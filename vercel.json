@@ -4,16 +4,32 @@
     {
       "src": "raw/**/*.user.js",
       "use": "@vercel/static"
+    },
+    {
+      "src": "raw/**/*.js",
+      "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "redirects": [
     {
-      "src": "/raw/(.*\\.user\\.js)",
-      "dest": "/raw/$1",
-      "headers": {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      }
+      "source": "/",
+      "destination": "/raw/bypass.user.js",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/raw/(.*\\.(user\\.)?js)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ]
 }
