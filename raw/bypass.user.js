@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.0
+// @version      1.19
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -17,7 +17,8 @@
 
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
   const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
-  const LUARMOR_ICON_URL = 'https://luarmor.net/newlanding/logo.png'
+  const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png'
+  const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85-E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
 
@@ -314,12 +315,12 @@
           <div id="vortixWorldOverlay">
             <div class="vw-header-bar">
               <div class="vw-title">
-                <img src="${LUARMOR_ICON_URL}" class="vw-header-icon" alt="Icon" onerror="this.onerror=null;this.src='${ICON_URL}'">
+                <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
                 VortixWorld
               </div>
             </div>
             <div class="vw-main-content">
-              <img src="${LUARMOR_ICON_URL}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
+              <img src="${LUARMOR_UI_ICON}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
               <div id="vwLuarmorSpinner" class="vw-spinner"></div>
               <div id="vwLuarmorCheckmark" class="vw-checkmark" style="display:none;">✓</div>
               <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
@@ -472,7 +473,7 @@
         </div>
       </div>
       <div class="vw-main-content">
-        <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+        <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
         <div id="vwStatus" class="vw-status">Initializing...</div>
         <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
