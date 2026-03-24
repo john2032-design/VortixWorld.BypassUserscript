@@ -284,6 +284,10 @@
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .vw-toast{position:fixed!important;top:20px!important;right:20px!important;padding:12px 20px!important;border-radius:12px!important;background:rgba(15,23,42,0.95)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:14px!important;box-shadow:0 8px 32px rgba(0,0,0,0.4)!important;z-index:2147483647!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;animation:vw-toast-slide-in 0.2s ease-out!important;border-left:4px solid #3b82f6!important}
+    .vw-toast.error{border-left-color:#ef4444!important}
+    @keyframes vw-toast-slide-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    @media (max-width:640px){.vw-toast{top:12px!important;right:12px!important;left:12px!important;width:auto!important;max-width:calc(100% - 24px)!important;text-align:center!important}}
     @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}}
   `
 
@@ -546,6 +550,16 @@
     }
   }
 
+  function showToast(message, isError = false) {
+    const toast = document.createElement('div')
+    toast.className = 'vw-toast' + (isError ? ' error' : '')
+    toast.textContent = message
+    document.body.appendChild(toast)
+    setTimeout(() => {
+      if (toast && toast.remove) toast.remove()
+    }, 3500)
+  }
+
   function handleBypassSuccess(url, timeSecondsStr) {
     const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
     if (isLuarmorUrl(url)) {
@@ -555,12 +569,14 @@
     }
     if (isAutoRedirect) {
       updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
+      showToast(`✅ Bypassed in ${timeLabel}s`, false)
       setTimeout(() => {
         location.href = url
       }, 1000)
     } else {
       injectUI()
       updateStatus('✔️ Bypass Complete!', `Completed in ${timeLabel}s - ${url}`)
+      showToast(`✅ Completed in ${timeLabel}s`, false)
     }
     shutdown()
   }
@@ -852,26 +868,36 @@
     }
   }
 
-  function sendTcManually() {
+  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, options)
+        if (res.ok) return res
+        if (i === retries) throw new Error(`HTTP ${res.status}`)
+      } catch (err) {
+        if (i === retries) throw err
+      }
+      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
+    }
+  }
+
+  async function sendTcManually() {
     if (window.__vw_tc_processed) return
     const originalFetch = window.fetch
     const syncDomain = window.INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
     Logger.info('Sending manual /tc request', tcUrl)
-    fetch(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
-        window.__vw_tc_processed = true
-        processTcResponse(data, originalFetch)
-        Logger.info('Manual /tc processed successfully')
-      })
-      .catch(err => {
-        Logger.warn('Manual /tc request failed', err.message)
-      })
+    try {
+      const res = await fetchWithRetry(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } }, 2, 1000)
+      const data = await res.json()
+      window.__vw_tc_processed = true
+      processTcResponse(data, originalFetch)
+      Logger.info('Manual /tc processed successfully')
+    } catch (err) {
+      Logger.warn('Manual /tc request failed after retries', err.message)
+      showToast('⚠️ Lootlink bypass failed, retrying...', true)
+    }
   }
 
   function runLocalLootlinkBypass() {
@@ -879,11 +905,17 @@
     installLuarmorNavigationGuard()
 
     const startManualCheck = () => {
+      let attempts = 0
       const interval = setInterval(() => {
         if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
           clearInterval(interval)
           sendTcManually()
+        } else if (attempts >= 100) {
+          clearInterval(interval)
+          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
+          showToast('⚠️ Globals not found, bypass may be slower', true)
         }
+        attempts++
       }, 100)
     }
 
@@ -935,6 +967,7 @@
     } catch (err) {
       Logger.error('tpi.li bypass failed', err.message)
       updateStatus('❌ Bypass failed', err.message)
+      showToast(`❌ Bypass failed: ${err.message}`, true)
       const manualDiv = document.createElement('div')
       manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#3b82f6;">Click here to continue manually</a></p>`
       const overlay = document.getElementById('vortixWorldOverlay')
