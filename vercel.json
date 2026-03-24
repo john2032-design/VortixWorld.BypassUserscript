@@ -1,15 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "raw/**/*.user.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "raw/**/*.js",
-      "use": "@vercel/static"
-    }
-  ],
   "redirects": [
     {
       "source": "/",
@@ -19,7 +8,7 @@
   ],
   "headers": [
     {
-      "source": "/raw/(.*\\.(user\\.)?js)",
+      "source": "/raw/(.*)",
       "headers": [
         {
           "key": "Content-Type",
