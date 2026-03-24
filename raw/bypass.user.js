@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.16
+// @version      1.17
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -551,7 +551,7 @@
       }, 1000)
     } else {
       injectUI()
-      updateStatus('✔️ Bypass Complete!', String(url))
+      updateStatus('✔️ Bypass Complete!', `Completed in ${timeLabel}s - ${url}`)
     }
     shutdown()
   }
@@ -902,6 +902,7 @@
   }
 
   async function runLocalTpiLiBypass() {
+    const startTime = Date.now()
     Logger.info('VortixWorld local tpi.li bypass enabled')
     injectUI()
     updateStatus('🔍 Fetching tpi.li link...', 'Extracting token, please wait')
@@ -925,7 +926,8 @@
       const finalUrl = atob(tokenPart)
 
       if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL')
-      handleBypassSuccess(finalUrl, 'tpi.li')
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+      handleBypassSuccess(finalUrl, duration)
     } catch (err) {
       Logger.error('tpi.li bypass failed', err.message)
       updateStatus('❌ Bypass failed', err.message)
