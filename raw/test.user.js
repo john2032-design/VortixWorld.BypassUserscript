@@ -1,4 +1,4 @@
-// ==UserScript==
+  // ==UserScript==
   // @name         VortixWorld Lootlinks Bypass
   // @namespace    afklolbypasser
   // @version      9.0
