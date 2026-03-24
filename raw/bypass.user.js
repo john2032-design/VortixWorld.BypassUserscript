@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.23
+// @version      1.24
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -282,9 +282,10 @@
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;left:calc(14px + env(safe-area-inset-left))!important;bottom:calc(70px + env(safe-area-inset-bottom))!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483647!important;pointer-events:none!important;font-family:inherit!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important}
+    .vw-toast{position:fixed!important;bottom:14px!important;left:14px!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important}
     .vw-toast.error{border-left:4px solid #ef4444!important}
     @keyframes vw-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @media (max-width:640px){.vw-toast{left:12px!important;right:12px!important;width:auto!important;max-width:calc(100% - 24px)!important;text-align:center!important}}
     @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}}
   `
 
@@ -551,7 +552,7 @@
     document.body.appendChild(toast)
     setTimeout(() => {
       if (toast && toast.remove) toast.remove()
-    }, 3500)
+    }, 2500)
   }
 
   function handleBypassSuccess(url, timeSecondsStr) {
@@ -561,16 +562,23 @@
       shutdown()
       return
     }
+    const isLoot = isLootHost()
     if (isAutoRedirect) {
       updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
-      showToast(`✅ Bypassed in ${timeLabel}s`, false)
+      if (!isLoot) showToast(`✅ Bypassed in ${timeLabel}s`, false)
+      else showToast('✅ Bypass successful', false)
       setTimeout(() => {
         location.href = url
       }, 1000)
     } else {
       injectUI()
-      updateStatus('✔️ Bypass Complete!', `Completed in ${timeLabel}s - ${url}`)
-      showToast(`✅ Completed in ${timeLabel}s`, false)
+      if (!isLoot) {
+        updateStatus('✔️ Bypass Complete!', `Completed in ${timeLabel}s - ${url}`)
+        showToast(`✅ Completed in ${timeLabel}s`, false)
+      } else {
+        updateStatus('✔️ Bypass Complete!', String(url))
+        showToast('✅ Bypass successful', false)
+      }
     }
     shutdown()
   }
@@ -838,7 +846,7 @@
         if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
           return originalFetch(url, config)
         }
-        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc_`)) {
           return originalFetch(url, config)
             .then(response => {
               if (!response.ok) return response
@@ -880,16 +888,16 @@
     const originalFetch = window.fetch
     const syncDomain = window.INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
-    const tcUrl = `https://${syncDomain}/tc`
-    Logger.info('Sending manual /tc request', tcUrl)
+    const tcUrl = `https://${syncDomain}/tc_`
+    Logger.info('Sending manual /tc_ request', tcUrl)
     try {
       const res = await fetchWithRetry(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } }, 2, 1000)
       const data = await res.json()
       window.__vw_tc_processed = true
       processTcResponse(data, originalFetch)
-      Logger.info('Manual /tc processed successfully')
+      Logger.info('Manual /tc_ processed successfully')
     } catch (err) {
-      Logger.warn('Manual /tc request failed after retries', err.message)
+      Logger.warn('Manual /tc_ request failed after retries', err.message)
       showToast('⚠️ Lootlink bypass failed, retrying...', true)
     }
   }
@@ -906,7 +914,7 @@
           sendTcManually()
         } else if (attempts >= 100) {
           clearInterval(interval)
-          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
+          Logger.warn('Manual /tc_: globals not found after 10s, relying on page fetch')
           showToast('⚠️ Globals not found, bypass may be slower', true)
         }
         attempts++
