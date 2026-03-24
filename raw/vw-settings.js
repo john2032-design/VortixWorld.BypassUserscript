@@ -624,14 +624,12 @@
 
       const logs = window.__vw_logs || []
       container.innerHTML = logs
-        .map((log) => `
-          <div class="vw-log-entry">
-            <span class="vw-log-time">[${String(log.timestamp || '').slice(11, 19)}]</span>
-            <span class="vw-log-level-${log.level || 'info'}">${String(log.level || 'info').toUpperCase()}</span>
-            <span class="vw-log-message"> ${escapeHtml(log.message)}</span>
-            ${log.data ? `<div class="vw-log-data">${escapeHtml(log.data)}</div>` : ''}
-          </div>
-        `)
+        .map((log) => {
+          const level = (log.level || 'info').toUpperCase()
+          const message = escapeHtml(log.message)
+          const data = log.data ? ` ${escapeHtml(log.data)}` : ''
+          return `<div class="vw-log-entry"><span class="vw-log-level-${log.level || 'info'}">[${level}]</span> <span class="vw-log-message">[VortixWorld] ${message}${data}</span></div>`
+        })
         .join('')
 
       container.scrollTop = container.scrollHeight
