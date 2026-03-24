@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.19
+// @version      1.20
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -879,16 +879,11 @@
     installLuarmorNavigationGuard()
 
     const startManualCheck = () => {
-      let attempts = 0
       const interval = setInterval(() => {
         if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
           clearInterval(interval)
           sendTcManually()
-        } else if (attempts >= 100) {
-          clearInterval(interval)
-          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
         }
-        attempts++
       }, 100)
     }
 
