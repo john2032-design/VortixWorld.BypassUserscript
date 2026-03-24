@@ -17,6 +17,7 @@
 
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
   const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
+  const LUARMOR_ICON_URL = 'https://luarmor.net/newlanding/logo.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
 
@@ -273,6 +274,8 @@
     .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(15,23,42,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:32px!important;border:1px solid rgba(59,130,246,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
     .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 0 0 2px #3b82f6,0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
     .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(59,130,246,0.2)!important;border-top:4px solid #3b82f6!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
+    .vw-checkmark{width:48px!important;height:48px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin-bottom:20px!important;color:#22c55e!important;font-size:36px!important;font-weight:bold!important;background:rgba(34,197,94,0.1)!important;border-radius:50%!important;animation:vw-check-pop 0.3s ease-out!important}
+    @keyframes vw-check-pop{0%{transform:scale(0)}80%{transform:scale(1.2)}100%{transform:scale(1)}}
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;background:linear-gradient(135deg,#fff,#94a3b8)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
     .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important}
@@ -311,13 +314,14 @@
           <div id="vortixWorldOverlay">
             <div class="vw-header-bar">
               <div class="vw-title">
-                <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+                <img src="${LUARMOR_ICON_URL}" class="vw-header-icon" alt="Icon" onerror="this.onerror=null;this.src='${ICON_URL}'">
                 VortixWorld
               </div>
             </div>
             <div class="vw-main-content">
-              <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
-              <div class="vw-spinner"></div>
+              <img src="${LUARMOR_ICON_URL}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
+              <div id="vwLuarmorSpinner" class="vw-spinner"></div>
+              <div id="vwLuarmorCheckmark" class="vw-checkmark" style="display:none;">✓</div>
               <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
               <div id="vwSubStatus" class="vw-substatus">Next will unlock in ${secs} seconds...</div>
               <div style="width:80%; max-width:420px; margin-top:18px; display:flex; flex-direction:column; gap:12px;">
@@ -330,11 +334,15 @@
     `
     const btn = document.getElementById('vwLuarmorNextBtn')
     const sub = document.getElementById('vwSubStatus')
+    const spinner = document.getElementById('vwLuarmorSpinner')
+    const checkmark = document.getElementById('vwLuarmorCheckmark')
     let remaining = secs
     const iv = setInterval(() => {
       remaining = Math.max(0, remaining - 1)
       if (sub) sub.innerText = remaining > 0 ? `Next will unlock in ${remaining} seconds...` : 'You may continue now.'
       if (remaining <= 0) {
+        if (spinner) spinner.style.display = 'none'
+        if (checkmark) checkmark.style.display = 'flex'
         if (btn) btn.disabled = false
         clearInterval(iv)
       }
