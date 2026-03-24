@@ -369,11 +369,6 @@
       word-break: break-word !important;
     }
 
-    .vw-log-time {
-      color: #64748b !important;
-      margin-right: 12px !important;
-    }
-
     .vw-log-level-info {
       color: #22c55e !important;
     }
@@ -388,14 +383,6 @@
 
     .vw-log-message {
       color: #e2e8f0 !important;
-    }
-
-    .vw-log-data {
-      color: #94a3b8 !important;
-      margin-top: 4px !important;
-      font-size: 11px !important;
-      white-space: pre-wrap !important;
-      word-break: break-word !important;
     }
 
     @media (max-width: 560px) {
@@ -635,6 +622,23 @@
       container.scrollTop = container.scrollHeight
     }
 
+    let refreshInterval = null
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval)
+      refreshInterval = setInterval(() => {
+        if (consolePanel && consolePanel.classList.contains('vw-hidden') === false) {
+          renderConsoleLogs()
+        }
+      }, 500)
+    }
+
+    function stopAutoRefresh() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+        refreshInterval = null
+      }
+    }
+
     function showToast(message) {
       const existingToast = shadow.querySelector('.vw-toast')
       if (existingToast) existingToast.remove()
@@ -657,7 +661,12 @@
       backdropDiv.classList.add('open')
       setScrollLock(true)
 
-      if (panel === 'console') renderConsoleLogs()
+      if (panel === 'console') {
+        renderConsoleLogs()
+        startAutoRefresh()
+      } else {
+        stopAutoRefresh()
+      }
 
       const focusTarget = panel === 'console'
         ? shadow.querySelector('#vwClearConsoleBtn')
@@ -681,6 +690,7 @@
       setVisible(settingsPanel, false)
       setVisible(consolePanel, false)
       setScrollLock(false)
+      stopAutoRefresh()
     }
 
     function loadSettings() {
