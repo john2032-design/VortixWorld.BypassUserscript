@@ -27,6 +27,10 @@
       padding: 0;
     }
 
+    .vw-hidden {
+      display: none !important;
+    }
+
     .vw-gear-btn {
       position: fixed !important;
       left: calc(14px + env(safe-area-inset-left)) !important;
@@ -79,6 +83,8 @@
       display: none !important;
       align-items: center !important;
       justify-content: center !important;
+      flex-direction: column !important;
+      gap: 16px !important;
       overflow: auto !important;
       overscroll-behavior: contain !important;
       -webkit-overflow-scrolling: touch !important;
@@ -507,15 +513,7 @@
 
     const host = document.createElement('div')
     host.id = VW_SETTINGS_ID
-    host.style.cssText = [
-      'all: initial',
-      'position: fixed',
-      'inset: 0',
-      'z-index: 2147483647',
-      'pointer-events: none',
-      'isolation: isolate',
-      'contain: layout style paint'
-    ].join(' !important; ') + ' !important;'
+    host.style.cssText = 'all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important; contain: layout style paint !important;'
 
     const shadow = host.attachShadow({ mode: 'closed' })
 
@@ -563,7 +561,7 @@
         </div>
       </div>
 
-      <div class="vw-panel" id="vwConsolePanel" style="display:none;" role="dialog" aria-modal="true" aria-label="VW Console">
+      <div class="vw-panel vw-hidden" id="vwConsolePanel" role="dialog" aria-modal="true" aria-label="VW Console">
         <div class="vw-header">
           <div class="vw-title"><div class="vw-badge">📟</div><span>Console</span></div>
           <button class="vw-close-btn" type="button" aria-label="Close console">✕</button>
@@ -609,6 +607,17 @@
       } catch (_) {}
     }
 
+    function setVisible(el, visible) {
+      if (!el) return
+      if (visible) {
+        el.classList.remove('vw-hidden')
+        el.style.setProperty('display', 'flex', 'important')
+      } else {
+        el.classList.add('vw-hidden')
+        el.style.setProperty('display', 'none', 'important')
+      }
+    }
+
     function renderConsoleLogs() {
       const container = shadow.querySelector('#vwConsoleLogs')
       if (!container) return
@@ -645,24 +654,25 @@
     }
 
     function openPanel(panel) {
-      settingsPanel.style.display = panel === 'settings' ? 'flex' : 'none'
-      consolePanel.style.display = panel === 'console' ? 'flex' : 'none'
+      setVisible(settingsPanel, panel === 'settings')
+      setVisible(consolePanel, panel === 'console')
       backdropDiv.classList.add('open')
       setScrollLock(true)
 
       if (panel === 'console') renderConsoleLogs()
 
-      const focusTarget =
-        panel === 'console'
-          ? shadow.querySelector('#vwClearConsoleBtn')
-          : shadow.querySelector('#vwWaitTimeInput')
+      const focusTarget = panel === 'console'
+        ? shadow.querySelector('#vwClearConsoleBtn')
+        : shadow.querySelector('#vwWaitTimeInput')
 
       if (focusTarget && typeof focusTarget.focus === 'function') {
         setTimeout(() => {
           try {
             focusTarget.focus({ preventScroll: true })
           } catch (_) {
-            try { focusTarget.focus() } catch (_) {}
+            try {
+              focusTarget.focus()
+            } catch (_) {}
           }
         }, 0)
       }
@@ -670,8 +680,8 @@
 
     function closePanel() {
       backdropDiv.classList.remove('open')
-      settingsPanel.style.display = 'flex'
-      consolePanel.style.display = 'none'
+      setVisible(settingsPanel, false)
+      setVisible(consolePanel, false)
       setScrollLock(false)
     }
 
@@ -714,9 +724,7 @@
     })
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && backdropDiv.classList.contains('open')) {
-        closePanel()
-      }
+      if (e.key === 'Escape' && backdropDiv.classList.contains('open')) closePanel()
     }, true)
 
     applyBtn.addEventListener('click', (e) => {
@@ -753,6 +761,8 @@
       openPanel('settings')
     })
 
+    setVisible(settingsPanel, true)
+    setVisible(consolePanel, false)
     loadSettings()
     document.documentElement.appendChild(host)
   }
