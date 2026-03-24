@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.22
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -852,6 +852,9 @@
           return originalFetch(url, config)
         }
         if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+          if (window.__vw_tc_processed) {
+            return originalFetch(url, config)
+          }
           return originalFetch(url, config)
             .then(response => {
               if (!response.ok) return response
@@ -860,6 +863,7 @@
                 .json()
                 .then(data => {
                   processTcResponse(data, originalFetch)
+                  window.__vw_tc_processed = true
                   return new Response(JSON.stringify(data), {
                     status: response.status,
                     statusText: response.statusText,
@@ -898,8 +902,8 @@
     try {
       const res = await fetchWithRetry(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } }, 2, 1000)
       const data = await res.json()
-      window.__vw_tc_processed = true
       processTcResponse(data, originalFetch)
+      window.__vw_tc_processed = true
       Logger.info('Manual /tc processed successfully')
       showToast('✅ Lootlink bypass successful', false)
     } catch (err) {
