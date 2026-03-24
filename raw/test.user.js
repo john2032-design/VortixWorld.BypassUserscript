@@ -1,1517 +1,999 @@
-  // ==UserScript==
-  // @name         VortixWorld Lootlinks Bypass
-  // @namespace    afklolbypasser
-  // @version      9.0
-  // @description  Bypass lootlinks with enhanced security and beautiful UI
-  // @author       afk.l0l
-  // @match        *://loot-link.com/s?*
-  // @match        *://loot-links.com/s?*
-  // @match        *://lootlink.org/s?*
-  // @match        *://lootlinks.co/s?*
-  // @match        *://lootdest.info/s?*
-  // @match        *://lootdest.org/s?*
-  // @match        *://lootdest.com/s?*
-  // @match        *://links-loot.com/s?*
-  // @match        *://linksloot.net/s?*
-  // @connect      loot-link.com
-  // @connect      loot-links.com
-  // @connect      lootlink.org
-  // @connect      lootlinks.co
-  // @connect      lootdest.info
-  // @connect      lootdest.org
-  // @connect      lootdest.com
-  // @connect      links-loot.com
-  // @connect      linksloot.net
-  // @icon         https://i.ibb.co/cKy9ztXL/IMG-3412.png
-  // @grant        none
-  // @license      MIT
-  // @run-at       document-start
-  // ==/UserScript==
+// ==UserScript==
+// @name         VortixWorld Bypass
+// @namespace    afklolbypasser
+// @version      1.12
+// @description  Bypass 💩 Fr
+// @author       afk.l0l
+// @match        *://*/*
+// @icon         https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
+// @require      https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/vw-settings.js
+// @require      https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/vw-notifications.js
+// @grant        none
+// @license      MIT
+// @run-at       document-start
+// ==/UserScript==
 
-  (function () {
-  'use strict';
+;(function () {
+  'use strict'
 
-  if (window.__VORTIX_BYPASS_INSTALLED) return;
-  window.__VORTIX_BYPASS_INSTALLED = true;
+  const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
+  const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
+  const SITE_HOST = 'vortix-world-bypass.vercel.app'
 
-  const ALLOWED_HOSTS = Object.freeze([
-      'loot-link.com',
-      'loot-links.com',
-      'lootlink.org',
-      'lootlinks.co',
-      'lootdest.info',
-      'lootdest.org',
-      'lootdest.com',
-      'links-loot.com',
-      'linksloot.net'
-  ]);
+  const LOOT_HOSTS = [
+    'loot-link.com',
+    'loot-links.com',
+    'lootlink.org',
+    'lootlinks.co',
+    'lootdest.info',
+    'lootdest.org',
+    'lootdest.com',
+    'links-loot.com',
+    'linksloot.net',
+    'lootlinks.com',
+    'best-links.org',
+    'loot-labs.com',
+    'lootlabs.com'
+  ]
 
-  const UNLOCK_TEXTS = Object.freeze(['UNLOCK CONTENT', 'Unlock Content']);
+  const ALLOWED_SHORT_HOSTS = [
+    'linkvertise.com',
+    'lootlinks.com',
+    'admaven.com',
+    'work.ink',
+    'shortearn.eu',
+    'beta.shortearn.eu',
+    'cuty.io',
+    'ouo.io',
+    'lockr.so',
+    'rekonise.com',
+    'mboost.me',
+    'link-unlocker.com',
+    'mega.nz',
+    'mega.co.nz',
+    'direct-link.net',
+    'direct-links.net',
+    'direct-links.org',
+    'link-center.net',
+    'link-hub.net',
+    'link-pays.in',
+    'link-target.net',
+    'link-target.org',
+    'link-to.net',
+    'links-loot.com',
+    'linksloot.net',
+    'loot-labs.com',
+    'loot-link.com',
+    'loot-links.com',
+    'lootdest.com',
+    'lootdest.info',
+    'lootdest.net',
+    'lootdest.org',
+    'lootlabs.com',
+    'lootlink.org',
+    'lootlinks.co',
+    'workink.net'
+  ]
 
-  const TASK_IMAGES = Object.freeze({
-      eye: 'eye.png',
-      bell: 'bell.png',
-      apps: 'apps.png',
-      fire: 'fire.png',
-      gamers: 'gamers.png'
-  });
+  function hostMatchesAny(list) {
+    const h = HOST
+    for (const base of list) {
+      if (h === base) return true
+      if (h.endsWith('.' + base)) return true
+    }
+    return false
+  }
+
+  const isLootHost = () => hostMatchesAny(LOOT_HOSTS)
+  const isAllowedHost = () => hostMatchesAny(ALLOWED_SHORT_HOSTS)
 
   const CONFIG = Object.freeze({
-      WS_TIMEOUT: 90000,
-      HEARTBEAT_INTERVAL: 1000,
-      MAX_RECONNECT_DELAY: 30000,
-      INITIAL_RECONNECT_DELAY: 1000,
-      FETCH_TIMEOUT: 30000,
-      COUNTDOWN_INTERVAL: 1000,
-      MAX_DECODE_RETRIES: 3,
-      MAX_FETCH_RETRIES: 3,
-      PROGRESS_RING_RADIUS: 90,
-      XOR_PREFIX_LENGTH: 5,
-      DEFAULT_COUNTDOWN: 60,
-      MIN_CONNECT_INTERVAL: 1000,
-      OBSERVER_DEBOUNCE_DELAY: 50,
-      VERSION: '9.0'
-  });
+    HEARTBEAT_INTERVAL: 1000,
+    MAX_RECONNECT_DELAY: 30000,
+    INITIAL_RECONNECT_DELAY: 1000,
+    COUNTDOWN_INTERVAL: 1000
+  })
 
-  const DEBUG = true;
+  const VW_KEYS = window.VW_CONFIG?.keys || {
+    lootlinkLocal: 'vw_lootlink_local',
+    autoRedirect: 'vw_auto_redirect',
+    redirectWaitTime: 'vw_redirect_wait_time',
+    luarmorWaitTime: 'vw_luarmor_wait_time'
+  }
+
+  let LootlinkLocal =
+    typeof window.VW_CONFIG?.lootlinkLocal === 'boolean'
+      ? window.VW_CONFIG.lootlinkLocal
+      : (localStorage.getItem(VW_KEYS.lootlinkLocal) ?? 'true') === 'true'
+
+  let RedirectWaitTime = (() => {
+    if (typeof window.VW_CONFIG?.redirectWaitTime === 'number') return window.VW_CONFIG.redirectWaitTime
+    const saved = localStorage.getItem(VW_KEYS.redirectWaitTime)
+    const parsed = saved ? parseInt(saved, 10) : NaN
+    return !isNaN(parsed) ? parsed : 5
+  })()
+
+  let LuarmorWaitTime = (() => {
+    if (typeof window.VW_CONFIG?.luarmorWaitTime === 'number') return window.VW_CONFIG.luarmorWaitTime
+    const saved = localStorage.getItem(VW_KEYS.luarmorWaitTime)
+    const parsed = saved ? parseInt(saved, 10) : NaN
+    return !isNaN(parsed) ? parsed : 20
+  })()
+
+  const savedAuto = localStorage.getItem(VW_KEYS.autoRedirect)
+  let isAutoRedirect = savedAuto !== null ? savedAuto === 'true' : true
+
+  const logStacks = {
+    countdown: { lastRemaining: null }
+  }
+
+  const LOG_STYLE = {
+    base: 'font-weight:800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
+    info: 'color:#22c55e;',
+    warn: 'color:#f59e0b;',
+    error: 'color:#ef4444;',
+    dim: 'color:#94a3b8;'
+  }
 
   const Logger = {
-      _log(level, color, message, data) {
-          if (!DEBUG && level !== 'error') return;
-          const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
-          const prefix = `%c[Vortix ${timestamp}]`;
-          const style = `color:${color};font-weight:700`;
-          if (data !== undefined && data !== '') {
-              console[level](prefix, style, message, data);
-          } else {
-              console[level](prefix, style, message);
-          }
-      },
-      info(message, data) { this._log('info', '#22d3ee', message, data); },
-      warn(message, data) { this._log('warn', '#fbbf24', message, data); },
-      error(message, data) { this._log('error', '#f87171', message, data); },
-      success(message, data) { this._log('info', '#4ade80', message, data); }
-  };
-
-  Logger.info(`VortixWorld Bypass v${CONFIG.VERSION} initialized`);
-
-  const pageURL = new URL(window.location.href);
-  const hostname = pageURL.hostname || '';
-  const isLootHost = ALLOWED_HOSTS.includes(hostname);
-
-  Logger.info('Host validation', { hostname, allowed: isLootHost });
-
-  if (!isLootHost) {
-      Logger.warn('Exiting - hostname not in allowed list');
-      return;
-  }
-
-  let originalFetch = null;
-  const DOMCache = new Map();
-
-  const perf = {
-      marks: new Map(),
-      mark(name) { this.marks.set(name, performance.now()); },
-      measure(start, end) {
-          const startTime = this.marks.get(start);
-          const endTime = this.marks.get(end);
-          if (startTime === undefined || endTime === undefined) return 0;
-          return endTime - startTime;
-      }
-  };
-
-  const state = {
-      uiInjected: false,
-      bypassSuccessful: false,
-      decodedUrl: null,
-      processStartTime: Date.now(),
-      isShutdown: false
-  };
-
-  function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-  }
-
-  function isValidUrl(url) {
-      try {
-          const parsed = new URL(url);
-          return ['http:', 'https:'].includes(parsed.protocol);
-      } catch {
-          return false;
-      }
-  }
-
-  function validateUrid(urid) {
-      return typeof urid === 'string' && /^[a-zA-Z0-9_-]+$/.test(urid);
-  }
-
-  function getCachedElement(selector, context = document) {
-      const key = context === document ? selector : `${selector}@${context.id || 'ctx'}`;
-      const cached = DOMCache.get(key);
-      if (cached && document.contains(cached)) {
-          return cached;
-      }
-      const element = context.querySelector(selector);
-      if (element) {
-          DOMCache.set(key, element);
-      } else {
-          DOMCache.delete(key);
-      }
-      return element;
-  }
-
-  function clearDOMCache() {
-      DOMCache.clear();
-  }
-
-  function debounce(fn, delay) {
-      let timeoutId = null;
-      return function(...args) {
-          if (timeoutId) clearTimeout(timeoutId);
-          timeoutId = setTimeout(() => {
-              timeoutId = null;
-              fn.apply(this, args);
-          }, delay);
-      };
+    info: (m, d = '') =>
+      console.info(
+        `%c[INFO]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.info,
+        LOG_STYLE.base + LOG_STYLE.dim,
+        d || ''
+      ),
+    warn: (m, d = '') =>
+      console.warn(
+        `%c[WARN]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.warn,
+        LOG_STYLE.base + LOG_STYLE.dim,
+        d || ''
+      ),
+    error: (m, d = '') =>
+      console.error(
+        `%c[ERROR]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.error,
+        LOG_STYLE.base + LOG_STYLE.dim,
+        d || ''
+      )
   }
 
   const cleanupManager = {
-      intervals: new Set(),
-      timeouts: new Set(),
-      listeners: new Map(),
+    intervals: new Set(),
+    timeouts: new Set(),
+    setInterval(fn, delay, ...args) {
+      const id = setInterval(fn, delay, ...args)
+      this.intervals.add(id)
+      return id
+    },
+    setTimeout(fn, delay, ...args) {
+      const id = setTimeout(() => {
+        this.timeouts.delete(id)
+        fn(...args)
+      }, delay)
+      this.timeouts.add(id)
+      return id
+    },
+    clearAll() {
+      this.intervals.forEach(id => clearInterval(id))
+      this.timeouts.forEach(id => clearTimeout(id))
+      this.intervals.clear()
+      this.timeouts.clear()
+    }
+  }
 
-      setInterval(fn, delay, ...args) {
-          const id = setInterval(fn, delay, ...args);
-          this.intervals.add(id);
-          return id;
-      },
-
-      clearInterval(id) {
-          clearInterval(id);
-          this.intervals.delete(id);
-      },
-
-      setTimeout(fn, delay, ...args) {
-          const id = setTimeout(() => {
-              this.timeouts.delete(id);
-              fn(...args);
-          }, delay);
-          this.timeouts.add(id);
-          return id;
-      },
-
-      clearTimeout(id) {
-          clearTimeout(id);
-          this.timeouts.delete(id);
-      },
-
-      addEventListener(target, event, handler, options) {
-          target.addEventListener(event, handler, options);
-          if (!this.listeners.has(target)) {
-              this.listeners.set(target, []);
-          }
-          this.listeners.get(target).push({ event, handler, options });
-      },
-
-      clearAll() {
-          this.intervals.forEach(id => clearInterval(id));
-          this.timeouts.forEach(id => clearTimeout(id));
-          this.intervals.clear();
-          this.timeouts.clear();
-
-          this.listeners.forEach((handlers, target) => {
-              handlers.forEach(({ event, handler, options }) => {
-                  try {
-                      target.removeEventListener(event, handler, options);
-                  } catch (e) {}
-              });
-          });
-          this.listeners.clear();
-
-          clearDOMCache();
-          Logger.info('Cleanup complete - all resources released');
-      }
-  };
+  let isShutdown = false
 
   function shutdown() {
-      if (state.isShutdown) return;
-      state.isShutdown = true;
+    if (isShutdown) return
+    isShutdown = true
+    cleanupManager.clearAll()
+    if (window.bypassObserver) {
+      window.bypassObserver.disconnect()
+      window.bypassObserver = null
+    }
+    if (window.activeWebSocket) {
+      window.activeWebSocket.disconnect()
+      window.activeWebSocket = null
+    }
+  }
 
-      cleanupManager.clearAll();
-
-      if (window.bypassObserver) {
-          window.bypassObserver.disconnect();
-          window.bypassObserver = null;
+  async function copyTextSilent(text) {
+    try {
+      if (!text) return false
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(String(text))
+        return true
       }
+    } catch (_) {}
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = String(text)
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      ta.style.top = '0'
+      ;(document.body || document.documentElement).appendChild(ta)
+      ta.focus()
+      ta.select()
+      const ok = document.execCommand('copy')
+      ta.remove()
+      return !!ok
+    } catch (_) {}
+    return false
+  }
 
-      if (window.activeWebSocket) {
-          window.activeWebSocket.disconnect();
-          window.activeWebSocket = null;
+  function isLuarmorUrl(url) {
+    try {
+      const u = new URL(String(url), location.href)
+      const h = (u.hostname || '').toLowerCase()
+      return h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net')
+    } catch (_) {
+      return String(url).includes('ads.luarmor.net')
+    }
+  }
+
+  function getBypassReturnUrl() {
+    try {
+      const params = new URLSearchParams(location.search)
+      const ret = params.get('return')
+      if (ret) return ret
+    } catch (_) {}
+    try {
+      const ret = sessionStorage.getItem('vw_bypass_return_url')
+      if (ret) return ret
+    } catch (_) {}
+    return ''
+  }
+
+  function setBypassReturnUrl(url) {
+    try {
+      sessionStorage.setItem('vw_bypass_return_url', String(url))
+    } catch (_) {}
+  }
+
+  function buildReturnWithRedirect(returnUrl, target) {
+    try {
+      const u = new URL(String(returnUrl), location.href)
+      u.searchParams.set('redirect', String(target))
+      return u.toString()
+    } catch (_) {
+      const base = String(returnUrl)
+      const join = base.includes('?') ? '&' : '?'
+      return base + join + 'redirect=' + encodeURIComponent(String(target))
+    }
+  }
+
+  const SHARED_UI_CSS = `
+    html,body{margin:0;padding:0;height:100%;overflow:hidden}
+    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;background:linear-gradient(135deg,#000000 0%,#071033 60%,#1e2be8 100%)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
+    #vortixWorldOverlay *{box-sizing:border-box!important}
+    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(255,255,255,0.06)!important;border-bottom:2px solid rgba(255,255,255,0.12)!important;z-index:2147483648!important;box-shadow:0 4px 18px rgba(0,0,0,0.35)!important;backdrop-filter:blur(10px)!important}
+    .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#a855f7!important}
+    .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important;border:2px solid #a855f7!important}
+    .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .6s ease-out!important;position:relative!important;z-index:2147483641!important;padding-top:56px!important;padding:20px!important}
+    .vw-icon-img{width:80px!important;height:80px!important;border-radius:16px!important;margin-bottom:25px!important;box-shadow:0 10px 36px rgba(0,0,0,0.35)!important;object-fit:cover!important}
+    .vw-status{font-size:22px!important;font-weight:900!important;text-align:center!important;margin-bottom:10px!important;color:#a855f7!important}
+    .vw-substatus{font-size:15px!important;color:rgba(207,214,230,0.82)!important;text-align:center!important;font-weight:600!important}
+    .vw-btn{background:linear-gradient(135deg,#0f1b4f,#a855f7)!important;color:#cfd6e6!important;border:1px solid rgba(255,255,255,0.14)!important;padding:14px 18px!important;border-radius:10px!important;font-weight:900!important;cursor:pointer!important;width:100%!important;text-transform:uppercase!important;transition:all .2s!important;font-size:14px!important;letter-spacing:1px!important}
+    .vw-btn:hover{opacity:.92!important;transform:translateY(-2px)!important}
+    .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
+    @keyframes vw-fade-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @media (max-width:768px){.vw-status{font-size:19px!important}.vw-substatus{font-size:13px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding-top:40px!important}}
+  `
+
+  let __vwLuarmorAllowOnceUrl = ''
+  let __vwLuarmorAllowUntil = 0
+
+  function allowLuarmorOnce(url, ms = 1500) {
+    __vwLuarmorAllowOnceUrl = String(url || '')
+    __vwLuarmorAllowUntil = Date.now() + ms
+  }
+
+  function isLuarmorAllowedNow(url) {
+    const u = String(url || '')
+    if (!__vwLuarmorAllowOnceUrl) return false
+    if (Date.now() > __vwLuarmorAllowUntil) return false
+    return u === __vwLuarmorAllowOnceUrl
+  }
+
+  function renderLuarmorNextUI(targetUrl, waitSeconds) {
+    const secs = Number.isFinite(waitSeconds) ? Math.max(0, Math.floor(waitSeconds)) : 20
+    document.documentElement.innerHTML = `
+      <html>
+        <head>
+          <title>VortixWorld USERSCRIPT</title>
+          <meta name="viewport" content="width=device-width,initial-scale=1"/>
+          <style>${SHARED_UI_CSS}</style>
+        </head>
+        <body>
+          <div id="vortixWorldOverlay">
+            <div class="vw-header-bar">
+              <div class="vw-title">
+                <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+                VortixWorld
+              </div>
+            </div>
+            <div class="vw-main-content">
+              <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+              <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
+              <div id="vwSubStatus" class="vw-substatus">Next will unlock in ${secs} seconds...</div>
+              <div style="width:80%; max-width:420px; margin-top:18px; display:flex; flex-direction:column; gap:12px;">
+                <button id="vwLuarmorNextBtn" class="vw-btn" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+    const btn = document.getElementById('vwLuarmorNextBtn')
+    const sub = document.getElementById('vwSubStatus')
+    let remaining = secs
+    const iv = setInterval(() => {
+      remaining = Math.max(0, remaining - 1)
+      if (sub) sub.innerText = remaining > 0 ? `Next will unlock in ${remaining} seconds...` : 'You may continue now.'
+      if (remaining <= 0) {
+        if (btn) btn.disabled = false
+        clearInterval(iv)
       }
+    }, 1000)
+    if (btn) {
+      btn.addEventListener('click', () => {
+        allowLuarmorOnce(targetUrl, 1500)
+        try {
+          location.href = targetUrl
+        } catch (_) {
+          window.open(targetUrl, '_self')
+        }
+      })
+    }
+  }
 
-      if (originalFetch) {
-          window.fetch = originalFetch;
+  function handleLuarmorTarget(url) {
+    const target = String(url)
+    if (isLuarmorAllowedNow(target)) {
+      __vwLuarmorAllowOnceUrl = ''
+      __vwLuarmorAllowUntil = 0
+      return false
+    }
+    if (HOST === SITE_HOST) {
+      const ret = getBypassReturnUrl()
+      if (ret) {
+        copyTextSilent(target).then(() => {
+          const backUrl = buildReturnWithRedirect(ret, target)
+          try {
+            location.href = backUrl
+          } catch (_) {
+            window.open(backUrl, '_self')
+          }
+        })
+        return true
       }
+    }
+    const wait = Number.isFinite(LuarmorWaitTime) ? LuarmorWaitTime : 20
+    renderLuarmorNextUI(target, wait)
+    return true
+  }
 
-      Logger.success('Shutdown complete');
+  function installLuarmorNavigationGuard() {
+    if (window.__VW_LUARMOR_GUARD_INSTALLED__) return
+    window.__VW_LUARMOR_GUARD_INSTALLED__ = true
+
+    const go = url => {
+      if (!isLuarmorUrl(url)) return false
+      return handleLuarmorTarget(url)
+    }
+
+    try {
+      const origOpen = window.open
+      window.open = function (url, target, features) {
+        if (go(url)) return null
+        return origOpen.call(this, url, target, features)
+      }
+    } catch (_) {}
+
+    try {
+      const origAssign = Location.prototype.assign
+      Location.prototype.assign = function (url) {
+        if (go(url)) return
+        return origAssign.call(this, url)
+      }
+    } catch (_) {}
+
+    try {
+      const origReplace = Location.prototype.replace
+      Location.prototype.replace = function (url) {
+        if (go(url)) return
+        return origReplace.call(this, url)
+      }
+    } catch (_) {}
+
+    try {
+      const origHrefDesc = Object.getOwnPropertyDescriptor(Location.prototype, 'href')
+      if (origHrefDesc && origHrefDesc.set && origHrefDesc.get) {
+        Object.defineProperty(Location.prototype, 'href', {
+          configurable: true,
+          enumerable: true,
+          get: function () {
+            return origHrefDesc.get.call(this)
+          },
+          set: function (url) {
+            if (go(url)) return
+            return origHrefDesc.set.call(this, url)
+          }
+        })
+      }
+    } catch (_) {}
+  }
+
+  function decodeURIxor(encodedString, prefixLength = 5) {
+    const base64Decoded = atob(encodedString)
+    const prefix = base64Decoded.substring(0, prefixLength)
+    const encodedPortion = base64Decoded.substring(prefixLength)
+    const prefixLen = prefix.length
+    const decodedChars = new Array(encodedPortion.length)
+    for (let i = 0; i < encodedPortion.length; i++) {
+      const encodedChar = encodedPortion.charCodeAt(i)
+      const prefixChar = prefix.charCodeAt(i % prefixLen)
+      decodedChars[i] = String.fromCharCode(encodedChar ^ prefixChar)
+    }
+    return decodedChars.join('')
+  }
+
+  let uiInjected = false
+  let bypassStart = performance.now()
+
+  const uiHTML = `
+    <div id="vortixWorldOverlay">
+      <div class="vw-header-bar">
+        <div class="vw-title">
+          <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+          VortixWorld
+        </div>
+        <div class="vw-header-right" style="display:flex; align-items:center; gap:10px;">
+          <div class="vw-toggle-container" style="display:flex; align-items:center; gap:10px; font-size:12px; color:rgba(207,214,230,0.92); font-weight:800; background:rgba(255,255,255,0.06); padding:7px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.12); cursor:pointer; z-index:2147483650; pointer-events:auto; user-select:none;">
+            <span>AutoRedirect</span>
+            <label style="position:relative; display:inline-block; width:40px; height:20px; pointer-events:auto;">
+              <input type="checkbox" id="vwAutoToggle" style="opacity:0; width:100%; height:100%; position:absolute; top:0; left:0; cursor:pointer; z-index:2147483651; margin:0;">
+              <span id="vwAutoTrack" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:rgba(255,255,255,0.20); transition:0.25s; border-radius:999px; pointer-events:none;"></span>
+              <span id="vwAutoKnob" style="position:absolute; height:14px; width:14px; left:3px; bottom:3px; background-color:#cfd6e6; transition:0.25s; border-radius:50%; pointer-events:none;"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="vw-main-content">
+        <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+        <div id="vwStatus" class="vw-status">Initializing...</div>
+        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+      </div>
+    </div>
+  `
+
+  function injectUI() {
+    if (uiInjected && document.getElementById('vortixWorldOverlay')) return
+    const existing = document.getElementById('vortixWorldOverlay')
+    if (existing) existing.remove()
+
+    const styleId = 'vortixWorldStyles'
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style')
+      styleSheet.id = styleId
+      styleSheet.innerText = SHARED_UI_CSS
+      ;(document.head || document.documentElement).appendChild(styleSheet)
+    }
+
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = uiHTML
+    const overlay = wrapper.firstElementChild
+
+    let container = document.body
+    if (!container) {
+      container = document.createElement('body')
+      document.documentElement.appendChild(container)
+      document.documentElement.style.overflow = 'hidden'
+    }
+    container.appendChild(overlay)
+    if (document.body) document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    uiInjected = true
+
+    const toggle = document.getElementById('vwAutoToggle')
+    const knob = document.getElementById('vwAutoKnob')
+    const track = document.getElementById('vwAutoTrack')
+
+    const paint = checked => {
+      if (track) track.style.background = checked ? 'linear-gradient(135deg, #0f1b4f, #a855f7)' : 'rgba(255,255,255,0.20)'
+      if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0px)'
+    }
+
+    if (toggle) {
+      toggle.checked = isAutoRedirect
+      paint(isAutoRedirect)
+      toggle.addEventListener('change', e => {
+        isAutoRedirect = e.target.checked
+        localStorage.setItem(VW_KEYS.autoRedirect, isAutoRedirect)
+        paint(isAutoRedirect)
+      })
+    }
+  }
+
+  function updateStatus(main, sub) {
+    if (!document.getElementById('vortixWorldOverlay')) injectUI()
+    const m = document.getElementById('vwStatus')
+    const s = document.getElementById('vwSubStatus')
+    if (m) m.innerText = main
+    if (s) s.innerText = sub
+  }
+
+  function handleBypassSuccess(url, timeSecondsStr) {
+    const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
+    if (isLuarmorUrl(url)) {
+      handleLuarmorTarget(url)
+      shutdown()
+      return
+    }
+    if (isAutoRedirect) {
+      updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
+      if (window.VWNotifications) window.VWNotifications.success(`Target URL acquired (${timeLabel}s)`)
+      setTimeout(() => {
+        location.href = url
+      }, 1000)
+    } else {
+      injectUI()
+      updateStatus('✔️ Bypass Complete!', String(url))
+      if (window.VWNotifications) window.VWNotifications.success('Bypass Complete!')
+    }
+    shutdown()
   }
 
   class RobustWebSocket {
-      constructor(url, options = {}) {
-          this.url = url;
-          this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY;
-          this.maxDelay = options.maxDelay || CONFIG.MAX_RECONNECT_DELAY;
-          this.heartbeatInterval = options.heartbeat || CONFIG.HEARTBEAT_INTERVAL;
-          this.maxRetries = options.maxRetries || 5;
-          this.ws = null;
-          this.reconnectTimeout = null;
-          this.heartbeatTimer = null;
-          this.retryCount = 0;
-          this.intentionallyClosed = false;
-          this.lastConnectAttempt = 0;
+    constructor(url, options = {}) {
+      this.url = url
+      this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY
+      this.maxDelay = options.maxDelay || CONFIG.MAX_RECONNECT_DELAY
+      this.heartbeatInterval = options.heartbeat || CONFIG.HEARTBEAT_INTERVAL
+      this.maxRetries = options.maxRetries || 5
+      this.ws = null
+      this.reconnectTimeout = null
+      this.heartbeatTimer = null
+      this.retryCount = 0
+    }
+
+    connect() {
+      if (isShutdown) return
+      try {
+        this.ws = new WebSocket(this.url)
+        this.ws.onopen = () => this.onOpen()
+        this.ws.onmessage = e => this.onMessage(e)
+        this.ws.onclose = () => this.handleReconnect()
+        this.ws.onerror = e => this.onError(e)
+      } catch (e) {
+        Logger.error('Unhandled exception thrown', e)
+        this.handleReconnect()
       }
+    }
 
-      connect() {
-          if (state.isShutdown || this.intentionallyClosed) return;
+    onOpen() {
+      if (isShutdown) return
+      Logger.info('WebSocket connection opened', this.url)
+      this.retryCount = 0
+      this.reconnectDelay = CONFIG.INITIAL_RECONNECT_DELAY
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout)
+        cleanupManager.timeouts.delete(this.reconnectTimeout)
+        this.reconnectTimeout = null
+      }
+      this.sendHeartbeat()
+      this.heartbeatTimer = cleanupManager.setInterval(() => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.sendHeartbeat()
+        } else {
+          clearInterval(this.heartbeatTimer)
+        }
+      }, this.heartbeatInterval)
+    }
 
-          const now = Date.now();
-          if (now - this.lastConnectAttempt < CONFIG.MIN_CONNECT_INTERVAL) {
-              Logger.warn('WebSocket connection rate limited');
-              return;
-          }
-          this.lastConnectAttempt = now;
+    sendHeartbeat() {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send('0')
+        Logger.info('WebSocket heartbeat sent', 'Keepalive')
+      }
+    }
 
+    handleReconnect() {
+      if (isShutdown) return
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer)
+        cleanupManager.intervals.delete(this.heartbeatTimer)
+        this.heartbeatTimer = null
+      }
+      if (this.retryCount >= this.maxRetries) {
+        Logger.error('WebSocket fatal error', 'Max retries exceeded')
+        return
+      }
+      this.retryCount++
+      const delay = Math.min(this.reconnectDelay * Math.pow(2, this.retryCount - 1), this.maxDelay)
+      Logger.warn('WebSocket connection slow to open', `Retry ${this.retryCount} in ${delay}ms`)
+      this.reconnectTimeout = cleanupManager.setTimeout(() => {
+        Logger.info('WebSocket url opened', this.url)
+        this.connect()
+      }, delay)
+    }
+
+    onMessage(event) {
+      if (isShutdown) return
+      if (event.data && event.data.includes('r:')) {
+        const PUBLISHER_LINK = event.data.replace('r:', '')
+        if (PUBLISHER_LINK) {
           try {
-              this.ws = new WebSocket(this.url);
-              this.ws.onopen = () => this.onOpen();
-              this.ws.onmessage = (e) => this.onMessage(e);
-              this.ws.onclose = () => this.handleReconnect();
-              this.ws.onerror = (e) => this.onError(e);
+            const finalUrl = decodeURIComponent(decodeURIxor(PUBLISHER_LINK))
+            this.disconnect()
+            const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
+            handleBypassSuccess(finalUrl, duration)
           } catch (e) {
-              Logger.error('WebSocket connection failed', e);
-              this.handleReconnect();
+            Logger.error('Critical decode failure', e)
+            if (window.VWNotifications) window.VWNotifications.error('Critical decode failure')
           }
+        }
       }
+    }
 
-      onOpen() {
-          if (state.isShutdown) return;
+    onError(error) {
+      Logger.error('WebSocket fatal error', error)
+      if (window.VWNotifications) window.VWNotifications.error('WebSocket fatal error')
+    }
 
-          Logger.success('WebSocket connected', this.url);
-          this.retryCount = 0;
-          this.reconnectDelay = CONFIG.INITIAL_RECONNECT_DELAY;
-
-          if (this.reconnectTimeout) {
-              cleanupManager.clearTimeout(this.reconnectTimeout);
-              this.reconnectTimeout = null;
-          }
-
-          this.sendHeartbeat();
-          this.heartbeatTimer = cleanupManager.setInterval(() => {
-              if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                  this.sendHeartbeat();
-              } else {
-                  cleanupManager.clearInterval(this.heartbeatTimer);
-              }
-          }, this.heartbeatInterval);
+    disconnect() {
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer)
+        cleanupManager.intervals.delete(this.heartbeatTimer)
+        this.heartbeatTimer = null
       }
-
-      sendHeartbeat() {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-              this.ws.send('0');
-          }
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout)
+        cleanupManager.timeouts.delete(this.reconnectTimeout)
+        this.reconnectTimeout = null
       }
-
-      handleReconnect() {
-          if (state.isShutdown || this.intentionallyClosed) return;
-
-          if (this.heartbeatTimer) {
-              cleanupManager.clearInterval(this.heartbeatTimer);
-              this.heartbeatTimer = null;
-          }
-
-          if (this.retryCount >= this.maxRetries) {
-              Logger.error('WebSocket max retries exceeded');
-              return;
-          }
-
-          this.retryCount++;
-          const delay = Math.min(
-              this.reconnectDelay * Math.pow(2, this.retryCount - 1),
-              this.maxDelay
-          );
-
-          Logger.warn(`WebSocket reconnecting in ${delay}ms`, `Attempt ${this.retryCount}/${this.maxRetries}`);
-
-          this.reconnectTimeout = cleanupManager.setTimeout(() => {
-              this.connect();
-          }, delay);
+      if (this.ws) {
+        this.ws.close()
       }
-
-      onMessage(event) {
-          if (state.isShutdown) return;
-
-          Logger.info('WebSocket message received', event.data?.length + ' bytes');
-
-          if (event.data && event.data.includes('r:')) {
-              const PUBLISHER_LINK = event.data.replace('r:', '');
-
-              if (PUBLISHER_LINK) {
-                  perf.mark('decodeStart');
-
-                  const result = decodeURIxor(PUBLISHER_LINK);
-
-                  if (!result) {
-                      Logger.error('Decode failed - null result');
-                      return;
-                  }
-
-                  let finalUrl = result;
-
-                  try {
-                      finalUrl = decodeURIComponent(result);
-                  } catch (e) {
-                      Logger.warn('URI decode failed, using raw result');
-                  }
-
-                  if (!isValidUrl(finalUrl)) {
-                      Logger.error('Invalid URL detected', finalUrl);
-                      return;
-                  }
-
-                  if (/^https?:\/\/ads\.luarmor\.net\//i.test(finalUrl)) {
-                      finalUrl = `https://vortixworld-luarmor.vercel.app/redirect?to=${encodeURIComponent(finalUrl)}`;
-                      this.disconnect();
-                      Logger.info('Redirecting to modified URL');
-                      window.location.href = finalUrl;
-                      return;
-                  }
-
-                  perf.mark('decodeEnd');
-                  Logger.success('Decode completed', `${perf.measure('decodeStart', 'decodeEnd').toFixed(2)}ms`);
-
-                  this.disconnect();
-
-                  const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2);
-                  state.decodedUrl = finalUrl;
-
-                  renderSuccessUI(finalUrl, duration);
-              }
-          }
-      }
-
-      onError(error) {
-          Logger.error('WebSocket error', error);
-      }
-
-      disconnect() {
-          this.intentionallyClosed = true;
-
-          if (this.heartbeatTimer) {
-              cleanupManager.clearInterval(this.heartbeatTimer);
-              this.heartbeatTimer = null;
-          }
-
-          if (this.reconnectTimeout) {
-              cleanupManager.clearTimeout(this.reconnectTimeout);
-              this.reconnectTimeout = null;
-          }
-
-          if (this.ws) {
-              this.ws.close();
-              this.ws = null;
-          }
-
-          Logger.info('WebSocket disconnected');
-      }
-  }
-
-  function decodeURIxor(encodedString, prefixLength = CONFIG.XOR_PREFIX_LENGTH) {
-      try {
-          const base64Decoded = atob(encodedString);
-          const prefix = base64Decoded.substring(0, prefixLength);
-          const encodedPortion = base64Decoded.substring(prefixLength);
-          const prefixLen = prefix.length;
-          const decodedChars = new Array(encodedPortion.length);
-
-          for (let i = 0; i < encodedPortion.length; i++) {
-              const encodedChar = encodedPortion.charCodeAt(i);
-              const prefixChar = prefix.charCodeAt(i % prefixLen);
-              decodedChars[i] = String.fromCharCode(encodedChar ^ prefixChar);
-          }
-
-          return decodedChars.join('');
-      } catch (e) {
-          Logger.error('XOR decode failed', e);
-          return null;
-      }
-  }
-
-  const modernCSS = `
-  :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-card: linear-gradient(145deg, #16161f 0%, #1a1a25 50%, #12121a 100%);
-      --accent-primary: #6366f1;
-      --accent-secondary: #8b5cf6;
-      --accent-tertiary: #a855f7;
-      --accent-glow: rgba(99, 102, 241, 0.4);
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.4);
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --border-subtle: rgba(99, 102, 241, 0.2);
-      --border-glow: rgba(139, 92, 246, 0.5);
-  }
-
-  * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-  }
-
-  @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-20px) rotate(5deg); }
-  }
-
-  @keyframes pulse-ring {
-      0% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(1.5); opacity: 0; }
-  }
-
-  @keyframes gradient-shift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-  }
-
-  @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-  }
-
-  @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes success-bounce {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-  }
-
-  @keyframes particle-float {
-      0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.6; }
-      25% { transform: translateY(-30px) translateX(10px) rotate(90deg); opacity: 1; }
-      50% { transform: translateY(-50px) translateX(-10px) rotate(180deg); opacity: 0.8; }
-      75% { transform: translateY(-30px) translateX(15px) rotate(270deg); opacity: 1; }
-  }
-
-  #vortix-bypass-overlay {
-      position: fixed;
-      inset: 0;
-      background: var(--bg-primary);
-      z-index: 2147483645;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 20px;
-      overflow: hidden;
-  }
-
-  #vortix-bypass-overlay::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 40%),
-                  radial-gradient(ellipse at 20% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 40%);
-      animation: gradient-shift 15s ease infinite;
-      background-size: 200% 200%;
-      pointer-events: none;
-  }
-
-  .vortix-particles {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-  }
-
-  .vortix-particle {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: var(--accent-primary);
-      border-radius: 50%;
-      animation: particle-float 8s ease-in-out infinite;
-  }
-
-  .vortix-particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; background: var(--accent-primary); }
-  .vortix-particle:nth-child(2) { left: 20%; top: 60%; animation-delay: 1s; background: var(--accent-secondary); }
-  .vortix-particle:nth-child(3) { left: 70%; top: 30%; animation-delay: 2s; background: var(--accent-tertiary); }
-  .vortix-particle:nth-child(4) { left: 80%; top: 70%; animation-delay: 3s; background: var(--accent-primary); }
-  .vortix-particle:nth-child(5) { left: 50%; top: 10%; animation-delay: 4s; background: var(--accent-secondary); }
-  .vortix-particle:nth-child(6) { left: 30%; top: 80%; animation-delay: 5s; background: var(--accent-tertiary); }
-
-  .vortix-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 32px;
-      padding: 48px 40px;
-      max-width: 480px;
-      width: 100%;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 32px;
-      animation: fade-in-up 0.6s ease-out;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05),
-                  0 25px 50px -12px rgba(0, 0, 0, 0.5),
-                  0 0 100px -20px var(--accent-glow);
-  }
-
-  .vortix-container::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: 32px;
-      padding: 1px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary), var(--accent-primary));
-      background-size: 300% 300%;
-      animation: gradient-shift 8s ease infinite;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
-      opacity: 0.6;
-  }
-
-  .vortix-logo-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-  }
-
-  .vortix-logo-wrapper {
-      position: relative;
-      width: 120px;
-      height: 120px;
-  }
-
-  .vortix-logo-ring {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      border-top-color: var(--accent-primary);
-      border-right-color: var(--accent-secondary);
-      animation: spin 3s linear infinite;
-  }
-
-  .vortix-logo-ring:nth-child(2) {
-      inset: 8px;
-      animation-direction: reverse;
-      animation-duration: 4s;
-      border-top-color: var(--accent-secondary);
-      border-right-color: var(--accent-tertiary);
-  }
-
-  .vortix-logo-ring:nth-child(3) {
-      inset: 16px;
-      animation-duration: 5s;
-      border-top-color: var(--accent-tertiary);
-      border-right-color: var(--accent-primary);
-  }
-
-  @keyframes spin {
-      to { transform: rotate(360deg); }
-  }
-
-  .vortix-logo-icon {
-      position: absolute;
-      inset: 24px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 40px var(--accent-glow),
-                  inset 0 0 20px rgba(255, 255, 255, 0.1);
-  }
-
-  .vortix-logo-icon img {
-      width: 40px;
-      height: 40px;
-      filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
-  }
-
-  .vortix-logo-text {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 50%, var(--accent-tertiary) 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 3s linear infinite;
-  }
-
-  .vortix-status {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-  }
-
-  .vortix-status-text {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
-  }
-
-  .vortix-status-sub {
-      font-size: 14px;
-      color: var(--text-secondary);
-  }
-
-  .vortix-loading-dots {
-      display: inline-flex;
-      gap: 4px;
-      margin-left: 8px;
-  }
-
-  .vortix-loading-dots span {
-      width: 6px;
-      height: 6px;
-      background: var(--accent-primary);
-      border-radius: 50%;
-      animation: dot-bounce 1.4s ease-in-out infinite;
-  }
-
-  .vortix-loading-dots span:nth-child(1) { animation-delay: 0s; }
-  .vortix-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
-  .vortix-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-  @keyframes dot-bounce {
-      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-      40% { transform: scale(1.2); opacity: 1; }
-  }
-
-  .vortix-task-card {
-      width: 100%;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-  }
-
-  .vortix-task-icon {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      box-shadow: 0 8px 24px -8px var(--accent-glow);
-  }
-
-  .vortix-task-info {
-      flex: 1;
-  }
-
-  .vortix-task-info h4 {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-  }
-
-  .vortix-task-info p {
-      font-size: 13px;
-      color: var(--text-secondary);
-  }
-
-  .vortix-progress-container {
-      position: relative;
-      width: 200px;
-      height: 200px;
-  }
-
-  .vortix-progress-ring {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-      filter: drop-shadow(0 0 20px var(--accent-glow));
-  }
-
-  .vortix-progress-bg {
-      fill: none;
-      stroke: rgba(99, 102, 241, 0.1);
-      stroke-width: 12;
+    }
   }
-
-  .vortix-progress-bar {
-      fill: none;
-      stroke: url(#vortix-gradient);
-      stroke-width: 12;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.5s ease;
-  }
-
-  .vortix-progress-center {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-  }
-
-  .vortix-countdown {
-      font-size: 52px;
-      font-weight: 800;
-      color: var(--text-primary);
-      line-height: 1;
-      text-shadow: 0 0 30px var(--accent-glow);
-  }
-
-  .vortix-countdown-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-top: 8px;
-  }
-
-  .vortix-footer {
-      font-size: 13px;
-      color: var(--text-muted);
-      text-align: center;
-  }
-
-  .vortix-result {
-      display: none;
-      flex-direction: column;
-      gap: 20px;
-      width: 100%;
-      animation: fade-in-up 0.5s ease-out;
-  }
-
-  .vortix-result.visible {
-      display: flex;
-  }
-
-  .vortix-success-badge {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 16px 24px;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 16px;
-      animation: success-bounce 2s ease-in-out infinite;
-  }
-
-  .vortix-success-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--success);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 20px var(--success-glow);
-  }
-
-  .vortix-success-icon svg {
-      width: 18px;
-      height: 18px;
-      color: white;
-  }
-
-  .vortix-success-text {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--success);
-  }
-
-  .vortix-time-badge {
-      font-size: 14px;
-      color: var(--text-secondary);
-      text-align: center;
-  }
-
-  .vortix-time-badge span {
-      color: var(--accent-secondary);
-      font-weight: 700;
-  }
-
-  .vortix-url-box {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px 20px;
-      max-height: 120px;
-      overflow-y: auto;
-  }
-
-  .vortix-url-box::-webkit-scrollbar {
-      width: 6px;
-  }
-
-  .vortix-url-box::-webkit-scrollbar-track {
-      background: transparent;
-  }
-
-  .vortix-url-box::-webkit-scrollbar-thumb {
-      background: var(--accent-primary);
-      border-radius: 3px;
-  }
-
-  .vortix-url-text {
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 13px;
-      color: var(--text-secondary);
-      word-break: break-all;
-      line-height: 1.6;
-  }
-
-  .vortix-actions {
-      display: flex;
-      gap: 12px;
-      width: 100%;
-  }
-
-  .vortix-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 16px 24px;
-      border: none;
-      border-radius: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-  }
-
-  .vortix-btn-primary {
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      color: white;
-      box-shadow: 0 8px 24px -8px var(--accent-glow);
-  }
-
-  .vortix-btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px -8px var(--accent-glow);
-  }
-
-  .vortix-btn-primary:active {
-      transform: translateY(0);
-  }
-
-  .vortix-btn-secondary {
-      background: rgba(99, 102, 241, 0.1);
-      color: var(--accent-primary);
-      border: 1px solid var(--border-subtle);
-  }
-
-  .vortix-btn-secondary:hover {
-      background: rgba(99, 102, 241, 0.2);
-      border-color: var(--accent-primary);
-  }
-
-  .vortix-btn svg {
-      width: 18px;
-      height: 18px;
-  }
-
-  .hidden {
-      display: none !important;
-  }
-
-  @media (max-width: 520px) {
-      #vortix-bypass-overlay {
-          padding: 12px;
-      }
-
-      .vortix-container {
-          padding: 32px 24px;
-          gap: 24px;
-          border-radius: 24px;
-      }
-
-      .vortix-logo-wrapper {
-          width: 100px;
-          height: 100px;
-      }
-
-      .vortix-logo-icon {
-          inset: 20px;
-      }
-
-      .vortix-logo-icon img {
-          width: 32px;
-          height: 32px;
-      }
-
-      .vortix-logo-text {
-          font-size: 24px;
-      }
-
-      .vortix-status-text {
-          font-size: 16px;
-      }
-
-      .vortix-task-card {
-          padding: 16px 20px;
-          gap: 16px;
-      }
-
-      .vortix-task-icon {
-          width: 48px;
-          height: 48px;
-          font-size: 24px;
-      }
-
-      .vortix-progress-container {
-          width: 160px;
-          height: 160px;
-      }
-
-      .vortix-countdown {
-          font-size: 42px;
-      }
-
-      .vortix-actions {
-          flex-direction: column;
-      }
-
-      .vortix-btn {
-          padding: 14px 20px;
-      }
-  }
-  `;
-
-  const BYPASS_HTML_TEMPLATE = `
-  <div id="vortix-bypass-overlay">
-      <div class="vortix-particles">
-          <div class="vortix-particle"></div>
-          <div class="vortix-particle"></div>
-          <div class="vortix-particle"></div>
-          <div class="vortix-particle"></div>
-          <div class="vortix-particle"></div>
-          <div class="vortix-particle"></div>
-      </div>
-      <div class="vortix-container">
-          <div class="vortix-logo-section">
-              <div class="vortix-logo-wrapper">
-                  <div class="vortix-logo-ring"></div>
-                  <div class="vortix-logo-ring"></div>
-                  <div class="vortix-logo-ring"></div>
-                  <div class="vortix-logo-icon">
-                      <img src="https://i.ibb.co/cKy9ztXL/IMG-3412.png" alt="Vortix">
-                  </div>
-              </div>
-              <div class="vortix-logo-text">Vortix Bypass</div>
-          </div>
-
-          <div class="vortix-status">
-              <div class="vortix-status-text">
-                  Processing your request
-                  <span class="vortix-loading-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                  </span>
-              </div>
-              <div class="vortix-status-sub">Please wait while we decode your link</div>
-          </div>
-
-          <div class="vortix-task-card">
-              <div class="vortix-task-icon">ð</div>
-              <div class="vortix-task-info">
-                  <h4>Processing</h4>
-                  <p>Estimated time: 60 seconds</p>
-              </div>
-          </div>
-
-          <div class="vortix-progress-container">
-              <svg class="vortix-progress-ring" viewBox="0 0 200 200">
-                  <defs>
-                      <linearGradient id="vortix-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stop-color="#6366f1"/>
-                          <stop offset="50%" stop-color="#8b5cf6"/>
-                          <stop offset="100%" stop-color="#a855f7"/>
-                      </linearGradient>
-                  </defs>
-                  <circle class="vortix-progress-bg" cx="100" cy="100" r="90"/>
-                  <circle class="vortix-progress-bar" id="vortix-progress-circle" cx="100" cy="100" r="90"/>
-              </svg>
-              <div class="vortix-progress-center">
-                  <div class="vortix-countdown" id="vortix-countdown">60</div>
-                  <div class="vortix-countdown-label">seconds</div>
-              </div>
-          </div>
-
-          <div class="vortix-result" id="vortix-result">
-              <div class="vortix-success-badge">
-                  <div class="vortix-success-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                  </div>
-                  <span class="vortix-success-text">Link Decoded Successfully!</span>
-              </div>
-              <div class="vortix-time-badge">Completed in <span id="vortix-time">0.00</span> seconds</div>
-              <div class="vortix-url-box">
-                  <div class="vortix-url-text" id="vortix-url"></div>
-              </div>
-              <div class="vortix-actions">
-                  <button class="vortix-btn vortix-btn-primary" id="vortix-copy-btn">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                      </svg>
-                      Copy Link
-                  </button>
-                  <button class="vortix-btn vortix-btn-secondary" id="vortix-open-btn">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                          <polyline points="15 3 21 3 21 9"></polyline>
-                          <line x1="10" y1="14" x2="21" y2="3"></line>
-                      </svg>
-                      Open
-                  </button>
-              </div>
-          </div>
-
-          <div class="vortix-footer">
-              Powered by Vortix v${CONFIG.VERSION}
-          </div>
-      </div>
-  </div>
-  `;
-
-  function injectStyles() {
-      if (document.getElementById('vortix-styles')) return;
-
-      try {
-          const styleEl = document.createElement('style');
-          styleEl.id = 'vortix-styles';
-          styleEl.textContent = modernCSS;
-
-          if (document.head) {
-              document.head.appendChild(styleEl);
-          } else {
-              document.addEventListener('DOMContentLoaded', () => {
-                  document.head.appendChild(styleEl);
-              });
-          }
-
-          Logger.success('Styles injected');
-      } catch (e) {
-          Logger.error('Style injection failed', e);
-      }
-  }
-
-  function copyToClipboard(text) {
-      if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text).then(() => {
-              Logger.success('Copied to clipboard');
-              showCopyFeedback();
-          }).catch(() => fallbackCopy(text));
-      } else {
-          fallbackCopy(text);
-      }
-  }
-
-  function fallbackCopy(text) {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-
-      try {
-          const success = document.execCommand('copy');
-          if (success) {
-              Logger.success('Copied via fallback');
-              showCopyFeedback();
-          }
-      } catch (e) {
-          Logger.error('Copy failed', e);
-      }
-
-      document.body.removeChild(textArea);
-  }
-
-  function showCopyFeedback() {
-      const btn = document.getElementById('vortix-copy-btn');
-      if (!btn) return;
-
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Copied!
-      `;
-      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-
-      cleanupManager.setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.style.background = '';
-      }, 2000);
-  }
-
-  function renderSuccessUI(url, time) {
-      Logger.success('Bypass completed', { time: time + 's' });
-
-      const overlay = document.getElementById('vortix-bypass-overlay');
-      if (!overlay) return;
-
-      const statusText = overlay.querySelector('.vortix-status-text');
-      if (statusText) statusText.classList.add('hidden');
-
-      const statusSub = overlay.querySelector('.vortix-status-sub');
-      if (statusSub) statusSub.classList.add('hidden');
-
-      const taskCard = overlay.querySelector('.vortix-task-card');
-      if (taskCard) taskCard.classList.add('hidden');
-
-      const progressContainer = overlay.querySelector('.vortix-progress-container');
-      if (progressContainer) progressContainer.classList.add('hidden');
-
-      const logoRings = overlay.querySelectorAll('.vortix-logo-ring');
-      logoRings.forEach(ring => ring.style.animation = 'none');
-
-      const resultContainer = document.getElementById('vortix-result');
-      if (resultContainer) {
-          resultContainer.classList.add('visible');
-
-          const timeEl = document.getElementById('vortix-time');
-          if (timeEl) timeEl.textContent = time;
-
-          const urlEl = document.getElementById('vortix-url');
-          if (urlEl) urlEl.textContent = url;
-
-          const copyBtn = document.getElementById('vortix-copy-btn');
-          if (copyBtn) {
-              copyBtn.onclick = () => copyToClipboard(url);
-          }
-
-          const openBtn = document.getElementById('vortix-open-btn');
-          if (openBtn) {
-              openBtn.onclick = () => {
-                  if (isValidUrl(url)) {
-                      window.open(url, '_blank', 'noopener,noreferrer');
-                  }
-              };
-          }
-      }
-
-      state.decodedUrl = url;
-      state.bypassSuccessful = true;
-
-      if (window.vortixCountdownTimer) {
-          cleanupManager.clearInterval(window.vortixCountdownTimer);
-          window.vortixCountdownTimer = null;
-      }
 
-      shutdown();
+  const state = {
+    processStartTime: Date.now()
   }
 
   function detectTaskInfo() {
-      let countdownSeconds = CONFIG.DEFAULT_COUNTDOWN;
-      let taskName = 'Processing';
-      let taskIcon = 'ð';
-
-      try {
-          const images = document.querySelectorAll('img');
-
-          for (const img of images) {
-              const src = (img.src || '').toLowerCase();
-
-              if (src.includes(TASK_IMAGES.eye)) {
-                  countdownSeconds = 13;
-                  taskName = 'View Content';
-                  taskIcon = 'ðï¸';
-                  break;
-              } else if (src.includes(TASK_IMAGES.bell)) {
-                  countdownSeconds = 30;
-                  taskName = 'Notification';
-                  taskIcon = 'ð';
-                  break;
-              } else if (src.includes(TASK_IMAGES.apps) || src.includes(TASK_IMAGES.fire)) {
-                  countdownSeconds = 60;
-                  taskName = 'App Task';
-                  taskIcon = 'ð±';
-                  break;
-              } else if (src.includes(TASK_IMAGES.gamers)) {
-                  countdownSeconds = 90;
-                  taskName = 'Gaming Offer';
-                  taskIcon = 'ð®';
-                  break;
-              }
-          }
-      } catch (e) {
-          Logger.warn('Task detection failed', e);
+    let countdownSeconds = 60
+    let taskName = 'Processing'
+    try {
+      const images = document.querySelectorAll('img')
+      for (let img of images) {
+        const src = (img.src || '').toLowerCase()
+        if (src.includes('eye.png')) {
+          countdownSeconds = 13
+          taskName = 'View Content'
+          break
+        } else if (src.includes('bell.png')) {
+          countdownSeconds = 30
+          taskName = 'Notification'
+          break
+        } else if (src.includes('apps.png') || src.includes('fire.png')) {
+          countdownSeconds = 60
+          taskName = 'App Install'
+          break
+        } else if (src.includes('gamers.png')) {
+          countdownSeconds = 90
+          taskName = 'Gaming Offer'
+          break
+        }
       }
-
-      return { countdownSeconds, taskName, taskIcon };
+    } catch (_) {}
+    return { countdownSeconds, taskName }
   }
 
   function modifyParentElement(targetElement) {
-      const parentElement = targetElement.parentElement;
-      if (!parentElement) return;
+    const parentElement = targetElement.parentElement
+    if (!parentElement) return
 
-      Logger.info('Injecting bypass UI');
+    const { countdownSeconds, taskName } = detectTaskInfo()
+    state.processStartTime = Date.now()
+    bypassStart = performance.now()
 
-      const { countdownSeconds, taskName, taskIcon } = detectTaskInfo();
-      state.processStartTime = Date.now();
+    parentElement.innerHTML = ''
+    parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
 
-      parentElement.innerHTML = '';
-      parentElement.insertAdjacentHTML('afterbegin', BYPASS_HTML_TEMPLATE);
+    injectUI()
+    updateStatus(`⏳ ${taskName}...`, `Estimated ${countdownSeconds} seconds remaining...`)
 
-      const taskIconEl = document.querySelector('.vortix-task-icon');
-      if (taskIconEl) taskIconEl.textContent = taskIcon;
-
-      const taskNameEl = document.querySelector('.vortix-task-info h4');
-      if (taskNameEl) taskNameEl.textContent = taskName;
-
-      const taskTimeEl = document.querySelector('.vortix-task-info p');
-      if (taskTimeEl) taskTimeEl.textContent = `Estimated time: ${countdownSeconds} seconds`;
-
-      const progressCircle = document.getElementById('vortix-progress-circle');
-      const countdownDisplay = document.getElementById('vortix-countdown');
-
-      const radius = CONFIG.PROGRESS_RING_RADIUS;
-      const circumference = 2 * Math.PI * radius;
-
-      if (progressCircle) {
-          progressCircle.style.strokeDasharray = circumference.toString();
-          progressCircle.style.strokeDashoffset = circumference.toString();
+    let remaining = countdownSeconds
+    const timer = cleanupManager.setInterval(() => {
+      remaining--
+      const last = logStacks.countdown.lastRemaining
+      if (last === null || last - remaining >= 5 || remaining <= 5) {
+        logStacks.countdown.lastRemaining = remaining
+        Logger.info('Countdown progress snapshot', `${remaining} seconds remaining`)
       }
-
-      let remaining = countdownSeconds;
-
-      if (countdownDisplay) {
-          countdownDisplay.textContent = remaining.toString();
+      updateStatus('🔄 Bypassing...', `(Estimated ${remaining} seconds remaining..)`)
+      if (remaining <= 0) {
+        clearInterval(timer)
+        cleanupManager.intervals.delete(timer)
       }
-
-      const timer = cleanupManager.setInterval(() => {
-          remaining--;
-
-          if (countdownDisplay) {
-              countdownDisplay.textContent = Math.max(0, remaining).toString();
-          }
-
-          if (progressCircle) {
-              const progress = (countdownSeconds - remaining) / countdownSeconds;
-              const offset = circumference - (progress * circumference);
-              progressCircle.style.strokeDashoffset = offset.toString();
-          }
-
-          if (remaining <= 0) {
-              cleanupManager.clearInterval(timer);
-          }
-      }, CONFIG.COUNTDOWN_INTERVAL);
-
-      window.vortixCountdownTimer = timer;
-      state.uiInjected = true;
+    }, CONFIG.COUNTDOWN_INTERVAL)
   }
 
-  function setupObserver() {
+  function setupOptimizedObserver() {
+    const targetContainer = document.body || document.documentElement
+    const observer = new MutationObserver((mutationsList, observerRef) => {
+      if (isShutdown) {
+        observerRef.disconnect()
+        return
+      }
+      const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+      for (const mutation of mutationsList) {
+        if (mutation.type !== 'childList') continue
+        const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1)
+        const found = addedElements
+          .flatMap(el => [el, ...Array.from(el.querySelectorAll('*'))])
+          .find(el => {
+            const text = el.textContent
+            return text && unlockText.some(t => text.includes(t))
+          })
+        if (found) {
+          modifyParentElement(found)
+          observerRef.disconnect()
+          return
+        }
+      }
+    })
+    window.bypassObserver = observer
+    observer.observe(targetContainer, { childList: true, subtree: true })
+
+    const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+    const existing = Array.from(document.querySelectorAll('*')).find(el => {
+      const text = el.textContent
+      return text && unlockText.some(t => text.includes(t))
+    })
+    if (existing) {
+      modifyParentElement(existing)
+      observer.disconnect()
+    }
+  }
+
+  function initLocalLootlinkFetchOverride() {
+    const originalFetch = window.fetch
+    window.fetch = function (url, config) {
       try {
-          const targetContainer = document.querySelector('.content-wrapper') || document.body;
+        const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
+        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
+          return originalFetch(url, config)
+        }
+        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+          return originalFetch(url, config)
+            .then(response => {
+              if (!response.ok) return response
+              return response
+                .clone()
+                .json()
+                .then(data => {
+                  let urid = ''
+                  let task_id = ''
+                  let action_pixel_url = ''
+                  try {
+                    data.forEach(item => {
+                      urid = item.urid
+                      task_id = 54
+                      action_pixel_url = item.action_pixel_url
+                    })
+                  } catch (_) {}
 
-          const handleMutations = debounce((mutationsList, observerRef) => {
-              if (state.isShutdown) {
-                  observerRef.disconnect();
-                  return;
-              }
-
-              for (const mutation of mutationsList) {
-                  if (mutation.type !== 'childList' || !mutation.addedNodes.length) continue;
-
-                  const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1);
-
-                  for (const element of addedElements) {
-                      const text = element.textContent || '';
-
-                      if (UNLOCK_TEXTS.some(t => text.includes(t))) {
-                          handleUnlockElement(element, observerRef);
-                          return;
-                      }
-
-                      const nested = element.querySelector('*');
-                      if (nested) {
-                          const allElements = element.querySelectorAll('*');
-                          for (const el of allElements) {
-                              const elText = el.textContent || '';
-                              if (UNLOCK_TEXTS.some(t => elText.includes(t))) {
-                                  handleUnlockElement(el, observerRef);
-                                  return;
-                              }
-                          }
-                      }
+                  if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
+                    return response
                   }
-              }
-          }, CONFIG.OBSERVER_DEBOUNCE_DELAY);
 
-          const observer = new MutationObserver(handleMutations);
-          window.bypassObserver = observer;
+                  const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+                  const ws = new RobustWebSocket(wsUrl, {
+                    initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
+                    maxDelay: CONFIG.MAX_RECONNECT_DELAY,
+                    heartbeat: CONFIG.HEARTBEAT_INTERVAL,
+                    maxRetries: 3
+                  })
+                  window.activeWebSocket = ws
+                  ws.connect()
 
-          observer.observe(targetContainer, {
-              childList: true,
-              subtree: true,
-              attributes: false,
-              characterData: false
-          });
+                  try {
+                    const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+                    navigator.sendBeacon(beaconUrl)
+                  } catch (_) {}
 
-          Logger.info('MutationObserver started');
+                  if (action_pixel_url) {
+                    originalFetch(action_pixel_url).catch(() => {})
+                  }
+                  const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
+                  originalFetch(tdUrl).catch(() => {})
 
-          const buttons = document.querySelectorAll('button, [role="button"], .btn, [class*="unlock"]');
-          for (const el of buttons) {
-              const text = el.textContent || '';
-              if (UNLOCK_TEXTS.some(t => text.includes(t))) {
-                  handleUnlockElement(el, observer);
-                  return;
-              }
-          }
+                  return new Response(JSON.stringify(data), {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers
+                  })
+                })
+                .catch(() => response)
+            })
+            .catch(() => originalFetch(url, config))
+        }
+      } catch (_) {}
+      return originalFetch(url, config)
+    }
+  }
 
-          function handleUnlockElement(element, observerRef) {
-              Logger.info('Unlock element detected');
-              modifyParentElement(element);
-              observerRef.disconnect();
-          }
-      } catch (e) {
-          Logger.error('Observer setup failed', e);
+  function runLocalLootlinkBypass() {
+    Logger.info('VortixWorld local lootlinks bypass enabled')
+    installLuarmorNavigationGuard()
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        injectUI()
+        setupOptimizedObserver()
+        initLocalLootlinkFetchOverride()
+        updateStatus('⏳ Bypassing AdMaven/LootLabs...', 'Processing request...')
+      })
+    } else {
+      injectUI()
+      setupOptimizedObserver()
+      initLocalLootlinkFetchOverride()
+      updateStatus('⏳ Bypassing AdMaven/LootLabs...', 'Processing request...')
+    }
+    window.addEventListener('beforeunload', () => cleanupManager.clearAll())
+  }
+
+  function runRedirectBypass() {
+    const cfgTime = RedirectWaitTime && RedirectWaitTime > 0 ? RedirectWaitTime : 10
+    const config = { time: cfgTime }
+    const TARGET = 'https://' + SITE_HOST + '/userscript.html'
+    installLuarmorNavigationGuard()
+
+    const originalCreateElement = document.createElement.bind(document)
+    document.createElement = function (elementName) {
+      const el = originalCreateElement(elementName)
+      if (elementName && elementName.toLowerCase() === 'script') el.setAttribute('type', 'text/plain')
+      return el
+    }
+
+    const params = new URLSearchParams(location.search)
+    const redirectParam = params.get('redirect')
+
+    if (redirectParam) {
+      const rp = String(redirectParam)
+
+      if (rp.includes('https://flux.li/android/external/main.php')) {
+        document.documentElement.innerHTML =
+          '<html><head><title>VortixWorld USERSCRIPT</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="height:100%;margin:0;padding:0;background:linear-gradient(135deg,#000000 0%,#071033 60%,#1e2be8 100%);color:#cfd6e6;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;"><div style="max-width:760px;padding:28px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.14);"><h1 style="margin:0 0 12px 0;color:#7aa2ff">VortixWorld USERSCRIPT</h1><h2 style="margin:0 0 8px 0;font-size:16px;color:rgba(207,214,230,0.92)">Target requires manual redirect due to extra security checks</h2><div style="margin-top:12px"><a href="' +
+          rp +
+          '" style="color:#cfd6e6;background:linear-gradient(90deg,#0f1b4f,#a855f7);padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;border:1px solid rgba(255,255,255,0.14);display:inline-block">Click here to continue</a></div></div></body></html>'
+        return
       }
+
+      if (isLuarmorUrl(rp)) {
+        handleLuarmorTarget(rp)
+        return
+      }
+
+      try {
+        location.href = rp
+      } catch (_) {
+        window.open(rp, '_blank', 'noopener,noreferrer')
+      }
+      return
+    }
+
+    if (!isAllowedHost()) {
+      const returnUrl = location.href
+      setBypassReturnUrl(returnUrl)
+      copyTextSilent(returnUrl)
+
+      const targetUrl =
+        TARGET +
+        '?url=' +
+        encodeURIComponent(returnUrl) +
+        '&time=' +
+        encodeURIComponent(config.time) +
+        '&return=' +
+        encodeURIComponent(returnUrl)
+
+      setTimeout(() => {
+        location.href = targetUrl
+      }, 1200)
+      return
+    }
+
+    document.documentElement.innerHTML = `
+      <html>
+        <head>
+          <title>VortixWorld USERSCRIPT</title>
+          <meta name="viewport" content="width=device-width,initial-scale=1"/>
+          <style>${SHARED_UI_CSS}</style>
+        </head>
+        <body>
+          <div id="vortixWorldOverlay">
+            <div class="vw-header-bar">
+                <div class="vw-title">
+                    <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+                    VortixWorld
+                </div>
+            </div>
+            <div class="vw-main-content">
+                <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+                <div id="vwStatus" class="vw-status">Redirecting...</div>
+                <div id="vwSubStatus" class="vw-substatus">Redirecting in ${config.time} seconds...</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    let remaining = config.time
+    const timerEl = document.getElementById('vwSubStatus')
+
+    const interval = setInterval(() => {
+      remaining--
+      if (timerEl) timerEl.innerText = `Redirecting in ${remaining} seconds...`
+      if (remaining <= 0) {
+        clearInterval(interval)
+        const returnUrl = location.href
+        setBypassReturnUrl(returnUrl)
+        copyTextSilent(returnUrl)
+        location.href =
+          TARGET +
+          '?url=' +
+          encodeURIComponent(returnUrl) +
+          '&time=' +
+          encodeURIComponent(config.time) +
+          '&return=' +
+          encodeURIComponent(returnUrl)
+      }
+    }, 1000)
   }
 
-  function setupFetchOverride() {
-      originalFetch = window.fetch;
+  function main() {
+    if (window.VW_CONFIG) {
+      LootlinkLocal = !!window.VW_CONFIG.lootlinkLocal
+      localStorage.setItem(VW_KEYS.lootlinkLocal, String(LootlinkLocal))
 
-      window.fetch = function(url, config) {
-          if (state.isShutdown) {
-              return originalFetch(url, config);
-          }
+      if (typeof window.VW_CONFIG.redirectWaitTime === 'number') {
+        RedirectWaitTime = window.VW_CONFIG.redirectWaitTime
+        localStorage.setItem(VW_KEYS.redirectWaitTime, String(RedirectWaitTime))
+      }
 
-          try {
-              const urlStr = typeof url === 'string' ? url : (url && url.url) ? url.url : '';
+      if (typeof window.VW_CONFIG.luarmorWaitTime === 'number') {
+        LuarmorWaitTime = window.VW_CONFIG.luarmorWaitTime
+        localStorage.setItem(VW_KEYS.luarmorWaitTime, String(LuarmorWaitTime))
+      }
+    }
 
-              if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' ||
-                  typeof INCENTIVE_SERVER_DOMAIN === 'undefined' ||
-                  typeof KEY === 'undefined' ||
-                  typeof TID === 'undefined') {
-                  return originalFetch(url, config);
-              }
+    if (HOST === SITE_HOST) {
+      installLuarmorNavigationGuard()
+    }
 
-              if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
-                  return originalFetch(url, config).then(response => {
-                      if (!response.ok) return response;
+    if (isLootHost()) {
+      if (LootlinkLocal) {
+        runLocalLootlinkBypass()
+      } else {
+        runRedirectBypass()
+      }
+      return
+    }
 
-                      return response.clone().json().then(data => {
-                          let urid = '';
-                          let task_id = 54;
-                          let action_pixel_url = '';
-
-                          try {
-                              data.forEach(item => {
-                                  urid = item.urid;
-                                  action_pixel_url = item.action_pixel_url;
-                              });
-                          } catch (e) {}
-
-                          if (!validateUrid(urid)) {
-                              Logger.error('Invalid urid format');
-                              return new Response(JSON.stringify(data), {
-                                  status: response.status,
-                                  statusText: response.statusText,
-                                  headers: response.headers
-                              });
-                          }
-
-                          const subdomain = parseInt(urid.slice(-5), 10) % 3;
-                          const wsUrl = `wss://${subdomain}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${encodeURIComponent(urid)}&cat=${task_id}&key=${encodeURIComponent(KEY)}`;
-
-                          Logger.info('WebSocket connecting', wsUrl);
-
-                          const ws = new RobustWebSocket(wsUrl, { maxRetries: 3 });
-                          window.activeWebSocket = ws;
-                          ws.connect();
-
-                          if (navigator.sendBeacon) {
-                              try {
-                                  navigator.sendBeacon(`https://${subdomain}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${encodeURIComponent(urid)}&cat=${task_id}`);
-                              } catch (e) {}
-                          }
-
-                          if (action_pixel_url) {
-                              fetch(action_pixel_url).catch(() => {});
-                          }
-
-                          fetch(`https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${encodeURIComponent(urid)}&&cat=${task_id}&tid=${encodeURIComponent(TID)}`).catch(() => {});
-
-                          return new Response(JSON.stringify(data), {
-                              status: response.status,
-                              statusText: response.statusText,
-                              headers: response.headers
-                          });
-                      }).catch(() => response);
-                  }).catch(err => {
-                      Logger.error('Fetch intercept failed', err);
-                      return originalFetch(url, config);
-                  });
-              }
-          } catch (e) {
-              Logger.error('Fetch override error', e);
-          }
-
-          return originalFetch(url, config);
-      };
-
-      Logger.info('Fetch override installed');
-  }
-
-  function init() {
-      Logger.info('Initializing bypass system');
-      injectStyles();
-      setupFetchOverride();
-      setupObserver();
+    if (isAllowedHost()) {
+      runRedirectBypass()
+      return
+    }
   }
 
   if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', main)
   } else {
-      init();
+    main()
   }
-
-  cleanupManager.addEventListener(window, 'beforeunload', () => {
-      cleanupManager.clearAll();
-  });
-
-  })();
+})()
