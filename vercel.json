@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "raw/**/*.user.js",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/raw/(.*\\.user\\.js)",
+      "dest": "/raw/$1",
+      "headers": {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
+    }
+  ]
+}
