@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.15
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -18,7 +18,6 @@
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
   const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
-  const TPI_HOST = 'tpi.li'
 
   const LOOT_HOSTS = [
     'loot-link.com',
@@ -58,9 +57,10 @@
     'link-pays.in',
     'link-target.net',
     'link-target.org',
-    'link-to.net',
-    'workink.net'
+    'link-to.net'
   ]
+
+  const TPI_HOSTS = ['tpi.li']
 
   function hostMatchesAny(list) {
     const h = HOST
@@ -73,7 +73,7 @@
 
   const isLootHost = () => hostMatchesAny(LOOT_HOSTS)
   const isAllowedHost = () => hostMatchesAny(ALLOWED_SHORT_HOSTS)
-  const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST)
+  const isTpiHost = () => hostMatchesAny(TPI_HOSTS)
 
   const CONFIG = Object.freeze({
     HEARTBEAT_INTERVAL: 1000,
@@ -83,7 +83,6 @@
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
-    autoRedirect: 'vw_auto_redirect',
     redirectWaitTime: 'vw_redirect_wait_time',
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
@@ -110,6 +109,7 @@
   }
 
   window.__vw_logs = window.__vw_logs || []
+
   const LOG_STYLE = {
     base: 'font-weight:800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
     info: 'color:#22c55e;',
@@ -119,41 +119,21 @@
   }
 
   const Logger = {
-    _push(level, msg, data) {
-      const entry = {
-        timestamp: new Date().toISOString(),
-        level,
-        message: msg,
-        data: data !== undefined ? String(data) : ''
-      }
+    _push(level, message, details) {
+      const entry = { timestamp: Date.now(), level, message, details: details || '' }
       window.__vw_logs.push(entry)
       if (window.__vw_logs.length > 500) window.__vw_logs.shift()
     },
     info: (m, d = '') => {
-      console.info(
-        `%c[INFO]%c [VortixBypass] ${m}`,
-        LOG_STYLE.base + LOG_STYLE.info,
-        LOG_STYLE.base + LOG_STYLE.dim,
-        d || ''
-      )
+      console.info(`%c[INFO]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.info, LOG_STYLE.base + LOG_STYLE.dim, d || '')
       Logger._push('info', m, d)
     },
     warn: (m, d = '') => {
-      console.warn(
-        `%c[WARN]%c [VortixBypass] ${m}`,
-        LOG_STYLE.base + LOG_STYLE.warn,
-        LOG_STYLE.base + LOG_STYLE.dim,
-        d || ''
-      )
+      console.warn(`%c[WARN]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.warn, LOG_STYLE.base + LOG_STYLE.dim, d || '')
       Logger._push('warn', m, d)
     },
     error: (m, d = '') => {
-      console.error(
-        `%c[ERROR]%c [VortixBypass] ${m}`,
-        LOG_STYLE.base + LOG_STYLE.error,
-        LOG_STYLE.base + LOG_STYLE.dim,
-        d || ''
-      )
+      console.error(`%c[ERROR]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.error, LOG_STYLE.base + LOG_STYLE.dim, d || '')
       Logger._push('error', m, d)
     }
   }
@@ -264,141 +244,25 @@
   }
 
   const SHARED_UI_CSS = `
-    @keyframes vw-spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .vw-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(59,130,246,0.2);
-      border-top: 4px solid #3b82f6;
-      border-radius: 50%;
-      animation: vw-spin 0.8s linear infinite;
-      margin-bottom: 20px;
-    }
     html,body{margin:0;padding:0;height:100%;overflow:hidden}
-    #vortixWorldOverlay{
-      position:fixed!important;
-      top:0!important;
-      left:0!important;
-      width:100vw!important;
-      height:100vh!important;
-      background:rgba(10,10,31,0.85)!important;
-      backdrop-filter:blur(12px)!important;
-      z-index:2147483647!important;
-      display:flex!important;
-      flex-direction:column!important;
-      align-items:center!important;
-      justify-content:center!important;
-      font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif!important;
-      opacity:1!important;
-      visibility:visible!important;
-      pointer-events:auto!important;
-      box-sizing:border-box!important;
-      isolation:isolate!important;
-      color:#e2e8f0!important;
-    }
+    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;background:rgba(0,0,0,0.85)!important;backdrop-filter:blur(12px)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Segoe UI','Inter',system-ui,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
     #vortixWorldOverlay *{box-sizing:border-box!important}
-    .vw-header-bar{
-      position:absolute!important;
-      top:0!important;
-      left:0!important;
-      width:100%!important;
-      height:72px!important;
-      padding:0 26px!important;
-      display:flex!important;
-      align-items:center!important;
-      justify-content:space-between!important;
-      background:rgba(15,23,42,0.6)!important;
-      backdrop-filter:blur(12px)!important;
-      border-bottom:1px solid rgba(59,130,246,0.3)!important;
-      z-index:2147483648!important;
-    }
-    .vw-title{
-      font-weight:900!important;
-      font-size:22px!important;
-      display:flex!important;
-      align-items:center!important;
-      gap:12px!important;
-      color:#3b82f6!important;
-    }
-    .vw-header-icon{
-      height:34px!important;
-      width:34px!important;
-      border-radius:50%!important;
-      object-fit:cover!important;
-      border:2px solid #3b82f6!important;
-    }
-    .vw-main-content{
-      display:flex!important;
-      flex-direction:column!important;
-      align-items:center!important;
-      justify-content:center!important;
-      width:100%!important;
-      max-width:600px!important;
-      animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;
-      position:relative!important;
-      z-index:2147483641!important;
-      padding:20px!important;
-      text-align:center!important;
-    }
-    .vw-icon-img{
-      width:80px!important;
-      height:80px!important;
-      border-radius:20px!important;
-      margin-bottom:25px!important;
-      box-shadow:0 20px 40px -12px rgba(0,0,0,0.4)!important;
-      object-fit:cover!important;
-    }
-    .vw-status{
-      font-size:26px!important;
-      font-weight:800!important;
-      text-align:center!important;
-      margin-bottom:12px!important;
-      color:#3b82f6!important;
-    }
-    .vw-substatus{
-      font-size:15px!important;
-      color:#94a3b8!important;
-      text-align:center!important;
-      font-weight:500!important;
-    }
-    .vw-btn{
-      background:rgba(30,41,59,0.7)!important;
-      backdrop-filter:blur(4px)!important;
-      color:#e2e8f0!important;
-      border:1px solid rgba(59,130,246,0.5)!important;
-      padding:14px 18px!important;
-      border-radius:16px!important;
-      font-weight:700!important;
-      cursor:pointer!important;
-      width:100%!important;
-      text-transform:uppercase!important;
-      transition:all .2s!important;
-      font-size:14px!important;
-      letter-spacing:1px!important;
-    }
-    .vw-btn:hover{
-      background:rgba(59,130,246,0.2)!important;
-      transform:translateY(-2px)!important;
-      border-color:#3b82f6!important;
-    }
-    .vw-btn:disabled{
-      opacity:.45!important;
-      cursor:not-allowed!important;
-      transform:none!important;
-    }
-    @keyframes vw-fade-in{
-      from{opacity:0;transform:translateY(24px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-    @media (max-width:768px){
-      .vw-status{font-size:22px!important}
-      .vw-substatus{font-size:13px!important}
-      .vw-icon-img{width:64px!important;height:64px!important}
-      .vw-header-bar{height:60px!important;padding:0 16px!important}
-    }
+    .vw-glass-card{background:rgba(20,30,50,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:28px!important;border:1px solid rgba(255,255,255,0.2)!important;box-shadow:0 20px 40px rgba(0,0,0,0.4)!important;padding:24px!important;width:90%!important;max-width:480px!important;text-align:center!important}
+    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;padding:16px 24px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(255,255,255,0.08)!important;border-bottom:1px solid rgba(255,255,255,0.15)!important;backdrop-filter:blur(10px)!important;z-index:2147483648!important}
+    .vw-title{font-weight:700!important;font-size:20px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#fff!important}
+    .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important;border:2px solid #3b82f6!important}
+    .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;animation:vw-fade-in 0.4s ease-out!important;position:relative!important;z-index:2147483641!important}
+    .vw-icon-img{width:80px!important;height:80px!important;border-radius:20px!important;margin-bottom:20px!important;box-shadow:0 12px 28px rgba(0,0,0,0.3)!important;object-fit:cover!important}
+    .vw-status{font-size:24px!important;font-weight:800!important;text-align:center!important;margin-bottom:8px!important;background:linear-gradient(135deg,#fff,#94a3f8)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
+    .vw-substatus{font-size:14px!important;color:rgba(255,255,255,0.7)!important;text-align:center!important;font-weight:500!important;margin-top:4px!important}
+    .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(255,255,255,0.2)!important;border-top:4px solid #3b82f6!important;border-radius:50%!important;animation:vw-spin 1s linear infinite!important;margin:20px auto!important}
+    .vw-btn{background:rgba(59,130,246,0.9)!important;color:#fff!important;border:none!important;padding:12px 20px!important;border-radius:40px!important;font-weight:600!important;cursor:pointer!important;width:100%!important;text-transform:uppercase!important;transition:all 0.2s!important;font-size:14px!important;letter-spacing:0.5px!important;backdrop-filter:blur(4px)!important}
+    .vw-btn:hover{background:#3b82f6!important;transform:translateY(-2px)!important;box-shadow:0 8px 20px rgba(59,130,246,0.4)!important}
+    .vw-btn:disabled{opacity:0.5!important;cursor:not-allowed!important;transform:none!important}
+    .vw-toggle-container{background:rgba(255,255,255,0.1)!important;border-radius:40px!important;padding:5px 12px!important;display:flex!important;align-items:center!important;gap:8px!important;font-size:12px!important;font-weight:500!important}
+    @keyframes vw-fade-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes vw-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @media (max-width:768px){.vw-status{font-size:20px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-glass-card{padding:20px!important}.vw-header-bar{padding:12px 16px!important}}
   `
 
   let __vwLuarmorAllowOnceUrl = ''
@@ -434,11 +298,12 @@
               </div>
             </div>
             <div class="vw-main-content">
-              <div class="vw-spinner"></div>
-              <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
-              <div id="vwSubStatus" class="vw-substatus">Next will unlock in ${secs} seconds...</div>
-              <div style="width:80%; max-width:420px; margin-top:18px; display:flex; flex-direction:column; gap:12px;">
-                <button id="vwLuarmorNextBtn" class="vw-btn" disabled>Next</button>
+              <div class="vw-glass-card">
+                <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+                <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
+                <div id="vwSubStatus" class="vw-substatus">Next will unlock in ${secs} seconds...</div>
+                <div class="vw-spinner" style="display:${secs>0?'block':'none'}"></div>
+                <button id="vwLuarmorNextBtn" class="vw-btn" disabled style="margin-top:20px">Next</button>
               </div>
             </div>
           </div>
@@ -569,22 +434,22 @@
           <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
           VortixWorld
         </div>
-        <div class="vw-header-right" style="display:flex; align-items:center; gap:10px;">
-          <div class="vw-toggle-container" style="display:flex; align-items:center; gap:10px; font-size:12px; color:#e2e8f0; font-weight:800; background:rgba(15,23,42,0.6); padding:7px 12px; border-radius:999px; border:1px solid rgba(59,130,246,0.4); cursor:pointer; z-index:2147483650; pointer-events:auto; user-select:none;">
-            <span>AutoRedirect</span>
-            <label style="position:relative; display:inline-block; width:40px; height:20px; pointer-events:auto;">
-              <input type="checkbox" id="vwAutoToggle" style="opacity:0; width:100%; height:100%; position:absolute; top:0; left:0; cursor:pointer; z-index:2147483651; margin:0;">
-              <span id="vwAutoTrack" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#334155; transition:0.25s; border-radius:999px; pointer-events:none;"></span>
-              <span id="vwAutoKnob" style="position:absolute; height:14px; width:14px; left:3px; bottom:3px; background-color:#3b82f6; transition:0.25s; border-radius:50%; pointer-events:none;"></span>
-            </label>
-          </div>
+        <div class="vw-toggle-container">
+          <span>AutoRedirect</span>
+          <label style="position:relative; display:inline-block; width:40px; height:20px;">
+            <input type="checkbox" id="vwAutoToggle" style="opacity:0; width:100%; height:100%; position:absolute; top:0; left:0; cursor:pointer; margin:0;">
+            <span id="vwAutoTrack" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:rgba(255,255,255,0.2); transition:0.25s; border-radius:999px;"></span>
+            <span id="vwAutoKnob" style="position:absolute; height:14px; width:14px; left:3px; bottom:3px; background-color:#fff; transition:0.25s; border-radius:50%;"></span>
+          </label>
         </div>
       </div>
       <div class="vw-main-content">
-        <div class="vw-spinner"></div>
-        <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld" style="display:none;">
-        <div id="vwStatus" class="vw-status">Initializing...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+        <div class="vw-glass-card">
+          <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
+          <div id="vwStatus" class="vw-status">Initializing...</div>
+          <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+          <div class="vw-spinner" id="vwSpinner" style="display:block"></div>
+        </div>
       </div>
     </div>
   `
@@ -623,7 +488,7 @@
     const track = document.getElementById('vwAutoTrack')
 
     const paint = checked => {
-      if (track) track.style.background = checked ? '#3b82f6' : '#334155'
+      if (track) track.style.background = checked ? '#3b82f6' : 'rgba(255,255,255,0.2)'
       if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0px)'
     }
 
@@ -632,18 +497,20 @@
       paint(isAutoRedirect)
       toggle.addEventListener('change', e => {
         isAutoRedirect = e.target.checked
-        localStorage.setItem(VW_KEYS.autoRedirect, isAutoRedirect)
+        localStorage.setItem('vw_auto_redirect', isAutoRedirect)
         paint(isAutoRedirect)
       })
     }
   }
 
-  function updateStatus(main, sub) {
+  function updateStatus(main, sub, showSpinner = true) {
     if (!document.getElementById('vortixWorldOverlay')) injectUI()
     const m = document.getElementById('vwStatus')
     const s = document.getElementById('vwSubStatus')
+    const spinner = document.getElementById('vwSpinner')
     if (m) m.innerText = main
     if (s) s.innerText = sub
+    if (spinner) spinner.style.display = showSpinner ? 'block' : 'none'
   }
 
   function handleBypassSuccess(url, timeSecondsStr) {
@@ -654,13 +521,13 @@
       return
     }
     if (isAutoRedirect) {
-      updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
+      updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`, false)
       setTimeout(() => {
         location.href = url
       }, 1000)
     } else {
       injectUI()
-      updateStatus('✔️ Bypass Complete!', String(url))
+      updateStatus('✔️ Bypass Complete!', String(url), false)
     }
     shutdown()
   }
@@ -818,7 +685,9 @@
     state.processStartTime = Date.now()
     bypassStart = performance.now()
 
-    // Do NOT destroy the page, just overlay
+    parentElement.innerHTML = ''
+    parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
+
     injectUI()
     updateStatus(`⏳ ${taskName}...`, `Estimated ${countdownSeconds} seconds remaining...`)
 
@@ -876,48 +745,7 @@
     }
   }
 
-  function processTcResponse(data, originalFetch) {
-    let urid = ''
-    let task_id = ''
-    let action_pixel_url = ''
-    try {
-      data.forEach(item => {
-        urid = item.urid
-        task_id = 54
-        action_pixel_url = item.action_pixel_url
-      })
-    } catch (_) {
-      return false
-    }
-
-    if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
-      return false
-    }
-
-    const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-    const ws = new RobustWebSocket(wsUrl, {
-      initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-      maxDelay: CONFIG.MAX_RECONNECT_DELAY,
-      heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-      maxRetries: 3
-    })
-    window.activeWebSocket = ws
-    ws.connect()
-
-    try {
-      const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
-      navigator.sendBeacon(beaconUrl)
-    } catch (_) {}
-
-    if (action_pixel_url) {
-      originalFetch(action_pixel_url).catch(() => {})
-    }
-    const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
-    originalFetch(tdUrl).catch(() => {})
-
-    return true
-  }
-
+  let processedTc = false
   function initLocalLootlinkFetchOverride() {
     const originalFetch = window.fetch
     window.fetch = function (url, config) {
@@ -926,7 +754,8 @@
         if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
           return originalFetch(url, config)
         }
-        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`) && !processedTc) {
+          processedTc = true
           return originalFetch(url, config)
             .then(response => {
               if (!response.ok) return response
@@ -934,7 +763,42 @@
                 .clone()
                 .json()
                 .then(data => {
-                  processTcResponse(data, originalFetch)
+                  let urid = ''
+                  let task_id = ''
+                  let action_pixel_url = ''
+                  try {
+                    data.forEach(item => {
+                      urid = item.urid
+                      task_id = 54
+                      action_pixel_url = item.action_pixel_url
+                    })
+                  } catch (_) {}
+
+                  if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
+                    return response
+                  }
+
+                  const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+                  const ws = new RobustWebSocket(wsUrl, {
+                    initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
+                    maxDelay: CONFIG.MAX_RECONNECT_DELAY,
+                    heartbeat: CONFIG.HEARTBEAT_INTERVAL,
+                    maxRetries: 3
+                  })
+                  window.activeWebSocket = ws
+                  ws.connect()
+
+                  try {
+                    const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+                    navigator.sendBeacon(beaconUrl)
+                  } catch (_) {}
+
+                  if (action_pixel_url) {
+                    originalFetch(action_pixel_url).catch(() => {})
+                  }
+                  const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
+                  originalFetch(tdUrl).catch(() => {})
+
                   return new Response(JSON.stringify(data), {
                     status: response.status,
                     statusText: response.statusText,
@@ -950,98 +814,53 @@
     }
   }
 
-  function sendTcManually() {
-    if (window.__vw_tc_processed) return
-    const originalFetch = window.fetch
-    const syncDomain = window.INCENTIVE_SYNCER_DOMAIN
-    if (!syncDomain) return
-    const tcUrl = `https://${syncDomain}/tc`
-    Logger.info('Sending manual /tc request', tcUrl)
-    fetch(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
-        window.__vw_tc_processed = true
-        processTcResponse(data, originalFetch)
-        Logger.info('Manual /tc processed successfully')
-      })
-      .catch(err => {
-        Logger.warn('Manual /tc request failed', err.message)
-      })
+  function manualFetchTc() {
+    if (processedTc) return
+    if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
+      setTimeout(manualFetchTc, 500)
+      return
+    }
+    fetch(`/${INCENTIVE_SYNCER_DOMAIN}/tc`).catch(() => {})
   }
 
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled')
     installLuarmorNavigationGuard()
-
-    const startManualCheck = () => {
-      let attempts = 0
-      const interval = setInterval(() => {
-        if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
-          clearInterval(interval)
-          sendTcManually()
-        } else if (attempts >= 100) {
-          clearInterval(interval)
-          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
-        }
-        attempts++
-      }, 100)
-    }
-
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         injectUI()
         setupOptimizedObserver()
         initLocalLootlinkFetchOverride()
-        startManualCheck()
+        setTimeout(manualFetchTc, 500)
         updateStatus('⏳ Loading...', 'Preparing bypass')
       })
     } else {
       injectUI()
       setupOptimizedObserver()
       initLocalLootlinkFetchOverride()
-      startManualCheck()
+      setTimeout(manualFetchTc, 500)
       updateStatus('⏳ Loading...', 'Preparing bypass')
     }
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
-  async function runLocalTpiLiBypass() {
-    Logger.info('VortixWorld local tpi.li bypass enabled')
+  async function runTpiBypass() {
+    Logger.info('Starting tpi.li bypass')
     injectUI()
-    updateStatus('🔍 Fetching tpi.li link...', 'Extracting token, please wait')
-
+    updateStatus('🔓 TPI.BY', 'Fetching redirect...')
     try {
       const alias = location.pathname.slice(1)
-      if (!alias) {
-        throw new Error('No alias found in URL')
-      }
-      const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
-      const html = await response.text()
-
-      let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
-      if (!tokenMatch) tokenMatch = html.match(/value="([^"]+)"\s+name="token"/)
-      if (!tokenMatch) throw new Error('Token not found in page')
-
-      const token = tokenMatch[1]
+      const html = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } }).then(r => r.text())
+      const tokenMatch = html.match(/name="token"\s+value="([^"]+)"/) || html.match(/value="([^"]+)"\s+name="token"/)
+      const token = tokenMatch ? tokenMatch[1] : null
+      if (!token) throw new Error('No token found')
       const offset = 40 + 4 + alias.length + 4
-      if (token.length < offset) throw new Error('Token too short')
-      const tokenPart = token.slice(offset)
-      const finalUrl = atob(tokenPart)
-
-      if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL')
-      handleBypassSuccess(finalUrl, 'tpi.li')
+      const base64Part = token.slice(offset)
+      const finalUrl = atob(base64Part)
+      handleBypassSuccess(finalUrl)
     } catch (err) {
-      Logger.error('tpi.li bypass failed', err.message)
-      updateStatus('❌ Bypass failed', err.message)
-      const manualDiv = document.createElement('div')
-      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#3b82f6;">Click here to continue manually</a></p>`
-      const overlay = document.getElementById('vortixWorldOverlay')
-      if (overlay && overlay.querySelector('.vw-main-content')) {
-        overlay.querySelector('.vw-main-content').appendChild(manualDiv)
-      }
+      Logger.error('tpi.li bypass failed', err)
+      updateStatus('❌ Failed', err.message, false)
     }
   }
 
@@ -1075,17 +894,14 @@
             <body>
               <div id="vortixWorldOverlay">
                 <div class="vw-header-bar">
-                  <div class="vw-title">
-                    <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
-                    VortixWorld
-                  </div>
+                  <div class="vw-title"><img src="${ICON_URL}" class="vw-header-icon">VortixWorld</div>
                 </div>
                 <div class="vw-main-content">
-                  <div class="vw-spinner"></div>
-                  <div class="vw-status">Manual Redirect Required</div>
-                  <div class="vw-substatus">Extra security checks prevent auto-redirect</div>
-                  <div style="margin-top:24px;">
-                    <a href="${rp}" class="vw-btn" style="display:inline-block; text-decoration:none;">Click to Continue</a>
+                  <div class="vw-glass-card">
+                    <img src="${ICON_URL}" class="vw-icon-img">
+                    <div class="vw-status">Manual Redirect Required</div>
+                    <div class="vw-substatus">Extra security checks detected</div>
+                    <a href="${rp}" class="vw-btn" style="display:inline-block; text-decoration:none; margin-top:20px">Continue</a>
                   </div>
                 </div>
               </div>
@@ -1138,15 +954,15 @@
         <body>
           <div id="vortixWorldOverlay">
             <div class="vw-header-bar">
-                <div class="vw-title">
-                    <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
-                    VortixWorld
-                </div>
+              <div class="vw-title"><img src="${ICON_URL}" class="vw-header-icon">VortixWorld</div>
             </div>
             <div class="vw-main-content">
-                <div class="vw-spinner"></div>
+              <div class="vw-glass-card">
+                <img src="${ICON_URL}" class="vw-icon-img">
                 <div id="vwStatus" class="vw-status">Redirecting...</div>
                 <div id="vwSubStatus" class="vw-substatus">Redirecting in ${config.time} seconds...</div>
+                <div class="vw-spinner" id="vwSpinner" style="display:block"></div>
+              </div>
             </div>
           </div>
         </body>
@@ -1155,12 +971,14 @@
 
     let remaining = config.time
     const timerEl = document.getElementById('vwSubStatus')
+    const spinner = document.getElementById('vwSpinner')
 
     const interval = setInterval(() => {
       remaining--
       if (timerEl) timerEl.innerText = `Redirecting in ${remaining} seconds...`
       if (remaining <= 0) {
         clearInterval(interval)
+        if (spinner) spinner.style.display = 'none'
         const returnUrl = location.href
         setBypassReturnUrl(returnUrl)
         copyTextSilent(returnUrl)
@@ -1177,23 +995,12 @@
   }
 
   function main() {
-    if (window.VW_CONFIG) {
-      if (typeof window.VW_CONFIG.redirectWaitTime === 'number') {
-        RedirectWaitTime = window.VW_CONFIG.redirectWaitTime
-        localStorage.setItem(VW_KEYS.redirectWaitTime, String(RedirectWaitTime))
-      }
-      if (typeof window.VW_CONFIG.luarmorWaitTime === 'number') {
-        LuarmorWaitTime = window.VW_CONFIG.luarmorWaitTime
-        localStorage.setItem(VW_KEYS.luarmorWaitTime, String(LuarmorWaitTime))
-      }
-    }
-
     if (HOST === SITE_HOST) {
       installLuarmorNavigationGuard()
     }
 
-    if (isTpiLi()) {
-      runLocalTpiLiBypass()
+    if (isTpiHost()) {
+      runTpiBypass()
       return
     }
 
