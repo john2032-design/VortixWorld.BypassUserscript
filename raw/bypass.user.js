@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.22
+// @version      1.23
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -282,10 +282,9 @@
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;top:20px!important;right:20px!important;padding:12px 20px!important;border-radius:12px!important;background:rgba(15,23,42,0.95)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:14px!important;box-shadow:0 8px 32px rgba(0,0,0,0.4)!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;animation:vw-toast-slide-in 0.2s ease-out!important;border-left:4px solid #3b82f6!important}
-    .vw-toast.error{border-left-color:#ef4444!important}
-    @keyframes vw-toast-slide-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-    @media (max-width:640px){.vw-toast{top:12px!important;right:12px!important;left:12px!important;width:auto!important;max-width:calc(100% - 24px)!important;text-align:center!important}}
+    .vw-toast{position:fixed!important;left:calc(14px + env(safe-area-inset-left))!important;bottom:calc(70px + env(safe-area-inset-bottom))!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483647!important;pointer-events:none!important;font-family:inherit!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important}
+    .vw-toast.error{border-left:4px solid #ef4444!important}
+    @keyframes vw-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}}
   `
 
