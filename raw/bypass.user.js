@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.21
+// @version      1.22
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -275,8 +275,6 @@
     .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(15,23,42,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:32px!important;border:1px solid rgba(59,130,246,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
     .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 0 0 2px #3b82f6,0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
     .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(59,130,246,0.2)!important;border-top:4px solid #3b82f6!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
-    .vw-checkmark{width:48px!important;height:48px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin-bottom:20px!important;color:#22c55e!important;font-size:36px!important;font-weight:bold!important;background:rgba(34,197,94,0.1)!important;border-radius:50%!important;animation:vw-check-pop 0.3s ease-out!important}
-    @keyframes vw-check-pop{0%{transform:scale(0)}80%{transform:scale(1.2)}100%{transform:scale(1)}}
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;background:linear-gradient(135deg,#fff,#94a3b8)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
     .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important}
@@ -284,7 +282,7 @@
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;top:20px!important;right:20px!important;padding:12px 20px!important;border-radius:12px!important;background:rgba(15,23,42,0.95)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:14px!important;box-shadow:0 8px 32px rgba(0,0,0,0.4)!important;z-index:2147483647!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;animation:vw-toast-slide-in 0.2s ease-out!important;border-left:4px solid #3b82f6!important}
+    .vw-toast{position:fixed!important;top:20px!important;right:20px!important;padding:12px 20px!important;border-radius:12px!important;background:rgba(15,23,42,0.95)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:14px!important;box-shadow:0 8px 32px rgba(0,0,0,0.4)!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;animation:vw-toast-slide-in 0.2s ease-out!important;border-left:4px solid #3b82f6!important}
     .vw-toast.error{border-left-color:#ef4444!important}
     @keyframes vw-toast-slide-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
     @media (max-width:640px){.vw-toast{top:12px!important;right:12px!important;left:12px!important;width:auto!important;max-width:calc(100% - 24px)!important;text-align:center!important}}
@@ -326,7 +324,6 @@
             <div class="vw-main-content">
               <img src="${LUARMOR_UI_ICON}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
               <div id="vwLuarmorSpinner" class="vw-spinner"></div>
-              <div id="vwLuarmorCheckmark" class="vw-checkmark" style="display:none;">✓</div>
               <div id="vwStatus" class="vw-status">Luarmor Manual Continue</div>
               <div id="vwSubStatus" class="vw-substatus">Next will unlock in ${secs} seconds...</div>
               <div style="width:80%; max-width:420px; margin-top:18px; display:flex; flex-direction:column; gap:12px;">
@@ -340,14 +337,12 @@
     const btn = document.getElementById('vwLuarmorNextBtn')
     const sub = document.getElementById('vwSubStatus')
     const spinner = document.getElementById('vwLuarmorSpinner')
-    const checkmark = document.getElementById('vwLuarmorCheckmark')
     let remaining = secs
     const iv = setInterval(() => {
       remaining = Math.max(0, remaining - 1)
       if (sub) sub.innerText = remaining > 0 ? `Next will unlock in ${remaining} seconds...` : 'You may continue now.'
       if (remaining <= 0) {
         if (spinner) spinner.style.display = 'none'
-        if (checkmark) checkmark.style.display = 'flex'
         if (btn) btn.disabled = false
         clearInterval(iv)
       }
