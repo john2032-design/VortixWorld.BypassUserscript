@@ -4,8 +4,10 @@
   if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
+  const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
 
   const keys = {
+    autoRedirect: 'vw_auto_redirect',
     redirectWaitTime: 'vw_redirect_wait_time',
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
@@ -150,26 +152,19 @@
       min-width: 0 !important;
     }
 
+    .vw-title img {
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(59, 130, 246, 0.5) !important;
+      object-fit: cover !important;
+    }
+
     .vw-title span {
       min-width: 0 !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
-    }
-
-    .vw-badge {
-      width: 36px !important;
-      height: 36px !important;
-      border-radius: 12px !important;
-      border: 1px solid rgba(59, 130, 246, 0.5) !important;
-      background: rgba(0, 0, 0, 0.38) !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      font-weight: 950 !important;
-      font-size: 12px !important;
-      color: #e2e8f0 !important;
-      flex: 0 0 auto !important;
     }
 
     .vw-close-btn {
@@ -217,6 +212,10 @@
       border: 1px solid rgba(59, 130, 246, 0.2) !important;
       background: rgba(0, 0, 0, 0.18) !important;
       min-width: 0 !important;
+    }
+
+    .vw-row-toggle {
+      grid-template-columns: minmax(0, 1fr) auto !important;
     }
 
     .vw-label {
@@ -272,6 +271,57 @@
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
     }
 
+    .vw-toggle {
+      position: relative !important;
+      display: inline-block !important;
+      width: 48px !important;
+      height: 24px !important;
+    }
+
+    .vw-toggle input {
+      opacity: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      cursor: pointer !important;
+      z-index: 1 !important;
+      margin: 0 !important;
+    }
+
+    .vw-toggle-slider {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      background-color: #334155 !important;
+      transition: 0.25s !important;
+      border-radius: 999px !important;
+      pointer-events: none !important;
+    }
+
+    .vw-toggle-slider:before {
+      position: absolute !important;
+      content: "" !important;
+      height: 18px !important;
+      width: 18px !important;
+      left: 3px !important;
+      bottom: 3px !important;
+      background-color: #3b82f6 !important;
+      transition: 0.25s !important;
+      border-radius: 50% !important;
+    }
+
+    input:checked + .vw-toggle-slider {
+      background-color: #3b82f6 !important;
+    }
+
+    input:checked + .vw-toggle-slider:before {
+      transform: translateX(24px) !important;
+    }
+
     .vw-actions {
       display: flex !important;
       align-items: center !important;
@@ -318,8 +368,8 @@
 
     .vw-toast {
       position: fixed !important;
-      left: calc(14px + env(safe-area-inset-left)) !important;
-      bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+      top: calc(14px + env(safe-area-inset-top)) !important;
+      right: calc(14px + env(safe-area-inset-right)) !important;
       padding: 10px 18px !important;
       border-radius: 40px !important;
       background: rgba(15, 23, 42, 0.92) !important;
@@ -335,12 +385,13 @@
       font-family: inherit !important;
       max-width: calc(100vw - 28px) !important;
       word-break: break-word !important;
+      border-left: 4px solid #3b82f6 !important;
     }
 
     @keyframes vw-toast-in {
       from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(-8px);
       }
       to {
         opacity: 1;
@@ -520,10 +571,24 @@
     backdrop.innerHTML = `
       <div class="vw-panel" id="vwSettingsPanel" role="dialog" aria-modal="true" aria-label="VW Settings">
         <div class="vw-header">
-          <div class="vw-title"><div class="vw-badge">VW</div><span>Settings</span></div>
+          <div class="vw-title">
+            <img src="${ICON_URL}" alt="VW Icon">
+            <span>Settings</span>
+          </div>
           <button class="vw-close-btn" type="button" aria-label="Close settings">✕</button>
         </div>
         <div class="vw-body">
+          <div class="vw-row vw-row-toggle">
+            <div class="vw-label">
+              <div class="vw-label-title">Auto Redirect</div>
+              <div class="vw-label-desc">Automatically redirect when bypass is complete</div>
+            </div>
+            <label class="vw-toggle">
+              <input type="checkbox" id="vwAutoToggle">
+              <span class="vw-toggle-slider"></span>
+            </label>
+          </div>
+
           <div class="vw-row">
             <div class="vw-label">
               <div class="vw-label-title">Redirect Wait Time</div>
@@ -550,7 +615,10 @@
 
       <div class="vw-panel vw-hidden" id="vwConsolePanel" role="dialog" aria-modal="true" aria-label="VW Console">
         <div class="vw-header">
-          <div class="vw-title"><div class="vw-badge">📟</div><span>Console</span></div>
+          <div class="vw-title">
+            <img src="${ICON_URL}" alt="VW Icon">
+            <span>Console</span>
+          </div>
           <button class="vw-close-btn" type="button" aria-label="Close console">✕</button>
         </div>
         <div class="vw-body">
@@ -569,6 +637,7 @@
     const closeBtns = shadow.querySelectorAll('.vw-close-btn')
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
+    const autoToggle = shadow.querySelector('#vwAutoToggle')
     const waitTimeInput = shadow.querySelector('#vwWaitTimeInput')
     const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
@@ -694,20 +763,25 @@
     }
 
     function loadSettings() {
+      const auto = getStoredValue(keys.autoRedirect, true)
+      autoToggle.checked = auto === true
       waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
       luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
     }
 
     function saveSettings() {
+      const newAuto = autoToggle.checked
       const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
 
+      setStoredValue(keys.autoRedirect, newAuto)
       setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
       if (window.VW_CONFIG) {
         window.VW_CONFIG.redirectWaitTime = newWaitTime
         window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
+        window.VW_CONFIG.keys = keys
       }
 
       showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
