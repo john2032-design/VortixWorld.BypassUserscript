@@ -79,10 +79,11 @@
   const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST)
 
   const CONFIG = Object.freeze({
-    HEARTBEAT_INTERVAL: 300,
+    HEARTBEAT_INTERVAL: 100,
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
-    COUNTDOWN_INTERVAL: 1000
+    COUNTDOWN_INTERVAL: 1000,
+    CACHED_METHOD_TIMEOUT: 15000
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
@@ -104,9 +105,6 @@
     const parsed = saved ? parseInt(saved, 10) : NaN
     return !isNaN(parsed) ? parsed : 20
   })()
-
-  const savedAuto = localStorage.getItem(VW_KEYS.autoRedirect)
-  let isAutoRedirect = savedAuto !== null ? savedAuto === 'true' : true
 
   window.__vw_logs = window.__vw_logs || []
   const LOG_STYLE = {
@@ -266,7 +264,7 @@
     html,body{margin:0;padding:0;height:100%;overflow:hidden}
     #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;background:radial-gradient(circle at 10% 20%,#0f172a,#030614)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
     #vortixWorldOverlay *{box-sizing:border-box!important}
-    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;background:rgba(15,23,42,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(59,130,246,0.3)!important;z-index:2147483648!important}
+    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(15,23,42,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(59,130,246,0.3)!important;z-index:2147483648!important}
     .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#3b82f6!important}
     .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important;border:2px solid #3b82f6!important}
     .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(15,23,42,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:32px!important;border:1px solid rgba(59,130,246,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
@@ -522,6 +520,11 @@
     }, 3500)
   }
 
+  function isAutoRedirectEnabled() {
+    const saved = localStorage.getItem(VW_KEYS.autoRedirect)
+    return saved !== null ? saved === 'true' : true
+  }
+
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '') {
     const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
     if (isLuarmorUrl(url)) {
@@ -529,7 +532,8 @@
       shutdown()
       return
     }
-    if (isAutoRedirect) {
+    const auto = isAutoRedirectEnabled()
+    if (auto) {
       updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
       if (bypassType === 'tpili') {
         showToast(`✅ Bypassed in ${timeLabel}s`, false)
@@ -568,6 +572,7 @@
       this.retryCount = 0
       this.heartbeatCount = 0
       this.lastLoggedCount = 0
+      this.resolved = false
     }
 
     connect() {
@@ -608,7 +613,6 @@
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send('0')
         this.heartbeatCount++
-        // Log only every 5 heartbeats to reduce noise
         if (this.heartbeatCount - this.lastLoggedCount >= 5) {
           this.lastLoggedCount = this.heartbeatCount
           Logger.info(`WebSocket heartbeat sent (x${this.heartbeatCount})`, 'Keepalive')
@@ -647,6 +651,7 @@
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
             cacheLootlinkMethod(state.cachedUrid, state.cachedTaskId)
+            this.resolved = true
             handleBypassSuccess(finalUrl, duration, 'lootlink')
           } catch (e) {
             Logger.error('Critical decode failure', e)
@@ -679,7 +684,8 @@
   const state = {
     processStartTime: Date.now(),
     cachedUrid: null,
-    cachedTaskId: null
+    cachedTaskId: null,
+    fallbackTimer: null
   }
 
   const LOOTLINK_CACHE_KEY = 'vw_lootlink_method'
@@ -725,7 +731,24 @@
     })
     window.activeWebSocket = ws
     ws.connect()
+
+    state.fallbackTimer = cleanupManager.setTimeout(() => {
+      if (!ws.resolved) {
+        Logger.warn('Cached method timed out, falling back to normal flow')
+        ws.disconnect()
+        startNormalLootlinkFlow()
+      }
+    }, CONFIG.CACHED_METHOD_TIMEOUT)
     return true
+  }
+
+  function startNormalLootlinkFlow() {
+    if (window.__vw_tc_processed) return
+    injectUI()
+    setupOptimizedObserver()
+    initLocalLootlinkFetchOverride()
+    startManualCheck()
+    updateStatus('⏳ Loading...', 'Preparing bypass')
   }
 
   function detectTaskInfo() {
@@ -937,45 +960,31 @@
     }
   }
 
+  function startManualCheck() {
+    let attempts = 0
+    const interval = setInterval(() => {
+      if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
+        clearInterval(interval)
+        sendTcManually()
+      } else if (attempts >= 100) {
+        clearInterval(interval)
+        Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
+        showToast('⚠️ Globals not found, bypass may be slower', true)
+      }
+      attempts++
+    }, 100)
+  }
+
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled')
     installLuarmorNavigationGuard()
 
     if (tryCachedLootlinkBypass()) {
-      Logger.info('Using cached lootlink method, skipping observer')
+      Logger.info('Using cached lootlink method, waiting for result')
       return
     }
 
-    const startManualCheck = () => {
-      let attempts = 0
-      const interval = setInterval(() => {
-        if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
-          clearInterval(interval)
-          sendTcManually()
-        } else if (attempts >= 100) {
-          clearInterval(interval)
-          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
-          showToast('⚠️ Globals not found, bypass may be slower', true)
-        }
-        attempts++
-      }, 100)
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        injectUI()
-        setupOptimizedObserver()
-        initLocalLootlinkFetchOverride()
-        startManualCheck()
-        updateStatus('⏳ Loading...', 'Preparing bypass')
-      })
-    } else {
-      injectUI()
-      setupOptimizedObserver()
-      initLocalLootlinkFetchOverride()
-      startManualCheck()
-      updateStatus('⏳ Loading...', 'Preparing bypass')
-    }
+    startNormalLootlinkFlow()
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
