@@ -690,6 +690,8 @@
     let previousBodyOverflow = ''
     let previousHtmlOverflow = ''
     let currentFilter = 'all'
+    let userHasScrolled = false
+    let scrollListenerAdded = false
 
     function setScrollLock(locked) {
       try {
@@ -726,6 +728,8 @@
       if (!consoleContainer) return
 
       const logs = getFilteredLogs()
+      const wasAtBottom = consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 10
+
       consoleContainer.innerHTML = logs
         .map((log) => {
           const level = (log.level || 'info').toUpperCase()
@@ -735,7 +739,9 @@
         })
         .join('')
 
-      consoleContainer.scrollTop = consoleContainer.scrollHeight
+      if (wasAtBottom && !userHasScrolled) {
+        consoleContainer.scrollTop = consoleContainer.scrollHeight
+      }
     }
 
     function copyAllLogs() {
@@ -789,6 +795,14 @@
       setScrollLock(true)
 
       if (panel === 'console') {
+        userHasScrolled = false
+        if (!scrollListenerAdded) {
+          consoleContainer.addEventListener('scroll', () => {
+            const atBottom = consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 10
+            userHasScrolled = !atBottom
+          })
+          scrollListenerAdded = true
+        }
         renderConsoleLogs()
         startAutoRefresh()
       } else {
