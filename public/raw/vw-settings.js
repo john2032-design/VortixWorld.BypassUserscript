@@ -464,6 +464,10 @@
       color: #ef4444 !important;
     }
 
+    .vw-log-level-websocket {
+      color: #a855f7 !important;
+    }
+
     .vw-log-message {
       color: #e2e8f0 !important;
     }
@@ -659,7 +663,7 @@
             <button class="vw-tab" data-level="info">INFO</button>
             <button class="vw-tab" data-level="warn">WARN</button>
             <button class="vw-tab" data-level="error">ERROR</button>
-            <button class="vw-tab" data-level="heartbeat">HEARTBEAT</button>
+            <button class="vw-tab" data-level="websocket">WEBSOCKET</button>
           </div>
           <div class="vw-console" id="vwConsoleLogs"></div>
           <div class="vw-actions">
@@ -723,8 +727,8 @@
     function getFilteredLogs() {
       const logs = window.__vw_logs || []
       if (currentFilter === 'all') return logs
-      if (currentFilter === 'heartbeat') {
-        return logs.filter(log => log.message.includes('WebSocket heartbeat sent'))
+      if (currentFilter === 'websocket') {
+        return logs.filter(log => log.level === 'websocket')
       }
       return logs.filter(log => log.level === currentFilter)
     }
@@ -740,7 +744,8 @@
           const level = (log.level || 'info').toUpperCase()
           const message = escapeHtml(log.message)
           const data = log.data ? ` ${escapeHtml(log.data)}` : ''
-          return `<div class="vw-log-entry"><span class="vw-log-level-${log.level || 'info'}">[${level}]</span> <span class="vw-log-message">${message}${data}</span></div>`
+          const levelClass = log.level === 'websocket' ? 'vw-log-level-websocket' : `vw-log-level-${log.level || 'info'}`
+          return `<div class="vw-log-entry"><span class="${levelClass}">[${level}]</span> <span class="vw-log-message">${message}${data}</span></div>`
         })
         .join('')
 
