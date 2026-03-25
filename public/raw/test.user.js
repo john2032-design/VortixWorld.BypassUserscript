@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.1
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -84,7 +84,9 @@
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
     CACHED_METHOD_TIMEOUT: 15000,
-    BYPASS_START_DELAY: 1000
+    BYPASS_START_DELAY: 1000,
+    GLOBALS_WAIT_TIMEOUT: 10000,
+    NORMAL_FLOW_FALLBACK_TIMEOUT: 15000
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
@@ -113,6 +115,7 @@
     info: 'color:#22c55e;',
     warn: 'color:#f59e0b;',
     error: 'color:#ef4444;',
+    heartbeat: 'color:#a855f7;',
     dim: 'color:#94a3b8;'
   }
 
@@ -153,6 +156,15 @@
         d || ''
       )
       Logger._push('error', m, d)
+    },
+    heartbeat: (m, d = '') => {
+      console.info(
+        `%c[HEARTBEAT]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.heartbeat,
+        LOG_STYLE.base + LOG_STYLE.dim,
+        d || ''
+      )
+      Logger._push('heartbeat', m, d)
     }
   }
 
@@ -617,7 +629,7 @@
         this.heartbeatCount++
         if (this.heartbeatCount - this.lastLoggedCount >= 5) {
           this.lastLoggedCount = this.heartbeatCount
-          Logger.info(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
+          Logger.heartbeat(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
         }
       }
     }
@@ -702,11 +714,12 @@
       urid,
       taskId,
       host: HOST,
+      url: location.href,
       timestamp: Date.now()
     }
     try {
       localStorage.setItem(LOOTLINK_CACHE_KEY, JSON.stringify(cache))
-      Logger.info('Cached lootlink method', `urid: ${urid}, taskId: ${taskId}`)
+      Logger.info('Cached lootlink method', `urid: ${urid}, taskId: ${taskId}, url: ${location.href}`)
     } catch (_) {}
   }
 
@@ -722,11 +735,35 @@
     return null
   }
 
-  function tryCachedLootlinkBypass() {
+  function waitForGlobals() {
+    return new Promise((resolve) => {
+      let attempts = 0
+      const interval = setInterval(() => {
+        if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
+          clearInterval(interval)
+          resolve(true)
+        } else if (attempts >= CONFIG.GLOBALS_WAIT_TIMEOUT / 100) {
+          clearInterval(interval)
+          resolve(false)
+        }
+        attempts++
+      }, 100)
+    })
+  }
+
+  async function tryCachedLootlinkBypass() {
     if (window.__vw_tc_processed) return false
     const cache = getCachedLootlinkMethod()
     if (!cache) return false
     const { urid, taskId } = cache
+
+    Logger.info('Waiting for globals to use cached lootlink method')
+    const globalsReady = await waitForGlobals()
+    if (!globalsReady) {
+      Logger.warn('Globals not ready for cached method, falling back to normal flow')
+      return false
+    }
+
     if (typeof KEY === 'undefined' || typeof TID === 'undefined') return false
     const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${taskId}&key=${KEY}`
     Logger.info('Using cached lootlink method', wsUrl)
@@ -756,6 +793,13 @@
     initLocalLootlinkFetchOverride()
     startManualCheck()
     updateStatus('⏳ Loading...', 'Preparing bypass')
+
+    cleanupManager.setTimeout(() => {
+      if (!window.__vw_tc_processed && !window.activeWebSocket) {
+        Logger.warn('Normal flow appears stuck, falling back to manual mode')
+        updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
+      }
+    }, CONFIG.NORMAL_FLOW_FALLBACK_TIMEOUT)
   }
 
   function detectTaskInfo() {
@@ -1098,14 +1142,6 @@
 
     if (redirectParam) {
       const rp = String(redirectParam)
-
-      if (rp.includes('https://flux.li/android/external/main.php')) {
-        document.documentElement.innerHTML =
-          '<html><head><title>VortixWorld USERSCRIPT</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="height:100%;margin:0;padding:0;background:radial-gradient(circle at 10% 20%,#0f172a,#030614);color:#e2e8f0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;"><div style="max-width:760px;padding:28px;border-radius:32px;background:rgba(15,23,42,0.7);backdrop-filter:blur(12px);border:1px solid #3b82f640;"><h1 style="margin:0 0 12px 0;color:#3b82f6">VortixWorld USERSCRIPT</h1><h2 style="margin:0 0 8px 0;font-size:16px;color:#e2e8f0">Target requires manual redirect due to extra security checks</h2><div style="margin-top:12px"><a href="' +
-          rp +
-          '" style="color:#e2e8f0;background:#1e293b;padding:10px 14px;border-radius:40px;text-decoration:none;font-weight:700;border:1px solid #3b82f640;display:inline-block">Click here to continue</a></div></div></body></html>'
-        return
-      }
 
       if (isLuarmorUrl(rp)) {
         handleLuarmorTarget(rp)
