@@ -728,7 +728,7 @@
       const raw = localStorage.getItem(LOOTLINK_CACHE_KEY)
       if (!raw) return null
       const cache = JSON.parse(raw)
-      if (cache.host === HOST && (Date.now() - cache.timestamp) < 3600000) {
+      if (cache.host === HOST && cache.url === location.href && (Date.now() - cache.timestamp) < 3600000) {
         return cache
       }
     } catch (_) {}
@@ -759,13 +759,13 @@
 
     Logger.info('Waiting for globals to use cached lootlink method')
     const globalsReady = await waitForGlobals()
-    if (!globalsReady) {
-      Logger.warn('Globals not ready for cached method, falling back to normal flow')
+    if (!globalsReady || !window.INCENTIVE_SERVER_DOMAIN) {
+      Logger.warn('Globals not ready or domain missing for cached method, falling back to normal flow')
       return false
     }
 
     if (typeof KEY === 'undefined' || typeof TID === 'undefined') return false
-    const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${taskId}&key=${KEY}`
+    const wsUrl = `wss://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${taskId}&key=${KEY}`
     Logger.info('Using cached lootlink method', wsUrl)
     const ws = new RobustWebSocket(wsUrl, {
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
@@ -814,7 +814,7 @@
       } else if (lowerText.includes('notification') || lowerText.includes('allow notifications')) {
         countdownSeconds = 30
         taskName = 'Notification'
-      } else if (lowerText.includes('app install') || lowerText.includes('download app') || lowerText.includes('fire.png')) {
+      } else if (lowerText.includes('app install') || lowerText.includes('download app')) {
         countdownSeconds = 60
         taskName = 'App Install'
       } else if (lowerText.includes('gaming offer') || lowerText.includes('play game')) {
@@ -943,7 +943,7 @@
     state.cachedUrid = urid
     state.cachedTaskId = task_id
 
-    const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+    const wsUrl = `wss://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
     Logger.info('Initiating WebSocket connection', wsUrl)
     const ws = new RobustWebSocket(wsUrl, {
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
@@ -955,7 +955,7 @@
     ws.connect()
 
     try {
-      const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+      const beaconUrl = `https://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
       navigator.sendBeacon(beaconUrl)
       Logger.info('Sent beacon', beaconUrl)
     } catch (_) {}
@@ -964,7 +964,7 @@
       originalFetch(action_pixel_url).catch(() => {})
       Logger.info('Fetched action pixel', action_pixel_url)
     }
-    const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
+    const tdUrl = `https://${window.INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
     originalFetch(tdUrl).catch(() => {})
     Logger.info('Fetched td URL', tdUrl)
 
