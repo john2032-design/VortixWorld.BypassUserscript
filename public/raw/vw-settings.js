@@ -350,7 +350,7 @@
 
     .vw-console {
       flex: 1 1 auto !important;
-      min-height: 180px !important;
+      min-height: 0 !important;
       overflow-y: auto !important;
       background: rgba(0, 0, 0, 0.4) !important;
       border-radius: 20px !important;
