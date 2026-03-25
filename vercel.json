@@ -4,6 +4,11 @@
       "source": "/",
       "destination": "/raw/bypass.user.js",
       "permanent": false
+    },
+    {
+      "source": "/visit",
+      "destination": "/api/visit",
+      "permanent": false
     }
   ],
   "headers": [
