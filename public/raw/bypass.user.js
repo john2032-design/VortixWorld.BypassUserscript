@@ -21,6 +21,7 @@
   const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85-E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
 
   const LOOT_HOSTS = [
     'loot-link.com',
@@ -78,10 +79,12 @@
   const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST)
 
   const CONFIG = Object.freeze({
-    HEARTBEAT_INTERVAL: 1000,
+    HEARTBEAT_INTERVAL: 10,
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
-    COUNTDOWN_INTERVAL: 1000
+    COUNTDOWN_INTERVAL: 1000,
+    BYPASS_START_DELAY: 1000,
+    FALLBACK_CHECK_DELAY: 15000
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
@@ -104,19 +107,13 @@
     return !isNaN(parsed) ? parsed : 20
   })()
 
-  const savedAuto = localStorage.getItem(VW_KEYS.autoRedirect)
-  let isAutoRedirect = savedAuto !== null ? savedAuto === 'true' : true
-
-  const logStacks = {
-    countdown: { lastRemaining: null }
-  }
-
   window.__vw_logs = window.__vw_logs || []
   const LOG_STYLE = {
     base: 'font-weight:800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
     info: 'color:#22c55e;',
     warn: 'color:#f59e0b;',
     error: 'color:#ef4444;',
+    websocket: 'color:#a855f7;',
     dim: 'color:#94a3b8;'
   }
 
@@ -157,6 +154,15 @@
         d || ''
       )
       Logger._push('error', m, d)
+    },
+    websocket: (m, d = '') => {
+      console.info(
+        `%c[WEBSOCKET]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.websocket,
+        LOG_STYLE.base + LOG_STYLE.dim,
+        d || ''
+      )
+      Logger._push('websocket', m, d)
     }
   }
 
@@ -267,7 +273,7 @@
 
   const SHARED_UI_CSS = `
     html,body{margin:0;padding:0;height:100%;overflow:hidden}
-    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;background:radial-gradient(circle at 10% 20%,#0f172a,#030614)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
+    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;background:radial-gradient(circle at 10% 20%,#0f172a,#030614)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
     #vortixWorldOverlay *{box-sizing:border-box!important}
     .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(15,23,42,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(59,130,246,0.3)!important;z-index:2147483648!important}
     .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#3b82f6!important}
@@ -282,11 +288,10 @@
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;left:calc(14px + env(safe-area-inset-left))!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important;border-left:4px solid #3b82f6!important}
+    .vw-toast{position:fixed!important;top:calc(72px + 12px)!important;right:calc(14px + env(safe-area-inset-right))!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important;border-left:4px solid #3b82f6!important}
     .vw-toast.error{border-left-color:#ef4444!important}
-    @keyframes vw-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    @media (max-width:640px){.vw-toast{left:calc(14px + env(safe-area-inset-left))!important;right:auto!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;max-width:calc(100vw - 28px)!important}}
-    @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}}
+    @keyframes vw-toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}.vw-toast{top:calc(60px + 12px)!important}}
   `
 
   let __vwLuarmorAllowOnceUrl = ''
@@ -460,16 +465,6 @@
           <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
           VortixWorld
         </div>
-        <div class="vw-header-right" style="display:flex; align-items:center; gap:10px;">
-          <div class="vw-toggle-container" style="display:flex; align-items:center; gap:10px; font-size:12px; color:#e2e8f0; font-weight:800; background:rgba(15,23,42,0.6); padding:7px 12px; border-radius:999px; border:1px solid #3b82f640; cursor:pointer; z-index:2147483650; pointer-events:auto; user-select:none;">
-            <span>AutoRedirect</span>
-            <label style="position:relative; display:inline-block; width:40px; height:20px; pointer-events:auto;">
-              <input type="checkbox" id="vwAutoToggle" style="opacity:0; width:100%; height:100%; position:absolute; top:0; left:0; cursor:pointer; z-index:2147483651; margin:0;">
-              <span id="vwAutoTrack" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#334155; transition:0.25s; border-radius:999px; pointer-events:none;"></span>
-              <span id="vwAutoKnob" style="position:absolute; height:14px; width:14px; left:3px; bottom:3px; background-color:#3b82f6; transition:0.25s; border-radius:50%; pointer-events:none;"></span>
-            </label>
-          </div>
-        </div>
       </div>
       <div class="vw-main-content">
         <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
@@ -508,25 +503,6 @@
     document.documentElement.style.overflow = 'hidden'
 
     uiInjected = true
-
-    const toggle = document.getElementById('vwAutoToggle')
-    const knob = document.getElementById('vwAutoKnob')
-    const track = document.getElementById('vwAutoTrack')
-
-    const paint = checked => {
-      if (track) track.style.background = checked ? '#3b82f6' : '#334155'
-      if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0px)'
-    }
-
-    if (toggle) {
-      toggle.checked = isAutoRedirect
-      paint(isAutoRedirect)
-      toggle.addEventListener('change', e => {
-        isAutoRedirect = e.target.checked
-        localStorage.setItem(VW_KEYS.autoRedirect, isAutoRedirect)
-        paint(isAutoRedirect)
-      })
-    }
   }
 
   function updateStatus(main, sub) {
@@ -555,6 +531,11 @@
     }, 3500)
   }
 
+  function isAutoRedirectEnabled() {
+    const saved = localStorage.getItem(VW_KEYS.autoRedirect)
+    return saved !== null ? saved === 'true' : true
+  }
+
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '') {
     const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
     if (isLuarmorUrl(url)) {
@@ -562,7 +543,8 @@
       shutdown()
       return
     }
-    if (isAutoRedirect) {
+    const auto = isAutoRedirectEnabled()
+    if (auto) {
       updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
       if (bypassType === 'tpili') {
         showToast(`✅ Bypassed in ${timeLabel}s`, false)
@@ -599,11 +581,15 @@
       this.reconnectTimeout = null
       this.heartbeatTimer = null
       this.retryCount = 0
+      this.heartbeatCount = 0
+      this.lastLoggedCount = 0
+      this.resolved = false
     }
 
     connect() {
       if (isShutdown) return
       try {
+        Logger.websocket('Connecting WebSocket', this.url)
         this.ws = new WebSocket(this.url)
         this.ws.onopen = () => this.onOpen()
         this.ws.onmessage = e => this.onMessage(e)
@@ -617,7 +603,7 @@
 
     onOpen() {
       if (isShutdown) return
-      Logger.info('WebSocket connection opened', this.url)
+      Logger.websocket('WebSocket connection opened', this.url)
       this.retryCount = 0
       this.reconnectDelay = CONFIG.INITIAL_RECONNECT_DELAY
       if (this.reconnectTimeout) {
@@ -638,7 +624,11 @@
     sendHeartbeat() {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send('0')
-        Logger.info('WebSocket heartbeat sent', 'Keepalive')
+        this.heartbeatCount++
+        if (this.heartbeatCount - this.lastLoggedCount >= 5) {
+          this.lastLoggedCount = this.heartbeatCount
+          Logger.websocket(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
+        }
       }
     }
 
@@ -657,7 +647,7 @@
       const delay = Math.min(this.reconnectDelay * Math.pow(2, this.retryCount - 1), this.maxDelay)
       Logger.warn('WebSocket connection slow to open', `Retry ${this.retryCount} in ${delay}ms`)
       this.reconnectTimeout = cleanupManager.setTimeout(() => {
-        Logger.info('WebSocket url opened', this.url)
+        Logger.websocket('WebSocket url opened', this.url)
         this.connect()
       }, delay)
     }
@@ -666,11 +656,19 @@
       if (isShutdown) return
       if (event.data && event.data.includes('r:')) {
         const PUBLISHER_LINK = event.data.replace('r:', '')
+        Logger.info('Received publisher link from WebSocket', PUBLISHER_LINK)
         if (PUBLISHER_LINK) {
           try {
             const finalUrl = decodeURIComponent(decodeURIxor(PUBLISHER_LINK))
+            Logger.info('Decoded final URL', finalUrl)
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
+            if (!isLuarmorUrl(finalUrl)) {
+              saveResultToCache(location.href, finalUrl)
+            } else {
+              Logger.info('Skipping cache because final URL is luarmor', finalUrl)
+            }
+            this.resolved = true
             handleBypassSuccess(finalUrl, duration, 'lootlink')
           } catch (e) {
             Logger.error('Critical decode failure', e)
@@ -704,29 +702,84 @@
     processStartTime: Date.now()
   }
 
+  const RESULT_CACHE_KEY = 'vw_lootlink_results'
+
+  function saveResultToCache(originalUrl, resultUrl) {
+    try {
+      let cache = {}
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (existing) {
+        try {
+          cache = JSON.parse(existing)
+        } catch (_) {}
+      }
+      cache[originalUrl] = resultUrl
+      localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
+      Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
+    } catch (e) {
+      Logger.warn('Failed to cache result', e)
+    }
+  }
+
+  function getCachedResult(originalUrl) {
+    try {
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (!existing) return null
+      const cache = JSON.parse(existing)
+      return cache[originalUrl] || null
+    } catch (_) {
+      return null
+    }
+  }
+
   function detectTaskInfo() {
     let countdownSeconds = 60
     let taskName = 'Processing'
     try {
-      const images = document.querySelectorAll('img')
-      for (let img of images) {
-        const src = (img.src || '').toLowerCase()
-        if (src.includes('eye.png')) {
-          countdownSeconds = 13
-          taskName = 'View Content'
-          break
-        } else if (src.includes('bell.png')) {
-          countdownSeconds = 30
-          taskName = 'Notification'
-          break
-        } else if (src.includes('apps.png') || src.includes('fire.png')) {
-          countdownSeconds = 60
-          taskName = 'App Install'
-          break
-        } else if (src.includes('gamers.png')) {
-          countdownSeconds = 90
-          taskName = 'Gaming Offer'
-          break
+      const pageText = document.body ? document.body.innerText : ''
+      const lowerText = pageText.toLowerCase()
+      if (lowerText.includes('view content') || lowerText.includes('watch video')) {
+        countdownSeconds = 13
+        taskName = 'View Content'
+      } else if (lowerText.includes('notification') || lowerText.includes('allow notifications')) {
+        countdownSeconds = 30
+        taskName = 'Notification'
+      } else if (lowerText.includes('app install') || lowerText.includes('download app')) {
+        countdownSeconds = 60
+        taskName = 'App Install'
+      } else if (lowerText.includes('gaming offer') || lowerText.includes('play game')) {
+        countdownSeconds = 90
+        taskName = 'Gaming Offer'
+      } else if (lowerText.includes('send sms') || lowerText.includes('text message')) {
+        countdownSeconds = 50
+        taskName = 'Send SMS'
+      } else if (lowerText.includes('click') && lowerText.includes('reward')) {
+        countdownSeconds = 30
+        taskName = 'Click Reward'
+      } else if (lowerText.includes('complete') && lowerText.includes('reward')) {
+        countdownSeconds = 30
+        taskName = 'Complete Reward'
+      } else {
+        const images = document.querySelectorAll('img')
+        for (let img of images) {
+          const src = (img.src || '').toLowerCase()
+          if (src.includes('eye.png')) {
+            countdownSeconds = 13
+            taskName = 'View Content'
+            break
+          } else if (src.includes('bell.png')) {
+            countdownSeconds = 30
+            taskName = 'Notification'
+            break
+          } else if (src.includes('apps.png') || src.includes('fire.png')) {
+            countdownSeconds = 60
+            taskName = 'App Install'
+            break
+          } else if (src.includes('gamers.png')) {
+            countdownSeconds = 90
+            taskName = 'Gaming Offer'
+            break
+          }
         }
       }
     } catch (_) {}
@@ -750,11 +803,6 @@
     let remaining = countdownSeconds
     const timer = cleanupManager.setInterval(() => {
       remaining--
-      const last = logStacks.countdown.lastRemaining
-      if (last === null || last - remaining >= 5 || remaining <= 5) {
-        logStacks.countdown.lastRemaining = remaining
-        Logger.info('Countdown progress snapshot', `${remaining} seconds remaining`)
-      }
       updateStatus('🔄 Bypassing...', `(Estimated ${remaining} seconds remaining..)`)
       if (remaining <= 0) {
         clearInterval(timer)
@@ -770,7 +818,7 @@
         observerRef.disconnect()
         return
       }
-      const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+      const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
       for (const mutation of mutationsList) {
         if (mutation.type !== 'childList') continue
         const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1)
@@ -790,7 +838,7 @@
     window.bypassObserver = observer
     observer.observe(targetContainer, { childList: true, subtree: true })
 
-    const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+    const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
     const existing = Array.from(document.querySelectorAll('*')).find(el => {
       const text = el.textContent
       return text && unlockText.some(t => text.includes(t))
@@ -811,15 +859,19 @@
         task_id = 54
         action_pixel_url = item.action_pixel_url
       })
+      Logger.info('Processed /tc response', `urid=${urid}, task_id=${task_id}`)
     } catch (_) {
+      Logger.error('Failed to parse /tc response', data)
       return false
     }
 
     if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
+      Logger.warn('KEY or TID not defined, cannot proceed')
       return false
     }
 
     const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+    Logger.info('Initiating WebSocket connection', wsUrl)
     const ws = new RobustWebSocket(wsUrl, {
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
       maxDelay: CONFIG.MAX_RECONNECT_DELAY,
@@ -832,13 +884,16 @@
     try {
       const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
       navigator.sendBeacon(beaconUrl)
+      Logger.info('Sent beacon', beaconUrl)
     } catch (_) {}
 
     if (action_pixel_url) {
       originalFetch(action_pixel_url).catch(() => {})
+      Logger.info('Fetched action pixel', action_pixel_url)
     }
     const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
     originalFetch(tdUrl).catch(() => {})
+    Logger.info('Fetched td URL', tdUrl)
 
     return true
   }
@@ -895,57 +950,79 @@
   async function sendTcManually() {
     if (window.__vw_tc_processed) return
     const originalFetch = window.fetch
-    const syncDomain = window.INCENTIVE_SYNCER_DOMAIN
+    const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
     Logger.info('Sending manual /tc request', tcUrl)
+
+    let processed = false
     try {
-      const res = await fetchWithRetry(tcUrl, { credentials: 'include', headers: { 'User-Agent': navigator.userAgent } }, 2, 1000)
+      const res = await fetchWithRetry(tcUrl, {
+        credentials: 'include',
+        headers: { 'User-Agent': ANDROID_UA }
+      }, 2, 1000)
       const data = await res.json()
       processTcResponse(data, originalFetch)
       window.__vw_tc_processed = true
+      processed = true
       Logger.info('Manual /tc processed successfully')
       showToast('✅ Lootlink bypass successful', false)
     } catch (err) {
-      Logger.warn('Manual /tc request failed after retries', err.message)
-      showToast('⚠️ Lootlink bypass failed, retrying...', true)
+      if (!processed) {
+        Logger.warn('Manual /tc request failed after retries', err.message)
+        showToast('⚠️ Lootlink bypass failed, retrying...', true)
+      }
     }
+  }
+
+  function startManualCheck() {
+    const interval = setInterval(() => {
+      if (window.__vw_tc_processed) {
+        clearInterval(interval)
+        return
+      }
+      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
+        clearInterval(interval)
+        sendTcManually()
+      }
+    }, 100)
   }
 
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled')
     installLuarmorNavigationGuard()
 
-    const startManualCheck = () => {
-      let attempts = 0
-      const interval = setInterval(() => {
-        if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
-          clearInterval(interval)
-          sendTcManually()
-        } else if (attempts >= 100) {
-          clearInterval(interval)
-          Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
-          showToast('⚠️ Globals not found, bypass may be slower', true)
-        }
-        attempts++
-      }, 100)
+    const cachedResult = getCachedResult(location.href)
+    if (cachedResult && !isLuarmorUrl(cachedResult)) {
+      Logger.info('Using cached result', `from cache: ${cachedResult}`)
+      handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink')
+      return
+    } else if (cachedResult && isLuarmorUrl(cachedResult)) {
+      Logger.info('Cached result is luarmor, ignoring cache', cachedResult)
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        injectUI()
-        setupOptimizedObserver()
-        initLocalLootlinkFetchOverride()
-        startManualCheck()
-        updateStatus('⏳ Loading...', 'Preparing bypass')
-      })
-    } else {
-      injectUI()
-      setupOptimizedObserver()
-      initLocalLootlinkFetchOverride()
-      startManualCheck()
-      updateStatus('⏳ Loading...', 'Preparing bypass')
-    }
+    injectUI()
+    updateStatus('⏳ Loading...', 'Preparing bypass')
+    setupOptimizedObserver()
+    initLocalLootlinkFetchOverride()
+    startManualCheck()
+
+    cleanupManager.setTimeout(() => {
+      if (!window.__vw_tc_processed && !window.activeWebSocket) {
+        Logger.warn('Bypass seems stuck, checking for unlock element again')
+        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+        const existing = Array.from(document.querySelectorAll('*')).find(el => {
+          const text = el.textContent
+          return text && unlockText.some(t => text.includes(t))
+        })
+        if (existing) {
+          modifyParentElement(existing)
+        } else {
+          updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
+        }
+      }
+    }, CONFIG.FALLBACK_CHECK_DELAY)
+
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
@@ -960,18 +1037,24 @@
       if (!alias) {
         throw new Error('No alias found in URL')
       }
+      Logger.info('TPI.LI alias', alias)
+
       const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
       const html = await response.text()
+      Logger.info('Fetched TPI.LI HTML', `${html.length} bytes`)
 
       let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
       if (!tokenMatch) tokenMatch = html.match(/value="([^"]+)"\s+name="token"/)
       if (!tokenMatch) throw new Error('Token not found in page')
-
       const token = tokenMatch[1]
+      Logger.info('Token extracted', token.substring(0, 20) + '...')
+
       const offset = 40 + 4 + alias.length + 4
       if (token.length < offset) throw new Error('Token too short')
       const tokenPart = token.slice(offset)
+      Logger.info('Token part for decoding', tokenPart)
       const finalUrl = atob(tokenPart)
+      Logger.info('Decoded final URL', finalUrl)
 
       if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL')
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
@@ -1007,14 +1090,6 @@
 
     if (redirectParam) {
       const rp = String(redirectParam)
-
-      if (rp.includes('https://flux.li/android/external/main.php')) {
-        document.documentElement.innerHTML =
-          '<html><head><title>VortixWorld USERSCRIPT</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="height:100%;margin:0;padding:0;background:radial-gradient(circle at 10% 20%,#0f172a,#030614);color:#e2e8f0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;"><div style="max-width:760px;padding:28px;border-radius:32px;background:rgba(15,23,42,0.7);backdrop-filter:blur(12px);border:1px solid #3b82f640;"><h1 style="margin:0 0 12px 0;color:#3b82f6">VortixWorld USERSCRIPT</h1><h2 style="margin:0 0 8px 0;font-size:16px;color:#e2e8f0">Target requires manual redirect due to extra security checks</h2><div style="margin-top:12px"><a href="' +
-          rp +
-          '" style="color:#e2e8f0;background:#1e293b;padding:10px 14px;border-radius:40px;text-decoration:none;font-weight:700;border:1px solid #3b82f640;display:inline-block">Click here to continue</a></div></div></body></html>'
-        return
-      }
 
       if (isLuarmorUrl(rp)) {
         handleLuarmorTarget(rp)
