@@ -6,11 +6,22 @@
       "permanent": false
     }
   ],
-  "rewrites": [
+  "headers": [
     {
       "source": "/raw/(.*)",
-      "destination": "/api/raw"
-    },
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
     {
       "source": "/visit",
       "destination": "/api/visit"
