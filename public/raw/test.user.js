@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.0
+// @version      2.1
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -79,11 +79,12 @@
   const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST)
 
   const CONFIG = Object.freeze({
-    HEARTBEAT_INTERVAL: 50,
+    HEARTBEAT_INTERVAL: 10,
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
-    CACHED_METHOD_TIMEOUT: 15000
+    CACHED_METHOD_TIMEOUT: 15000,
+    BYPASS_START_DELAY: 1000
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
@@ -652,7 +653,6 @@
             Logger.info('Decoded final URL', finalUrl)
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
-            // Only cache if the final URL is NOT a luarmor URL
             if (!isLuarmorUrl(finalUrl)) {
               cacheLootlinkMethod(state.cachedUrid, state.cachedTaskId)
             } else {
@@ -762,25 +762,50 @@
     let countdownSeconds = 60
     let taskName = 'Processing'
     try {
-      const images = document.querySelectorAll('img')
-      for (let img of images) {
-        const src = (img.src || '').toLowerCase()
-        if (src.includes('eye.png')) {
-          countdownSeconds = 13
-          taskName = 'View Content'
-          break
-        } else if (src.includes('bell.png')) {
-          countdownSeconds = 30
-          taskName = 'Notification'
-          break
-        } else if (src.includes('apps.png') || src.includes('fire.png')) {
-          countdownSeconds = 60
-          taskName = 'App Install'
-          break
-        } else if (src.includes('gamers.png')) {
-          countdownSeconds = 90
-          taskName = 'Gaming Offer'
-          break
+      const pageText = document.body ? document.body.innerText : ''
+      const lowerText = pageText.toLowerCase()
+      if (lowerText.includes('view content') || lowerText.includes('watch video')) {
+        countdownSeconds = 13
+        taskName = 'View Content'
+      } else if (lowerText.includes('notification') || lowerText.includes('allow notifications')) {
+        countdownSeconds = 30
+        taskName = 'Notification'
+      } else if (lowerText.includes('app install') || lowerText.includes('download app') || lowerText.includes('fire.png')) {
+        countdownSeconds = 60
+        taskName = 'App Install'
+      } else if (lowerText.includes('gaming offer') || lowerText.includes('play game')) {
+        countdownSeconds = 90
+        taskName = 'Gaming Offer'
+      } else if (lowerText.includes('send sms') || lowerText.includes('text message')) {
+        countdownSeconds = 50
+        taskName = 'Send SMS'
+      } else if (lowerText.includes('click') && lowerText.includes('reward')) {
+        countdownSeconds = 30
+        taskName = 'Click Reward'
+      } else if (lowerText.includes('complete') && lowerText.includes('reward')) {
+        countdownSeconds = 30
+        taskName = 'Complete Reward'
+      } else {
+        const images = document.querySelectorAll('img')
+        for (let img of images) {
+          const src = (img.src || '').toLowerCase()
+          if (src.includes('eye.png')) {
+            countdownSeconds = 13
+            taskName = 'View Content'
+            break
+          } else if (src.includes('bell.png')) {
+            countdownSeconds = 30
+            taskName = 'Notification'
+            break
+          } else if (src.includes('apps.png') || src.includes('fire.png')) {
+            countdownSeconds = 60
+            taskName = 'App Install'
+            break
+          } else if (src.includes('gamers.png')) {
+            countdownSeconds = 90
+            taskName = 'Gaming Offer'
+            break
+          }
         }
       }
     } catch (_) {}
@@ -977,7 +1002,6 @@
   function startManualCheck() {
     let attempts = 0
     const interval = setInterval(() => {
-      // Stop if already processed
       if (window.__vw_tc_processed) {
         clearInterval(interval)
         return
@@ -1003,7 +1027,10 @@
       return
     }
 
-    startNormalLootlinkFlow()
+    cleanupManager.setTimeout(() => {
+      startNormalLootlinkFlow()
+    }, CONFIG.BYPASS_START_DELAY)
+
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
