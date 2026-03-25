@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.2
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -616,7 +616,7 @@
         this.heartbeatCount++
         if (this.heartbeatCount - this.lastLoggedCount >= 5) {
           this.lastLoggedCount = this.heartbeatCount
-          Logger.info(`WebSocket heartbeat sent (x${this.heartbeatCount})`, 'Keepalive')
+          Logger.info(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
         }
       }
     }
@@ -652,7 +652,12 @@
             Logger.info('Decoded final URL', finalUrl)
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
-            cacheLootlinkMethod(state.cachedUrid, state.cachedTaskId)
+            // Only cache if the final URL is NOT a luarmor URL
+            if (!isLuarmorUrl(finalUrl)) {
+              cacheLootlinkMethod(state.cachedUrid, state.cachedTaskId)
+            } else {
+              Logger.info('Skipping cache because final URL is luarmor', finalUrl)
+            }
             this.resolved = true
             handleBypassSuccess(finalUrl, duration, 'lootlink')
           } catch (e) {
@@ -972,6 +977,11 @@
   function startManualCheck() {
     let attempts = 0
     const interval = setInterval(() => {
+      // Stop if already processed
+      if (window.__vw_tc_processed) {
+        clearInterval(interval)
+        return
+      }
       if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
         clearInterval(interval)
         sendTcManually()
