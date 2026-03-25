@@ -411,6 +411,7 @@
       margin-bottom: 12px !important;
       border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
       padding-bottom: 8px !important;
+      flex-wrap: wrap !important;
     }
 
     .vw-tab {
@@ -658,6 +659,7 @@
             <button class="vw-tab" data-level="info">INFO</button>
             <button class="vw-tab" data-level="warn">WARN</button>
             <button class="vw-tab" data-level="error">ERROR</button>
+            <button class="vw-tab" data-level="heartbeat">HEARTBEAT</button>
           </div>
           <div class="vw-console" id="vwConsoleLogs"></div>
           <div class="vw-actions">
@@ -721,6 +723,9 @@
     function getFilteredLogs() {
       const logs = window.__vw_logs || []
       if (currentFilter === 'all') return logs
+      if (currentFilter === 'heartbeat') {
+        return logs.filter(log => log.message.includes('WebSocket heartbeat sent'))
+      }
       return logs.filter(log => log.level === currentFilter)
     }
 
@@ -735,7 +740,7 @@
           const level = (log.level || 'info').toUpperCase()
           const message = escapeHtml(log.message)
           const data = log.data ? ` ${escapeHtml(log.data)}` : ''
-          return `<div class="vw-log-entry"><span class="vw-log-level-${log.level || 'info'}">[${level}]</span> <span class="vw-log-message">[VortixWorld] ${message}${data}</span></div>`
+          return `<div class="vw-log-entry"><span class="vw-log-level-${log.level || 'info'}">[${level}]</span> <span class="vw-log-message">${message}${data}</span></div>`
         })
         .join('')
 
@@ -746,7 +751,7 @@
 
     function copyAllLogs() {
       const logs = getFilteredLogs()
-      const text = logs.map(log => `[${log.level.toUpperCase()}] [VortixWorld] ${log.message}${log.data ? ' ' + log.data : ''}`).join('\n')
+      const text = logs.map(log => `[${log.level.toUpperCase()}] ${log.message}${log.data ? ' ' + log.data : ''}`).join('\n')
       navigator.clipboard.writeText(text).then(() => {
         showToast('Copied to clipboard')
       }).catch(() => {
