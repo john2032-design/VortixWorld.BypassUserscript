@@ -664,7 +664,6 @@
             Logger.info('Decoded final URL', finalUrl)
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
-            // Cache result if not luarmor
             if (!isLuarmorUrl(finalUrl)) {
               saveResultToCache(location.href, finalUrl)
             } else {
@@ -704,7 +703,6 @@
     processStartTime: Date.now()
   }
 
-  // Result cache: store final URLs keyed by original loot URL
   const RESULT_CACHE_KEY = 'vw_lootlink_results'
 
   function saveResultToCache(originalUrl, resultUrl) {
@@ -733,22 +731,6 @@
     } catch (_) {
       return null
     }
-  }
-
-  function startNormalLootlinkFlow() {
-    if (window.__vw_tc_processed) return
-    injectUI()
-    setupOptimizedObserver()
-    initLocalLootlinkFetchOverride()
-    startManualCheck()
-    updateStatus('⏳ Loading...', 'Preparing bypass')
-
-    cleanupManager.setTimeout(() => {
-      if (!window.__vw_tc_processed && !window.activeWebSocket) {
-        Logger.warn('Normal flow appears stuck, falling back to manual mode')
-        updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
-      }
-    }, CONFIG.NORMAL_FLOW_FALLBACK_TIMEOUT)
   }
 
   function detectTaskInfo() {
@@ -837,7 +819,7 @@
         observerRef.disconnect()
         return
       }
-      const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+      const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
       for (const mutation of mutationsList) {
         if (mutation.type !== 'childList') continue
         const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1)
@@ -857,7 +839,7 @@
     window.bypassObserver = observer
     observer.observe(targetContainer, { childList: true, subtree: true })
 
-    const unlockText = ['UNLOCK CONTENT', 'Unlock Content']
+    const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
     const existing = Array.from(document.querySelectorAll('*')).find(el => {
       const text = el.textContent
       return text && unlockText.some(t => text.includes(t))
@@ -1012,7 +994,6 @@
     Logger.info('VortixWorld local lootlinks bypass enabled')
     installLuarmorNavigationGuard()
 
-    // Check result cache first
     const cachedResult = getCachedResult(location.href)
     if (cachedResult && !isLuarmorUrl(cachedResult)) {
       Logger.info('Using cached result', `from cache: ${cachedResult}`)
@@ -1022,9 +1003,29 @@
       Logger.info('Cached result is luarmor, ignoring cache', cachedResult)
     }
 
-    // No valid cache, proceed with normal flow
+    injectUI()
+    updateStatus('⏳ Loading...', 'Preparing bypass')
+    setupOptimizedObserver()
+
     cleanupManager.setTimeout(() => {
-      startNormalLootlinkFlow()
+      if (window.__vw_tc_processed) return
+      initLocalLootlinkFetchOverride()
+      startManualCheck()
+      cleanupManager.setTimeout(() => {
+        if (!window.__vw_tc_processed && !window.activeWebSocket) {
+          Logger.warn('Bypass seems stuck, checking for unlock element again')
+          const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+          const existing = Array.from(document.querySelectorAll('*')).find(el => {
+            const text = el.textContent
+            return text && unlockText.some(t => text.includes(t))
+          })
+          if (existing) {
+            modifyParentElement(existing)
+          } else {
+            updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
+          }
+        }
+      }, CONFIG.NORMAL_FLOW_FALLBACK_TIMEOUT)
     }, CONFIG.BYPASS_START_DELAY)
 
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
