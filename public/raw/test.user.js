@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.1
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -84,8 +84,7 @@
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
     BYPASS_START_DELAY: 1000,
-    GLOBALS_WAIT_TIMEOUT: 10000,
-    NORMAL_FLOW_FALLBACK_TIMEOUT: 15000
+    FALLBACK_CHECK_DELAY: 15000
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
@@ -114,7 +113,7 @@
     info: 'color:#22c55e;',
     warn: 'color:#f59e0b;',
     error: 'color:#ef4444;',
-    heartbeat: 'color:#a855f7;',
+    websocket: 'color:#a855f7;',
     dim: 'color:#94a3b8;'
   }
 
@@ -156,14 +155,14 @@
       )
       Logger._push('error', m, d)
     },
-    heartbeat: (m, d = '') => {
+    websocket: (m, d = '') => {
       console.info(
-        `%c[HEARTBEAT]%c [VortixBypass] ${m}`,
-        LOG_STYLE.base + LOG_STYLE.heartbeat,
+        `%c[WEBSOCKET]%c [VortixBypass] ${m}`,
+        LOG_STYLE.base + LOG_STYLE.websocket,
         LOG_STYLE.base + LOG_STYLE.dim,
         d || ''
       )
-      Logger._push('heartbeat', m, d)
+      Logger._push('websocket', m, d)
     }
   }
 
@@ -590,7 +589,7 @@
     connect() {
       if (isShutdown) return
       try {
-        Logger.info('Connecting WebSocket', this.url)
+        Logger.websocket('Connecting WebSocket', this.url)
         this.ws = new WebSocket(this.url)
         this.ws.onopen = () => this.onOpen()
         this.ws.onmessage = e => this.onMessage(e)
@@ -604,7 +603,7 @@
 
     onOpen() {
       if (isShutdown) return
-      Logger.info('WebSocket connection opened', this.url)
+      Logger.websocket('WebSocket connection opened', this.url)
       this.retryCount = 0
       this.reconnectDelay = CONFIG.INITIAL_RECONNECT_DELAY
       if (this.reconnectTimeout) {
@@ -628,7 +627,7 @@
         this.heartbeatCount++
         if (this.heartbeatCount - this.lastLoggedCount >= 5) {
           this.lastLoggedCount = this.heartbeatCount
-          Logger.heartbeat(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
+          Logger.websocket(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
         }
       }
     }
@@ -648,7 +647,7 @@
       const delay = Math.min(this.reconnectDelay * Math.pow(2, this.retryCount - 1), this.maxDelay)
       Logger.warn('WebSocket connection slow to open', `Retry ${this.retryCount} in ${delay}ms`)
       this.reconnectTimeout = cleanupManager.setTimeout(() => {
-        Logger.info('WebSocket url opened', this.url)
+        Logger.websocket('WebSocket url opened', this.url)
         this.connect()
       }, delay)
     }
@@ -972,7 +971,6 @@
   }
 
   function startManualCheck() {
-    let attempts = 0
     const interval = setInterval(() => {
       if (window.__vw_tc_processed) {
         clearInterval(interval)
@@ -981,12 +979,7 @@
       if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
         clearInterval(interval)
         sendTcManually()
-      } else if (attempts >= 100) {
-        clearInterval(interval)
-        Logger.warn('Manual /tc: globals not found after 10s, relying on page fetch')
-        showToast('⚠️ Globals not found, bypass may be slower', true)
       }
-      attempts++
     }, 100)
   }
 
@@ -1006,27 +999,24 @@
     injectUI()
     updateStatus('⏳ Loading...', 'Preparing bypass')
     setupOptimizedObserver()
+    initLocalLootlinkFetchOverride()
+    startManualCheck()
 
     cleanupManager.setTimeout(() => {
-      if (window.__vw_tc_processed) return
-      initLocalLootlinkFetchOverride()
-      startManualCheck()
-      cleanupManager.setTimeout(() => {
-        if (!window.__vw_tc_processed && !window.activeWebSocket) {
-          Logger.warn('Bypass seems stuck, checking for unlock element again')
-          const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-          const existing = Array.from(document.querySelectorAll('*')).find(el => {
-            const text = el.textContent
-            return text && unlockText.some(t => text.includes(t))
-          })
-          if (existing) {
-            modifyParentElement(existing)
-          } else {
-            updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
-          }
+      if (!window.__vw_tc_processed && !window.activeWebSocket) {
+        Logger.warn('Bypass seems stuck, checking for unlock element again')
+        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+        const existing = Array.from(document.querySelectorAll('*')).find(el => {
+          const text = el.textContent
+          return text && unlockText.some(t => text.includes(t))
+        })
+        if (existing) {
+          modifyParentElement(existing)
+        } else {
+          updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
         }
-      }, CONFIG.NORMAL_FLOW_FALLBACK_TIMEOUT)
-    }, CONFIG.BYPASS_START_DELAY)
+      }
+    }, CONFIG.FALLBACK_CHECK_DELAY)
 
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
