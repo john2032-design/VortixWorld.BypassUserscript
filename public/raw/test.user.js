@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.1
+// @version      2.2
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -79,7 +79,7 @@
   const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST)
 
   const CONFIG = Object.freeze({
-    HEARTBEAT_INTERVAL: 100,
+    HEARTBEAT_INTERVAL: 50,
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
@@ -578,6 +578,7 @@
     connect() {
       if (isShutdown) return
       try {
+        Logger.info('Connecting WebSocket', this.url)
         this.ws = new WebSocket(this.url)
         this.ws.onopen = () => this.onOpen()
         this.ws.onmessage = e => this.onMessage(e)
@@ -644,6 +645,7 @@
       if (isShutdown) return
       if (event.data && event.data.includes('r:')) {
         const PUBLISHER_LINK = event.data.replace('r:', '')
+        Logger.info('Received publisher link from WebSocket', PUBLISHER_LINK)
         if (PUBLISHER_LINK) {
           try {
             const finalUrl = decodeURIComponent(decodeURIxor(PUBLISHER_LINK))
@@ -853,11 +855,14 @@
         task_id = 54
         action_pixel_url = item.action_pixel_url
       })
+      Logger.info('Processed /tc response', `urid=${urid}, task_id=${task_id}`)
     } catch (_) {
+      Logger.error('Failed to parse /tc response', data)
       return false
     }
 
     if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
+      Logger.warn('KEY or TID not defined, cannot proceed')
       return false
     }
 
@@ -865,6 +870,7 @@
     state.cachedTaskId = task_id
 
     const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+    Logger.info('Initiating WebSocket connection', wsUrl)
     const ws = new RobustWebSocket(wsUrl, {
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
       maxDelay: CONFIG.MAX_RECONNECT_DELAY,
@@ -877,13 +883,16 @@
     try {
       const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
       navigator.sendBeacon(beaconUrl)
+      Logger.info('Sent beacon', beaconUrl)
     } catch (_) {}
 
     if (action_pixel_url) {
       originalFetch(action_pixel_url).catch(() => {})
+      Logger.info('Fetched action pixel', action_pixel_url)
     }
     const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
     originalFetch(tdUrl).catch(() => {})
+    Logger.info('Fetched td URL', tdUrl)
 
     return true
   }
@@ -999,18 +1008,24 @@
       if (!alias) {
         throw new Error('No alias found in URL')
       }
+      Logger.info('TPI.LI alias', alias)
+
       const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
       const html = await response.text()
+      Logger.info('Fetched TPI.LI HTML', `${html.length} bytes`)
 
       let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
       if (!tokenMatch) tokenMatch = html.match(/value="([^"]+)"\s+name="token"/)
       if (!tokenMatch) throw new Error('Token not found in page')
-
       const token = tokenMatch[1]
+      Logger.info('Token extracted', token.substring(0, 20) + '...')
+
       const offset = 40 + 4 + alias.length + 4
       if (token.length < offset) throw new Error('Token too short')
       const tokenPart = token.slice(offset)
+      Logger.info('Token part for decoding', tokenPart)
       const finalUrl = atob(tokenPart)
+      Logger.info('Decoded final URL', finalUrl)
 
       if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL')
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
