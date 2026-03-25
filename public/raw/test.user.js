@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.1
+// @version      2.0
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -83,7 +83,6 @@
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
-    CACHED_METHOD_TIMEOUT: 15000,
     BYPASS_START_DELAY: 1000,
     GLOBALS_WAIT_TIMEOUT: 10000,
     NORMAL_FLOW_FALLBACK_TIMEOUT: 15000
@@ -665,8 +664,9 @@
             Logger.info('Decoded final URL', finalUrl)
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
+            // Cache result if not luarmor
             if (!isLuarmorUrl(finalUrl)) {
-              cacheLootlinkMethod(state.cachedUrid, state.cachedTaskId)
+              saveResultToCache(location.href, finalUrl)
             } else {
               Logger.info('Skipping cache because final URL is luarmor', finalUrl)
             }
@@ -701,89 +701,38 @@
   }
 
   const state = {
-    processStartTime: Date.now(),
-    cachedUrid: null,
-    cachedTaskId: null,
-    fallbackTimer: null
+    processStartTime: Date.now()
   }
 
-  const LOOTLINK_CACHE_KEY = 'vw_lootlink_method'
-  function cacheLootlinkMethod(urid, taskId) {
-    if (!urid || !taskId) return
-    const cache = {
-      urid,
-      taskId,
-      host: HOST,
-      url: location.href,
-      timestamp: Date.now()
-    }
+  // Result cache: store final URLs keyed by original loot URL
+  const RESULT_CACHE_KEY = 'vw_lootlink_results'
+
+  function saveResultToCache(originalUrl, resultUrl) {
     try {
-      localStorage.setItem(LOOTLINK_CACHE_KEY, JSON.stringify(cache))
-      Logger.info('Cached lootlink method', `urid: ${urid}, taskId: ${taskId}, url: ${location.href}`)
-    } catch (_) {}
-  }
-
-  function getCachedLootlinkMethod() {
-    try {
-      const raw = localStorage.getItem(LOOTLINK_CACHE_KEY)
-      if (!raw) return null
-      const cache = JSON.parse(raw)
-      if (cache.host === HOST && cache.url === location.href && (Date.now() - cache.timestamp) < 3600000) {
-        return cache
+      let cache = {}
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (existing) {
+        try {
+          cache = JSON.parse(existing)
+        } catch (_) {}
       }
-    } catch (_) {}
-    return null
-  }
-
-  function waitForGlobals() {
-    return new Promise((resolve) => {
-      let attempts = 0
-      const interval = setInterval(() => {
-        if (window.INCENTIVE_SYNCER_DOMAIN && window.INCENTIVE_SERVER_DOMAIN && window.KEY && window.TID) {
-          clearInterval(interval)
-          resolve(true)
-        } else if (attempts >= CONFIG.GLOBALS_WAIT_TIMEOUT / 100) {
-          clearInterval(interval)
-          resolve(false)
-        }
-        attempts++
-      }, 100)
-    })
-  }
-
-  async function tryCachedLootlinkBypass() {
-    if (window.__vw_tc_processed) return false
-    const cache = getCachedLootlinkMethod()
-    if (!cache) return false
-    const { urid, taskId } = cache
-
-    Logger.info('Waiting for globals to use cached lootlink method')
-    const globalsReady = await waitForGlobals()
-    if (!globalsReady || !window.INCENTIVE_SERVER_DOMAIN) {
-      Logger.warn('Globals not ready or domain missing for cached method, falling back to normal flow')
-      return false
+      cache[originalUrl] = resultUrl
+      localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
+      Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
+    } catch (e) {
+      Logger.warn('Failed to cache result', e)
     }
+  }
 
-    if (typeof KEY === 'undefined' || typeof TID === 'undefined') return false
-    const wsUrl = `wss://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${taskId}&key=${KEY}`
-    Logger.info('Using cached lootlink method', wsUrl)
-    const ws = new RobustWebSocket(wsUrl, {
-      initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-      maxDelay: CONFIG.MAX_RECONNECT_DELAY,
-      heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-      maxRetries: 3
-    })
-    window.activeWebSocket = ws
-    ws.connect()
-
-    state.fallbackTimer = cleanupManager.setTimeout(() => {
-      if (!ws.resolved) {
-        Logger.warn('Cached method timed out, falling back to normal flow')
-        ws.disconnect()
-        startNormalLootlinkFlow()
-      }
-    }, CONFIG.CACHED_METHOD_TIMEOUT)
-    return true
+  function getCachedResult(originalUrl) {
+    try {
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (!existing) return null
+      const cache = JSON.parse(existing)
+      return cache[originalUrl] || null
+    } catch (_) {
+      return null
+    }
   }
 
   function startNormalLootlinkFlow() {
@@ -940,9 +889,6 @@
       return false
     }
 
-    state.cachedUrid = urid
-    state.cachedTaskId = task_id
-
     const wsUrl = `wss://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
     Logger.info('Initiating WebSocket connection', wsUrl)
     const ws = new RobustWebSocket(wsUrl, {
@@ -1066,11 +1012,17 @@
     Logger.info('VortixWorld local lootlinks bypass enabled')
     installLuarmorNavigationGuard()
 
-    if (tryCachedLootlinkBypass()) {
-      Logger.info('Using cached lootlink method, waiting for result')
+    // Check result cache first
+    const cachedResult = getCachedResult(location.href)
+    if (cachedResult && !isLuarmorUrl(cachedResult)) {
+      Logger.info('Using cached result', `from cache: ${cachedResult}`)
+      handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink')
       return
+    } else if (cachedResult && isLuarmorUrl(cachedResult)) {
+      Logger.info('Cached result is luarmor, ignoring cache', cachedResult)
     }
 
+    // No valid cache, proceed with normal flow
     cleanupManager.setTimeout(() => {
       startNormalLootlinkFlow()
     }, CONFIG.BYPASS_START_DELAY)
