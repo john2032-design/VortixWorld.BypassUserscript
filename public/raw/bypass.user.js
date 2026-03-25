@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.0
+// @version      2.1
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
