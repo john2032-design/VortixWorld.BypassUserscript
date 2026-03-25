@@ -368,7 +368,7 @@
 
     .vw-toast {
       position: fixed !important;
-      top: calc(14px + env(safe-area-inset-top)) !important;
+      top: calc(72px + 12px) !important;
       right: calc(14px + env(safe-area-inset-right)) !important;
       padding: 10px 18px !important;
       border-radius: 40px !important;
@@ -397,6 +397,37 @@
         opacity: 1;
         transform: translateY(0);
       }
+    }
+
+    @media (max-width: 768px) {
+      .vw-toast {
+        top: calc(60px + 12px) !important;
+      }
+    }
+
+    .vw-tabs {
+      display: flex !important;
+      gap: 8px !important;
+      margin-bottom: 12px !important;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+      padding-bottom: 8px !important;
+    }
+
+    .vw-tab {
+      background: transparent !important;
+      border: none !important;
+      color: #94a3b8 !important;
+      font-weight: 600 !important;
+      font-size: 12px !important;
+      padding: 6px 12px !important;
+      border-radius: 20px !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+    }
+
+    .vw-tab.active {
+      background: #3b82f6 !important;
+      color: white !important;
     }
 
     .vw-console {
@@ -622,8 +653,15 @@
           <button class="vw-close-btn" type="button" aria-label="Close console">✕</button>
         </div>
         <div class="vw-body">
+          <div class="vw-tabs">
+            <button class="vw-tab active" data-level="all">All</button>
+            <button class="vw-tab" data-level="info">INFO</button>
+            <button class="vw-tab" data-level="warn">WARN</button>
+            <button class="vw-tab" data-level="error">ERROR</button>
+          </div>
           <div class="vw-console" id="vwConsoleLogs"></div>
           <div class="vw-actions">
+            <button class="vw-btn" id="vwCopyConsoleBtn" type="button">Copy</button>
             <button class="vw-btn" id="vwClearConsoleBtn" type="button">Clear</button>
             <button class="vw-btn vw-btn-primary" id="vwBackToSettingsBtn" type="button">Back to Settings</button>
           </div>
@@ -643,11 +681,15 @@
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
+    const copyConsoleBtn = shadow.querySelector('#vwCopyConsoleBtn')
     const clearConsoleBtn = shadow.querySelector('#vwClearConsoleBtn')
     const backToSettingsBtn = shadow.querySelector('#vwBackToSettingsBtn')
+    const tabs = shadow.querySelectorAll('.vw-tab')
+    const consoleContainer = shadow.querySelector('#vwConsoleLogs')
 
     let previousBodyOverflow = ''
     let previousHtmlOverflow = ''
+    let currentFilter = 'all'
 
     function setScrollLock(locked) {
       try {
@@ -674,12 +716,17 @@
       }
     }
 
-    function renderConsoleLogs() {
-      const container = shadow.querySelector('#vwConsoleLogs')
-      if (!container) return
-
+    function getFilteredLogs() {
       const logs = window.__vw_logs || []
-      container.innerHTML = logs
+      if (currentFilter === 'all') return logs
+      return logs.filter(log => log.level === currentFilter)
+    }
+
+    function renderConsoleLogs() {
+      if (!consoleContainer) return
+
+      const logs = getFilteredLogs()
+      consoleContainer.innerHTML = logs
         .map((log) => {
           const level = (log.level || 'info').toUpperCase()
           const message = escapeHtml(log.message)
@@ -688,7 +735,17 @@
         })
         .join('')
 
-      container.scrollTop = container.scrollHeight
+      consoleContainer.scrollTop = consoleContainer.scrollHeight
+    }
+
+    function copyAllLogs() {
+      const logs = getFilteredLogs()
+      const text = logs.map(log => `[${log.level.toUpperCase()}] [VortixWorld] ${log.message}${log.data ? ' ' + log.data : ''}`).join('\n')
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard')
+      }).catch(() => {
+        showToast('Failed to copy', true)
+      })
     }
 
     let refreshInterval = null
@@ -708,12 +765,13 @@
       }
     }
 
-    function showToast(message) {
+    function showToast(message, isError = false) {
       const existingToast = shadow.querySelector('.vw-toast')
       if (existingToast) existingToast.remove()
 
       const toast = document.createElement('div')
       toast.className = 'vw-toast'
+      if (isError) toast.style.borderLeftColor = '#ef4444'
       toast.textContent = message
       shadow.appendChild(toast)
 
@@ -738,7 +796,7 @@
       }
 
       const focusTarget = panel === 'console'
-        ? shadow.querySelector('#vwClearConsoleBtn')
+        ? shadow.querySelector('#vwCopyConsoleBtn')
         : shadow.querySelector('#vwWaitTimeInput')
 
       if (focusTarget && typeof focusTarget.focus === 'function') {
@@ -829,6 +887,12 @@
       openPanel('console')
     })
 
+    copyConsoleBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      copyAllLogs()
+    })
+
     clearConsoleBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -841,6 +905,16 @@
       e.preventDefault()
       e.stopPropagation()
       openPanel('settings')
+    })
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const level = tab.getAttribute('data-level')
+        currentFilter = level === 'all' ? 'all' : level
+        tabs.forEach(t => t.classList.remove('active'))
+        tab.classList.add('active')
+        renderConsoleLogs()
+      })
     })
 
     setVisible(settingsPanel, true)
