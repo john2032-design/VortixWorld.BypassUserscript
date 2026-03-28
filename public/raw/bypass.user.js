@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.1
+// @version      2.2
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -83,7 +83,6 @@
     MAX_RECONNECT_DELAY: 30000,
     INITIAL_RECONNECT_DELAY: 1000,
     COUNTDOWN_INTERVAL: 1000,
-    BYPASS_START_DELAY: 1000,
     FALLBACK_CHECK_DELAY: 15000
   })
 
@@ -277,14 +276,16 @@
     #vortixWorldOverlay *{box-sizing:border-box!important}
     .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(15,23,42,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(59,130,246,0.3)!important;z-index:2147483648!important}
     .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#3b82f6!important}
-    .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important;border:2px solid #3b82f6!important}
+    .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important}
     .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(15,23,42,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:32px!important;border:1px solid rgba(59,130,246,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
-    .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 0 0 2px #3b82f6,0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
+    .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
     .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(59,130,246,0.2)!important;border-top:4px solid #3b82f6!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;background:linear-gradient(135deg,#fff,#94a3b8)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
-    .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important}
-    .vw-btn{background:rgba(30,41,59,0.6)!important;color:#e2e8f0!important;border:1px solid #3b82f640!important;padding:12px 20px!important;border-radius:40px!important;font-weight:700!important;cursor:pointer!important;width:100%!important;transition:all .2s!important;font-size:14px!important;letter-spacing:0.5px!important}
+    .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important;word-break:break-all!important;max-width:90vw!important}
+    .vw-url-container{width:100%;margin:20px 0;padding:12px;background:rgba(0,0,0,0.4);border-radius:12px;word-break:break-all;font-size:12px;color:#94a3b8;font-family:monospace;max-height:100px;overflow-y:auto}
+    .vw-button-group{display:flex;gap:12px;width:100%;margin-top:8px}
+    .vw-btn{background:rgba(30,41,59,0.6)!important;color:#e2e8f0!important;border:1px solid #3b82f640!important;padding:12px 20px!important;border-radius:40px!important;font-weight:700!important;cursor:pointer!important;transition:all .2s!important;font-size:14px!important;letter-spacing:0.5px!important;flex:1}
     .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -457,25 +458,10 @@
 
   let uiInjected = false
   let bypassStart = performance.now()
+  let countdownTimerId = null
+  let currentRemainingSeconds = 60
 
-  const uiHTML = `
-    <div id="vortixWorldOverlay">
-      <div class="vw-header-bar">
-        <div class="vw-title">
-          <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
-          VortixWorld
-        </div>
-      </div>
-      <div class="vw-main-content">
-        <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
-        <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Initializing...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
-      </div>
-    </div>
-  `
-
-  function injectUI() {
+  function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     if (uiInjected && document.getElementById('vortixWorldOverlay')) return
     const existing = document.getElementById('vortixWorldOverlay')
     if (existing) existing.remove()
@@ -489,7 +475,22 @@
     }
 
     const wrapper = document.createElement('div')
-    wrapper.innerHTML = uiHTML
+    wrapper.innerHTML = `
+      <div id="vortixWorldOverlay">
+        <div class="vw-header-bar">
+          <div class="vw-title">
+            <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+            VortixWorld
+          </div>
+        </div>
+        <div class="vw-main-content">
+          <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
+          <div class="vw-spinner" id="vwSpinner"></div>
+          <div id="vwStatus" class="vw-status">Initializing...</div>
+          <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+        </div>
+      </div>
+    `
     const overlay = wrapper.firstElementChild
 
     let container = document.body
@@ -503,6 +504,55 @@
     document.documentElement.style.overflow = 'hidden'
 
     uiInjected = true
+  }
+
+  function showCompleteUI(finalUrl, timeLabel) {
+    const overlay = document.getElementById('vortixWorldOverlay')
+    if (!overlay) return
+    const mainContent = overlay.querySelector('.vw-main-content')
+    if (!mainContent) return
+
+    const iconImg = mainContent.querySelector('.vw-icon-img')
+    if (iconImg) iconImg.style.display = 'none'
+    const spinner = mainContent.querySelector('#vwSpinner')
+    if (spinner) spinner.style.display = 'none'
+
+    mainContent.innerHTML = `
+      <img src="${iconImg ? iconImg.src : LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
+      <div id="vwStatus" class="vw-status">✔️ Bypass Complete!</div>
+      <div id="vwSubStatus" class="vw-substatus">Completed in ${timeLabel}s</div>
+      <div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>
+      <div class="vw-button-group">
+        <button id="vwCopyBtn" class="vw-btn">📋 Copy URL</button>
+        <button id="vwProceedBtn" class="vw-btn">➡️ Proceed to URL</button>
+      </div>
+    `
+
+    const copyBtn = document.getElementById('vwCopyBtn')
+    const proceedBtn = document.getElementById('vwProceedBtn')
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        copyTextSilent(finalUrl).then(() => {
+          showToast('URL copied to clipboard', false)
+        })
+      })
+    }
+    if (proceedBtn) {
+      proceedBtn.addEventListener('click', () => {
+        location.href = finalUrl
+      })
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;'
+      if (m === '<') return '&lt;'
+      if (m === '>') return '&gt;'
+      return m
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c
+    })
   }
 
   function updateStatus(main, sub) {
@@ -519,6 +569,34 @@
         spinner.style.display = 'block'
       }
     }
+  }
+
+  function updateCountdown(remaining) {
+    if (remaining !== undefined) {
+      currentRemainingSeconds = remaining
+    }
+    const sub = document.getElementById('vwSubStatus')
+    if (sub) {
+      sub.innerText = `Time Remaining ${currentRemainingSeconds} seconds...`
+    }
+  }
+
+  function startCountdown(initialSeconds) {
+    if (countdownTimerId) {
+      clearInterval(countdownTimerId)
+      cleanupManager.intervals.delete(countdownTimerId)
+    }
+    currentRemainingSeconds = initialSeconds
+    updateCountdown()
+    countdownTimerId = cleanupManager.setInterval(() => {
+      currentRemainingSeconds = Math.max(0, currentRemainingSeconds - 1)
+      updateCountdown()
+      if (currentRemainingSeconds <= 0) {
+        clearInterval(countdownTimerId)
+        cleanupManager.intervals.delete(countdownTimerId)
+        countdownTimerId = null
+      }
+    }, 1000)
   }
 
   function showToast(message, isError = false) {
@@ -558,14 +636,7 @@
       }, 1000)
     } else {
       injectUI()
-      updateStatus('✔️ Bypass Complete!', `Completed in ${timeLabel}s - ${url}`)
-      if (bypassType === 'tpili') {
-        showToast(`✅ Completed in ${timeLabel}s`, false)
-      } else if (bypassType === 'lootlink') {
-        showToast('✅ Bypass successful', false)
-      } else {
-        showToast(`✅ Completed in ${timeLabel}s`, false)
-      }
+      showCompleteUI(url, timeLabel)
     }
     shutdown()
   }
@@ -698,99 +769,265 @@
     }
   }
 
-  const state = {
-    processStartTime: Date.now()
-  }
+  const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
 
-  const RESULT_CACHE_KEY = 'vw_lootlink_results'
-
-  function saveResultToCache(originalUrl, resultUrl) {
+  async function completeTaskViaSkippedLol(taskUrl) {
+    const endpoint = 'https://skipped.lol/api/evade/ll'
+    let urlToSend = taskUrl
+    if (urlToSend && urlToSend.startsWith('//')) {
+      urlToSend = 'https:' + urlToSend
+    }
+    const payload = {
+      ID: 17,
+      URL: urlToSend
+    }
     try {
-      let cache = {}
-      const existing = localStorage.getItem(RESULT_CACHE_KEY)
-      if (existing) {
-        try {
-          cache = JSON.parse(existing)
-        } catch (_) {}
+      Logger.info('Sending request to skipped.lol', JSON.stringify(payload))
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
       }
-      cache[originalUrl] = resultUrl
-      localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
-      Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
-    } catch (e) {
-      Logger.warn('Failed to cache result', e)
-    }
-  }
+      const rawText = await response.text()
+      Logger.info('Raw response from skipped.lol', rawText)
 
-  function getCachedResult(originalUrl) {
-    try {
-      const existing = localStorage.getItem(RESULT_CACHE_KEY)
-      if (!existing) return null
-      const cache = JSON.parse(existing)
-      return cache[originalUrl] || null
-    } catch (_) {
-      return null
-    }
-  }
+      let parsed = null
+      try {
+        parsed = JSON.parse(rawText)
+        Logger.info('Parsed JSON response', JSON.stringify(parsed, null, 2))
+      } catch (e) {
+        Logger.warn('Response not JSON, ignoring', e.message)
+      }
 
-  function detectTaskInfo() {
-    let countdownSeconds = 60
-    let taskName = 'Processing'
-    try {
-      const pageText = document.body ? document.body.innerText : ''
-      const lowerText = pageText.toLowerCase()
-      if (lowerText.includes('view content') || lowerText.includes('watch video')) {
-        countdownSeconds = 13
-        taskName = 'View Content'
-      } else if (lowerText.includes('notification') || lowerText.includes('allow notifications')) {
-        countdownSeconds = 30
-        taskName = 'Notification'
-      } else if (lowerText.includes('app install') || lowerText.includes('download app')) {
-        countdownSeconds = 60
-        taskName = 'App Install'
-      } else if (lowerText.includes('gaming offer') || lowerText.includes('play game')) {
-        countdownSeconds = 90
-        taskName = 'Gaming Offer'
-      } else if (lowerText.includes('send sms') || lowerText.includes('text message')) {
-        countdownSeconds = 50
-        taskName = 'Send SMS'
-      } else if (lowerText.includes('click') && lowerText.includes('reward')) {
-        countdownSeconds = 30
-        taskName = 'Click Reward'
-      } else if (lowerText.includes('complete') && lowerText.includes('reward')) {
-        countdownSeconds = 30
-        taskName = 'Complete Reward'
+      if (parsed && parsed.status === 'ok') {
+        Logger.info('Skipped.lol confirmed task completion')
+        return true
       } else {
-        const images = document.querySelectorAll('img')
-        for (let img of images) {
-          const src = (img.src || '').toLowerCase()
-          if (src.includes('eye.png')) {
-            countdownSeconds = 13
-            taskName = 'View Content'
-            break
-          } else if (src.includes('bell.png')) {
-            countdownSeconds = 30
-            taskName = 'Notification'
-            break
-          } else if (src.includes('apps.png') || src.includes('fire.png')) {
-            countdownSeconds = 60
-            taskName = 'App Install'
-            break
-          } else if (src.includes('gamers.png')) {
-            countdownSeconds = 90
-            taskName = 'Gaming Offer'
-            break
-          }
-        }
+        throw new Error('Unexpected response from skipped.lol')
       }
+    } catch (err) {
+      Logger.error('Error calling skipped.lol', err)
+      throw err
+    }
+  }
+
+  function startWebSocketForTask(taskData) {
+    if (!taskData || !taskData.urid) {
+      Logger.error('Missing task data for WebSocket', taskData)
+      return
+    }
+    const { urid, task_id } = taskData
+    const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+    Logger.info('Initiating WebSocket connection', wsUrl)
+    const ws = new RobustWebSocket(wsUrl, {
+      initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
+      maxDelay: CONFIG.MAX_RECONNECT_DELAY,
+      heartbeat: CONFIG.HEARTBEAT_INTERVAL,
+      maxRetries: 3
+    })
+    window.activeWebSocket = ws
+    ws.connect()
+
+    try {
+      const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+      navigator.sendBeacon(beaconUrl)
+      Logger.info('Sent beacon', beaconUrl)
     } catch (_) {}
-    return { countdownSeconds, taskName }
+
+    const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`
+    fetch(tdUrl, { credentials: 'include' }).catch(() => {})
+    Logger.info('Fetched td URL', tdUrl)
+  }
+
+  function selectFallbackTask(tasks) {
+    if (!Array.isArray(tasks) || tasks.length === 0) return null
+    const preferred = tasks.find(t => t.auto_complete_seconds === 30)
+    if (preferred) return preferred
+    const second = tasks.find(t => t.auto_complete_seconds === 40)
+    if (second) return second
+    return tasks[0]
+  }
+
+  function processTcResponse(data, originalFetch) {
+    Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
+    const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
+
+    if (task17 && task17.ad_url) {
+      Logger.info('Found task 17, using skipped.lol')
+      const taskUrl = task17.ad_url
+      completeTaskViaSkippedLol(taskUrl)
+        .then(() => {
+          Logger.info('Skipped.lol success, starting WebSocket for task 17')
+          startWebSocketForTask(task17)
+        })
+        .catch(err => {
+          Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
+          updateStatus('⚠️ Method 1 Failed', 'Using Method 2')
+          startWebSocketForTask(task17)
+        })
+    } else {
+      Logger.warn('Task 17 not found or missing ad_url, falling back to another task')
+      updateStatus('⚠️ Method 1 Failed', 'Using Method 2')
+      const fallbackTask = selectFallbackTask(data)
+      if (fallbackTask && fallbackTask.urid) {
+        Logger.info('Using fallback task', fallbackTask)
+        if (fallbackTask.auto_complete_seconds) {
+          startCountdown(fallbackTask.auto_complete_seconds)
+        }
+        startWebSocketForTask(fallbackTask)
+      } else {
+        Logger.error('No suitable task found in /tc response')
+        updateStatus('❌ Bypass failed', 'No suitable task')
+      }
+    }
+    return true
+  }
+
+  function initLootlinkFetchOverride() {
+    const originalFetch = window.fetch
+    window.fetch = function (url, config) {
+      try {
+        const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
+        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
+          return originalFetch(url, config)
+        }
+        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+          if (window.__vw_tc_processed) {
+            return originalFetch(url, config)
+          }
+          if (config && config.method && config.method.toUpperCase() === 'POST') {
+            let newBody = null
+            let originalBody = config.body
+            if (originalBody && typeof originalBody === 'string') {
+              try {
+                const parsed = JSON.parse(originalBody)
+                if (!parsed.bl) {
+                  parsed.bl = BL_TASKS
+                  newBody = JSON.stringify(parsed)
+                }
+              } catch (e) {}
+            } else if (originalBody && typeof originalBody === 'object') {
+              if (!originalBody.bl) {
+                const newBodyObj = { ...originalBody, bl: BL_TASKS }
+                newBody = JSON.stringify(newBodyObj)
+              }
+            } else {
+              newBody = JSON.stringify({ bl: BL_TASKS })
+            }
+            if (newBody) {
+              const newConfig = {
+                ...config,
+                headers: {
+                  ...config.headers,
+                  'Content-Type': 'application/json'
+                },
+                body: newBody
+              }
+              return originalFetch(url, newConfig)
+                .then(response => {
+                  if (!response.ok) return response
+                  return response.clone().json()
+                    .then(data => {
+                      processTcResponse(data, originalFetch)
+                      window.__vw_tc_processed = true
+                      return new Response(JSON.stringify(data), {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: response.headers
+                      })
+                    })
+                    .catch(() => response)
+                })
+                .catch(err => originalFetch(url, config))
+            }
+          }
+          return originalFetch(url, config)
+            .then(response => {
+              if (!response.ok) return response
+              return response.clone().json()
+                .then(data => {
+                  processTcResponse(data, originalFetch)
+                  window.__vw_tc_processed = true
+                  return new Response(JSON.stringify(data), {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers
+                  })
+                })
+                .catch(() => response)
+            })
+            .catch(err => originalFetch(url, config))
+        }
+      } catch (_) {}
+      return originalFetch(url, config)
+    }
+  }
+
+  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, options)
+        if (res.ok) return res
+        if (i === retries) throw new Error(`HTTP ${res.status}`)
+      } catch (err) {
+        if (i === retries) throw err
+      }
+      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
+    }
+  }
+
+  async function sendTcManually() {
+    if (window.__vw_tc_processed) return
+    const originalFetch = window.fetch
+    const syncDomain = INCENTIVE_SYNCER_DOMAIN
+    if (!syncDomain) return
+    const tcUrl = `https://${syncDomain}/tc`
+    const payload = { bl: BL_TASKS }
+    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
+
+    try {
+      const res = await fetchWithRetry(tcUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': ANDROID_UA
+        },
+        body: JSON.stringify(payload)
+      }, 2, 1000)
+      const data = await res.json()
+      processTcResponse(data, originalFetch)
+      window.__vw_tc_processed = true
+      Logger.info('Manual /tc processed successfully')
+      showToast('✅ Lootlink bypass successful', false)
+    } catch (err) {
+      Logger.warn('Manual /tc request failed after retries', err.message)
+      showToast('⚠️ Lootlink bypass failed, retrying...', true)
+    }
+  }
+
+  function startManualCheck() {
+    const interval = setInterval(() => {
+      if (window.__vw_tc_processed) {
+        clearInterval(interval)
+        return
+      }
+      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
+        clearInterval(interval)
+        sendTcManually()
+      }
+    }, 100)
   }
 
   function modifyParentElement(targetElement) {
     const parentElement = targetElement.parentElement
     if (!parentElement) return
 
-    const { countdownSeconds, taskName } = detectTaskInfo()
     state.processStartTime = Date.now()
     bypassStart = performance.now()
 
@@ -798,17 +1035,7 @@
     parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
 
     injectUI()
-    updateStatus(`⏳ ${taskName}...`, `Estimated ${countdownSeconds} seconds remaining...`)
-
-    let remaining = countdownSeconds
-    const timer = cleanupManager.setInterval(() => {
-      remaining--
-      updateStatus('🔄 Bypassing...', `(Estimated ${remaining} seconds remaining..)`)
-      if (remaining <= 0) {
-        clearInterval(timer)
-        cleanupManager.intervals.delete(timer)
-      }
-    }, CONFIG.COUNTDOWN_INTERVAL)
+    updateStatus('⏳ Loading...', 'Waiting for task data')
   }
 
   function setupOptimizedObserver() {
@@ -849,147 +1076,8 @@
     }
   }
 
-  function processTcResponse(data, originalFetch) {
-    let urid = ''
-    let task_id = ''
-    let action_pixel_url = ''
-    try {
-      data.forEach(item => {
-        urid = item.urid
-        task_id = 54
-        action_pixel_url = item.action_pixel_url
-      })
-      Logger.info('Processed /tc response', `urid=${urid}, task_id=${task_id}`)
-    } catch (_) {
-      Logger.error('Failed to parse /tc response', data)
-      return false
-    }
-
-    if (typeof KEY === 'undefined' || typeof TID === 'undefined') {
-      Logger.warn('KEY or TID not defined, cannot proceed')
-      return false
-    }
-
-    const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-    Logger.info('Initiating WebSocket connection', wsUrl)
-    const ws = new RobustWebSocket(wsUrl, {
-      initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-      maxDelay: CONFIG.MAX_RECONNECT_DELAY,
-      heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-      maxRetries: 3
-    })
-    window.activeWebSocket = ws
-    ws.connect()
-
-    try {
-      const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
-      navigator.sendBeacon(beaconUrl)
-      Logger.info('Sent beacon', beaconUrl)
-    } catch (_) {}
-
-    if (action_pixel_url) {
-      originalFetch(action_pixel_url).catch(() => {})
-      Logger.info('Fetched action pixel', action_pixel_url)
-    }
-    const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`
-    originalFetch(tdUrl).catch(() => {})
-    Logger.info('Fetched td URL', tdUrl)
-
-    return true
-  }
-
-  function initLocalLootlinkFetchOverride() {
-    const originalFetch = window.fetch
-    window.fetch = function (url, config) {
-      try {
-        const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
-        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
-          return originalFetch(url, config)
-        }
-        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
-          if (window.__vw_tc_processed) {
-            return originalFetch(url, config)
-          }
-          return originalFetch(url, config)
-            .then(response => {
-              if (!response.ok) return response
-              return response
-                .clone()
-                .json()
-                .then(data => {
-                  processTcResponse(data, originalFetch)
-                  window.__vw_tc_processed = true
-                  return new Response(JSON.stringify(data), {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: response.headers
-                  })
-                })
-                .catch(() => response)
-            })
-            .catch(() => originalFetch(url, config))
-        }
-      } catch (_) {}
-      return originalFetch(url, config)
-    }
-  }
-
-  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
-    for (let i = 0; i <= retries; i++) {
-      try {
-        const res = await fetch(url, options)
-        if (res.ok) return res
-        if (i === retries) throw new Error(`HTTP ${res.status}`)
-      } catch (err) {
-        if (i === retries) throw err
-      }
-      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
-    }
-  }
-
-  async function sendTcManually() {
-    if (window.__vw_tc_processed) return
-    const originalFetch = window.fetch
-    const syncDomain = INCENTIVE_SYNCER_DOMAIN
-    if (!syncDomain) return
-    const tcUrl = `https://${syncDomain}/tc`
-    Logger.info('Sending manual /tc request', tcUrl)
-
-    let processed = false
-    try {
-      const res = await fetchWithRetry(tcUrl, {
-        credentials: 'include',
-        headers: { 'User-Agent': ANDROID_UA }
-      }, 2, 1000)
-      const data = await res.json()
-      processTcResponse(data, originalFetch)
-      window.__vw_tc_processed = true
-      processed = true
-      Logger.info('Manual /tc processed successfully')
-      showToast('✅ Lootlink bypass successful', false)
-    } catch (err) {
-      if (!processed) {
-        Logger.warn('Manual /tc request failed after retries', err.message)
-        showToast('⚠️ Lootlink bypass failed, retrying...', true)
-      }
-    }
-  }
-
-  function startManualCheck() {
-    const interval = setInterval(() => {
-      if (window.__vw_tc_processed) {
-        clearInterval(interval)
-        return
-      }
-      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
-        clearInterval(interval)
-        sendTcManually()
-      }
-    }, 100)
-  }
-
   function runLocalLootlinkBypass() {
-    Logger.info('VortixWorld local lootlinks bypass enabled')
+    Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
     installLuarmorNavigationGuard()
 
     const cachedResult = getCachedResult(location.href)
@@ -1004,11 +1092,11 @@
     injectUI()
     updateStatus('⏳ Loading...', 'Preparing bypass')
     setupOptimizedObserver()
-    initLocalLootlinkFetchOverride()
+    initLootlinkFetchOverride()
     startManualCheck()
 
     cleanupManager.setTimeout(() => {
-      if (!window.__vw_tc_processed && !window.activeWebSocket) {
+      if (!window.__vw_tc_processed) {
         Logger.warn('Bypass seems stuck, checking for unlock element again')
         const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
         const existing = Array.from(document.querySelectorAll('*')).find(el => {
@@ -1026,10 +1114,40 @@
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
+  const RESULT_CACHE_KEY = 'vw_lootlink_results'
+
+  function saveResultToCache(originalUrl, resultUrl) {
+    try {
+      let cache = {}
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (existing) {
+        try {
+          cache = JSON.parse(existing)
+        } catch (_) {}
+      }
+      cache[originalUrl] = resultUrl
+      localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
+      Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
+    } catch (e) {
+      Logger.warn('Failed to cache result', e)
+    }
+  }
+
+  function getCachedResult(originalUrl) {
+    try {
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (!existing) return null
+      const cache = JSON.parse(existing)
+      return cache[originalUrl] || null
+    } catch (_) {
+      return null
+    }
+  }
+
   async function runLocalTpiLiBypass() {
     const startTime = Date.now()
     Logger.info('VortixWorld local tpi.li bypass enabled')
-    injectUI()
+    injectUI(ICON_URL)
     updateStatus('🔍 Fetching tpi.li link...', 'Extracting token, please wait')
 
     try {
@@ -1171,6 +1289,10 @@
           encodeURIComponent(returnUrl)
       }
     }, 1000)
+  }
+
+  const state = {
+    processStartTime: Date.now()
   }
 
   function main() {
