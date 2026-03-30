@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         VortixWorld API Bypass (lootlink.js)
+// @name         VortixWorld method 2 lootlink
 // @namespace    afklolbypasser
 // @version      1.0
-// @description  bypass.tools API integration for VortixWorld
+// @description  lootlink method 2 integration for VortixWorld
 // @author       afk.l0l
 // @grant        none
 // @run-at       document-start
