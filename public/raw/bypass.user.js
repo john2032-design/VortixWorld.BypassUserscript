@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.3
+// @version      2.4
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
-// @icon         https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
+// @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
 // @grant        none
 // @license      MIT
@@ -16,14 +16,14 @@
   'use strict'
 
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
-  const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
+  const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
   const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png'
-  const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85-E-447-C-A27-C-11-B9-E8971-B45.png'
+  const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
   const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
 
-  const API_BASE = "https://vortixworld-end.vercel.app"
+  const API_BASE = 'https://vortixworld-end.vercel.app'
 
   const LOOT_HOSTS = [
     'loot-link.com',
@@ -38,7 +38,10 @@
     'lootlinks.com',
     'best-links.org',
     'loot-labs.com',
-    'lootlabs.com'
+    'lootlabs.com',
+    'fast-links.org',
+    'rapid-links.com',
+    'rapid-links.net'
   ]
 
   const ALLOWED_SHORT_HOSTS = [
@@ -53,8 +56,6 @@
     'rekonise.com',
     'mboost.me',
     'link-unlocker.com',
-    'mega.nz',
-    'mega.co.nz',
     'direct-link.net',
     'direct-links.net',
     'direct-links.org',
@@ -63,8 +64,7 @@
     'link-pays.in',
     'link-target.net',
     'link-target.org',
-    'link-to.net',
-    'workink.net'
+    'link-to.net'
   ]
 
   function hostMatchesAny(list) {
@@ -265,31 +265,457 @@
   }
 
   const SHARED_UI_CSS = `
-    html,body{margin:0;padding:0;height:100%;overflow:hidden}
-    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;background:#0f0f0f!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
-    #vortixWorldOverlay *{box-sizing:border-box!important}
-    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(0,0,0,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(79,70,229,0.3)!important;z-index:2147483648!important}
-    .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#4f46e5!important}
-    .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important}
-    .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(0,0,0,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:12px!important;border:1px solid rgba(79,70,229,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
-    .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
-    .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(79,70,229,0.2)!important;border-top:4px solid #4f46e5!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
-    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;color:#fff!important}
-    .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important;word-break:break-all!important;max-width:90vw!important}
-    .vw-url-container{width:100%;margin:20px 0;padding:12px;background:rgba(0,0,0,0.4);border-radius:12px;word-break:break-all;font-size:12px;color:#94a3b8;font-family:monospace;max-height:100px;overflow-y:auto}
-    .vw-button-group{display:flex;gap:12px;width:100%;margin-top:8px}
-    .vw-btn{background:rgba(30,41,59,0.6)!important;color:#e2e8f0!important;border:1px solid #4f46e540!important;padding:12px 20px!important;border-radius:40px!important;font-weight:700!important;cursor:pointer!important;transition:all .2s!important;font-size:14px!important;letter-spacing:0.5px!important;flex:1}
-    .vw-btn-copy{background:#22c55e!important;border-color:#22c55e!important;color:#fff!important}
-    .vw-btn-proceed{background:#4f46e5!important;border-color:#4f46e5!important;color:#fff!important}
-    .vw-btn-copy:hover{background:#16a34a!important;transform:translateY(-1px)!important}
-    .vw-btn-proceed:hover{background:#4338ca!important;transform:translateY(-1px)!important}
-    .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
-    @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;top:calc(72px + 12px)!important;right:calc(14px + env(safe-area-inset-right))!important;padding:12px 16px!important;border-radius:12px!important;background:#111!important;color:#fff!important;font-weight:600!important;font-size:14px!important;box-shadow:0 0 20px rgba(0,0,0,0.4)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important}
-    .vw-toast.error{background:#222!important;color:#ff6b6b!important}
-    @keyframes vw-toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-    @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}.vw-toast{top:calc(60px + 12px)!important}}
+    :root {
+      --vw-bg: #000000;
+      --vw-glass-bg: #111111;
+      --vw-accent: #2c2c2c;
+      --vw-accent-hover: #3a3a3a;
+      --vw-success: #1e7e34;
+      --vw-danger: #b91c1c;
+      --vw-text: #ffffff;
+      --vw-text-dim: #cccccc;
+      --vw-border: #333333;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #vortixWorldOverlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      background: var(--vw-bg) !important;
+      z-index: 2147483647 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      box-sizing: border-box !important;
+      isolation: isolate !important;
+    }
+
+    #vortixWorldOverlay * {
+      box-sizing: border-box !important;
+    }
+
+    .vw-header-bar {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 72px !important;
+      padding: 0 28px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      background: rgba(0, 0, 0, 0.8) !important;
+      border-bottom: 1px solid var(--vw-border) !important;
+      z-index: 2147483648 !important;
+    }
+
+    .vw-title {
+      font-weight: 700 !important;
+      font-size: 1.5rem !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      color: var(--vw-text) !important;
+    }
+
+    .vw-header-icon {
+      height: 36px !important;
+      width: 36px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      border: 1px solid var(--vw-border) !important;
+    }
+
+    .vw-main-content {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 100% !important;
+      max-width: 520px !important;
+      padding: 2rem !important;
+      background: var(--vw-glass-bg) !important;
+      border-radius: 16px !important;
+      border: 1px solid var(--vw-border) !important;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.5) !important;
+      text-align: center !important;
+      animation: vw-fade-in 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1) !important;
+    }
+
+    .vw-icon-img {
+      width: 96px !important;
+      height: 96px !important;
+      border-radius: 50% !important;
+      margin-bottom: 1.5rem !important;
+      object-fit: cover !important;
+      border: 1px solid var(--vw-border) !important;
+    }
+
+    .vw-spinner {
+      width: 48px !important;
+      height: 48px !important;
+      border: 3px solid rgba(255, 255, 255, 0.2) !important;
+      border-top: 3px solid var(--vw-text) !important;
+      border-radius: 50% !important;
+      animation: spin 0.8s linear infinite !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .vw-status {
+      font-size: 1.8rem !important;
+      font-weight: 700 !important;
+      color: var(--vw-text) !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    .vw-substatus {
+      font-size: 0.9rem !important;
+      color: var(--vw-text-dim) !important;
+      background: rgba(0, 0, 0, 0.5) !important;
+      padding: 6px 14px !important;
+      border-radius: 40px !important;
+      display: inline-block !important;
+      word-break: break-word !important;
+      max-width: 90vw !important;
+    }
+
+    .vw-url-container {
+      width: 100% !important;
+      margin: 1rem 0 !important;
+      padding: 0.75rem !important;
+      background: rgba(0, 0, 0, 0.6) !important;
+      border-radius: 12px !important;
+      word-break: break-all !important;
+      font-size: 0.8rem !important;
+      color: #aaa !important;
+      font-family: monospace !important;
+      max-height: 100px !important;
+      overflow-y: auto !important;
+      border: 1px solid var(--vw-border) !important;
+    }
+
+    .vw-button-group {
+      display: flex !important;
+      gap: 1rem !important;
+      width: 100% !important;
+      margin-top: 0.5rem !important;
+    }
+
+    .vw-btn {
+      background: var(--vw-accent) !important;
+      color: var(--vw-text) !important;
+      border: none !important;
+      padding: 0.75rem 1rem !important;
+      border-radius: 40px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      font-size: 0.9rem !important;
+      flex: 1;
+    }
+
+    .vw-btn-copy {
+      background: var(--vw-success) !important;
+    }
+
+    .vw-btn-proceed {
+      background: var(--vw-accent) !important;
+    }
+
+    .vw-btn:hover {
+      transform: translateY(-2px) !important;
+      filter: brightness(1.2) !important;
+    }
+
+    .vw-btn:active {
+      transform: translateY(1px) !important;
+    }
+
+    .vw-btn:disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
+      transform: none !important;
+    }
+
+    @keyframes vw-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .vw-status { font-size: 1.4rem !important; }
+      .vw-main-content { padding: 1.5rem !important; margin: 1rem !important; max-width: 90vw !important; }
+      .vw-header-bar { height: 60px !important; padding: 0 16px !important; }
+      .vw-btn { padding: 0.6rem 1rem !important; font-size: 0.8rem !important; }
+    }
+  `
+
+  const API_UI_CSS = `
+    .vw-api-card {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: min(500px, 90vw) !important;
+      background: #111 !important;
+      border-radius: 24px !important;
+      border: 1px solid #333 !important;
+      padding: 24px !important;
+      text-align: center !important;
+      box-shadow: 0 20px 35px -12px black !important;
+      z-index: 2147483647 !important;
+      font-family: 'Inter', system-ui, sans-serif !important;
+      backdrop-filter: blur(8px) !important;
+    }
+
+    .vw-api-card .vw-close {
+      position: absolute !important;
+      top: 16px !important;
+      right: 16px !important;
+      background: none !important;
+      border: none !important;
+      color: #aaa !important;
+      font-size: 20px !important;
+      cursor: pointer !important;
+      padding: 4px !important;
+      line-height: 1 !important;
+      transition: color 0.2s !important;
+    }
+
+    .vw-api-card .vw-close:hover {
+      color: #fff !important;
+    }
+
+    .vw-api-icon {
+      width: 64px !important;
+      height: 64px !important;
+      border-radius: 50% !important;
+      margin-bottom: 16px !important;
+      border: 1px solid #333 !important;
+    }
+
+    .vw-api-status {
+      font-size: 28px !important;
+      font-weight: 700 !important;
+      margin-bottom: 8px !important;
+      color: #fff !important;
+    }
+
+    .vw-api-substatus {
+      font-size: 14px !important;
+      color: #ccc !important;
+      margin-bottom: 16px !important;
+    }
+
+    .vw-api-url {
+      background: #1a1a1a !important;
+      border-radius: 12px !important;
+      padding: 12px !important;
+      word-break: break-all !important;
+      font-family: monospace !important;
+      font-size: 12px !important;
+      color: #aaa !important;
+      margin-bottom: 20px !important;
+      max-height: 100px !important;
+      overflow-y: auto !important;
+    }
+
+    .vw-api-buttons {
+      display: flex !important;
+      gap: 12px !important;
+    }
+
+    .vw-api-btn {
+      flex: 1 !important;
+      background: #2c2c2c !important;
+      border: none !important;
+      padding: 12px !important;
+      border-radius: 40px !important;
+      color: white !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+    }
+
+    .vw-api-btn-copy {
+      background: #1e7e34 !important;
+    }
+
+    .vw-api-btn-proceed {
+      background: #2c2c2c !important;
+    }
+
+    .vw-api-btn:hover {
+      transform: translateY(-2px) !important;
+      filter: brightness(1.1) !important;
+    }
+
+    .vw-api-btn:active {
+      transform: translateY(1px) !important;
+    }
+
+    .vw-api-topbar-inner {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+      width: 100% !important;
+      height: 100% !important;
+      padding: 0 16px !important;
+      white-space: nowrap !important;
+    }
+
+    .vw-api-loading-ring {
+      width: 14px !important;
+      height: 14px !important;
+      flex: 0 0 auto !important;
+      display: inline-block !important;
+      border-radius: 50% !important;
+      border: 2px solid rgba(255, 255, 255, 0.22) !important;
+      border-top-color: #ffffff !important;
+      border-right-color: rgba(255, 255, 255, 0.7) !important;
+      border-bottom-color: rgba(255, 255, 255, 0.22) !important;
+      border-left-color: rgba(255, 255, 255, 0.22) !important;
+      animation: vw-api-spin 0.75s linear infinite !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: translateZ(0) !important;
+    }
+
+    .vw-api-loading-text {
+      color: #fff !important;
+      font-weight: 600 !important;
+      line-height: 1 !important;
+      white-space: nowrap !important;
+    }
+
+    @keyframes vw-api-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+      .vw-api-card { padding: 20px !important; }
+      .vw-api-status { font-size: 22px !important; }
+      .vw-api-substatus { font-size: 12px !important; }
+    }
+  `
+
+  const TOAST_CONTAINER_CSS = `
+    #vwToastContainer {
+      position: fixed !important;
+      top: calc(72px + 12px) !important;
+      right: calc(14px + env(safe-area-inset-right)) !important;
+      padding: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-end !important;
+      gap: 8px !important;
+      z-index: 2147483649 !important;
+      pointer-events: none !important;
+      box-sizing: border-box !important;
+      max-width: calc(100vw - 28px) !important;
+    }
+
+    .vw-toast {
+      padding: 10px 18px !important;
+      border-radius: 40px !important;
+      background: #1a1a1a !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      color: #fff !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+      animation: vw-toast-in 0.22s ease-out !important;
+      pointer-events: none !important;
+      font-family: inherit !important;
+      word-break: break-word !important;
+      border-left: 4px solid #1e7e34 !important;
+      max-width: 100% !important;
+    }
+
+    .vw-toast-content {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      white-space: normal !important;
+    }
+
+    .vw-toast-emoji {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 28px !important;
+      height: 28px !important;
+      background: #2c2c2c !important;
+      border-radius: 50% !important;
+      font-size: 16px !important;
+      flex: 0 0 auto !important;
+    }
+
+    .vw-toast-text {
+      color: #fff !important;
+      font-weight: 700 !important;
+      line-height: 1.25 !important;
+    }
+
+    .vw-toast-progress {
+      height: 3px !important;
+      background: #2c2c2c !important;
+      width: 100% !important;
+      animation: vw-toast-progress 5s linear forwards !important;
+      margin-top: 8px !important;
+      border-radius: 999px !important;
+    }
+
+    @keyframes vw-toast-progress {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+
+    @keyframes vw-toast-in {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      #vwToastContainer {
+        top: calc(60px + 12px) !important;
+      }
+    }
   `
 
   let __vwLuarmorAllowOnceUrl = ''
@@ -530,7 +956,7 @@
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
         copyTextSilent(finalUrl).then(() => {
-          showToast('URL copied to clipboard', false)
+          showToast('URL copied to clipboard', false, '📋')
         })
       })
     }
@@ -596,14 +1022,48 @@
     }, 1000)
   }
 
-  function showToast(message, isError = false) {
+  function ensureToastContainer() {
+    let container = document.getElementById('vwToastContainer')
+    if (!container) {
+      container = document.createElement('div')
+      container.id = 'vwToastContainer'
+      const styleId = 'vwToastStyles'
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style')
+        style.id = styleId
+        style.textContent = TOAST_CONTAINER_CSS
+        ;(document.head || document.documentElement).appendChild(style)
+      }
+      ;(document.body || document.documentElement).appendChild(container)
+    }
+    return container
+  }
+
+  function showToast(message, isError = false, emoji = null) {
+    const container = ensureToastContainer()
     const toast = document.createElement('div')
-    toast.className = 'vw-toast' + (isError ? ' error' : '')
-    toast.textContent = message
-    document.body.appendChild(toast)
-    setTimeout(() => {
+    toast.className = 'vw-toast'
+    const emojiChar = emoji || (isError ? '⚠️' : '✓')
+    toast.innerHTML = `
+      <div class="vw-toast-content">
+        <span class="vw-toast-emoji">${emojiChar}</span>
+        <span class="vw-toast-text">${message}</span>
+      </div>
+      <div class="vw-toast-progress"></div>
+    `
+    container.appendChild(toast)
+
+    const progressBar = toast.querySelector('.vw-toast-progress')
+    progressBar.style.animation = 'vw-toast-progress 5s linear forwards'
+
+    const removeToast = () => {
       if (toast && toast.remove) toast.remove()
-    }, 3500)
+    }
+    const timeoutId = setTimeout(removeToast, 5000)
+    progressBar.addEventListener('animationend', () => {
+      clearTimeout(timeoutId)
+      removeToast()
+    })
   }
 
   function isAutoRedirectEnabled() {
@@ -611,7 +1071,7 @@
     return saved !== null ? saved === 'true' : true
   }
 
-  function handleBypassSuccess(url, timeSecondsStr, bypassType = '') {
+  function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
     const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
     if (isLuarmorUrl(url)) {
       handleLuarmorTarget(url)
@@ -619,14 +1079,30 @@
       return
     }
     const auto = isAutoRedirectEnabled()
+
+    // If we are forcing the complete UI (e.g., from cache), show it regardless of autoRedirect
+    if (forceCompleteUI) {
+      injectUI()
+      showCompleteUI(url, timeLabel)
+      if (auto) {
+        // Still redirect after a short delay so user can copy the URL
+        setTimeout(() => {
+          location.href = url
+        }, 3000)
+      }
+      shutdown()
+      return
+    }
+
+    // Normal flow (non‑cached)
     if (auto) {
-      updateStatus('🚀 Redirecting...', `Target URL acquired (${timeLabel}s)`)
+      updateStatus('Redirecting...', `Target URL acquired (${timeLabel}s)`)
       if (bypassType === 'tpili') {
-        showToast(`✅ Bypassed in ${timeLabel}s`, false)
+        showToast(`Bypassed in ${timeLabel}s`, false, '✅')
       } else if (bypassType === 'lootlink') {
-        showToast('✅ Bypass successful', false)
+        showToast('Bypass successful', false, '✅')
       } else {
-        showToast(`✅ Bypassed in ${timeLabel}s`, false)
+        showToast(`Bypassed in ${timeLabel}s`, false, '✅')
       }
       setTimeout(() => {
         location.href = url
@@ -693,10 +1169,6 @@
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send('0')
         this.heartbeatCount++
-        if (this.heartbeatCount - this.lastLoggedCount >= 5) {
-          this.lastLoggedCount = this.heartbeatCount
-          Logger.websocket(`WebSocket heartbeat sent x${this.heartbeatCount}`, 'Keepalive')
-        }
       }
     }
 
@@ -723,12 +1195,24 @@
     onMessage(event) {
       if (isShutdown) return
       if (event.data && event.data.includes('r:')) {
-        const PUBLISHER_LINK = event.data.replace('r:', '')
-        Logger.info('Received publisher link from WebSocket', PUBLISHER_LINK)
-        if (PUBLISHER_LINK) {
-          try {
-            const finalUrl = decodeURIComponent(decodeURIxor(PUBLISHER_LINK))
-            Logger.info('Decoded final URL', finalUrl)
+        let publisherLink = event.data.replace('r:', '').trim()
+        Logger.info('Received publisher link from WebSocket', publisherLink)
+        if (publisherLink) {
+          let finalUrl = publisherLink
+          const isBase64 = /^[A-Za-z0-9+/=]+$/.test(publisherLink)
+          if (isBase64) {
+            try {
+              finalUrl = decodeURIComponent(decodeURIxor(publisherLink))
+              Logger.info('Decoded final URL', finalUrl)
+            } catch (e) {
+              Logger.error('Base64 decode failed, using raw', e)
+              finalUrl = publisherLink
+            }
+          } else {
+            Logger.info('Not base64, using raw as final URL', finalUrl)
+          }
+
+          if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
             if (!isLuarmorUrl(finalUrl)) {
@@ -738,8 +1222,8 @@
             }
             this.resolved = true
             handleBypassSuccess(finalUrl, duration, 'lootlink')
-          } catch (e) {
-            Logger.error('Critical decode failure', e)
+          } else {
+            Logger.error('Invalid final URL received', finalUrl)
           }
         }
       }
@@ -847,6 +1331,10 @@
     if (preferred) return preferred
     const second = tasks.find(t => t.auto_complete_seconds === 40)
     if (second) return second
+    const third = tasks.find(t => t.auto_complete_seconds === 50)
+    if (third) return third
+    const fourth = tasks.find(t => t.auto_complete_seconds === 60)
+    if (fourth) return fourth
     return tasks[0]
   }
 
@@ -864,12 +1352,12 @@
         })
         .catch(err => {
           Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
-          updateStatus('⚠️ Method 1 Failed', 'Using Method 2')
+          updateStatus('Method 1 Failed', 'Using Method 2')
           startWebSocketForTask(task17)
         })
     } else {
       Logger.warn('Task 17 not found or missing ad_url, falling back to another task')
-      updateStatus('⚠️ Method 1 Failed', 'Using Method 2')
+      updateStatus('Method 1 Failed', 'Using Method 2')
       const fallbackTask = selectFallbackTask(data)
       if (fallbackTask && fallbackTask.urid) {
         Logger.info('Using fallback task', fallbackTask)
@@ -1001,11 +1489,11 @@
       processTcResponse(data, originalFetch)
       window.__vw_tc_processed = true
       Logger.info('Manual /tc processed successfully')
-      showToast('✅ Lootlink bypass successful', false)
+      showToast('Lootlink bypass successful', false, '✅')
     } catch (err) {
       if (!window.__vw_tc_processed) {
         Logger.warn('Manual /tc request failed after retries', err.message)
-        showToast('⚠️ Lootlink bypass failed, retrying...', true)
+        showToast('Lootlink bypass failed, retrying...', true, '⚠️')
       } else {
         Logger.info('Manual request failed but bypass already succeeded – ignoring error')
       }
@@ -1036,7 +1524,7 @@
     parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
 
     injectUI()
-    updateStatus('⏳ Loading...', 'Waiting for task data')
+    updateStatus('Loading...', 'Waiting for task data')
   }
 
   function setupOptimizedObserver() {
@@ -1082,14 +1570,15 @@
     const cachedResult = getCachedResult(location.href)
     if (cachedResult && !isLuarmorUrl(cachedResult)) {
       Logger.info('Using cached result', `from cache: ${cachedResult}`)
-      handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink')
+      // Force the complete UI to be shown, even if auto‑redirect is on
+      handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink', true)
       return
     } else if (cachedResult && isLuarmorUrl(cachedResult)) {
       Logger.info('Cached result is luarmor, ignoring cache', cachedResult)
     }
 
     injectUI()
-    updateStatus('⏳ Loading...', 'Preparing bypass')
+    updateStatus('Loading...', 'Preparing bypass')
     setupOptimizedObserver()
     initLootlinkFetchOverride()
     startManualCheck()
@@ -1105,7 +1594,7 @@
         if (existing) {
           modifyParentElement(existing)
         } else {
-          updateStatus('⚠️ Bypass delayed', 'Trying alternative method...')
+          updateStatus('Bypass delayed', 'Trying alternative method...')
         }
       }
     }, CONFIG.FALLBACK_CHECK_DELAY)
@@ -1147,7 +1636,7 @@
     const startTime = Date.now()
     Logger.info('VortixWorld local tpi.li bypass enabled')
     injectUI(ICON_URL)
-    updateStatus('🔍 Fetching tpi.li link...', 'Extracting token, please wait')
+    updateStatus('Fetching tpi.li link...', 'Extracting token, please wait')
 
     try {
       const alias = location.pathname.slice(1)
@@ -1179,7 +1668,7 @@
     } catch (err) {
       Logger.error('tpi.li bypass failed', err.message)
       updateStatus('❌ Bypass failed', err.message)
-      showToast(`❌ Bypass failed: ${err.message}`, true)
+      showToast(`Bypass failed: ${err.message}`, true, '⚠️')
       const manualDiv = document.createElement('div')
       manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`
       const overlay = document.getElementById('vortixWorldOverlay')
@@ -1190,50 +1679,193 @@
   }
 
   async function initApi() {
-    const res = await fetch(API_BASE + "/api/auth/anon", { method: "POST", headers: { "Content-Type": "application/json" } });
-    const json = await res.json();
-    return json.accessToken;
-  }
-
-  async function refreshToken(accessToken) {
-    const res = await fetch(API_BASE + "/api/auth/refresh", { method: "POST", headers: { Authorization: "Bearer " + accessToken } });
-    const json = await res.json();
-    return json.accessToken;
+    const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    const json = await res.json()
+    return json.accessToken
   }
 
   async function bypassUrl(url, accessToken) {
-    const res = await fetch(API_BASE + "/api/bypass/direct", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + accessToken },
+    const res = await fetch(API_BASE + '/api/bypass/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
       body: JSON.stringify({ url })
-    });
-    return res.json();
+    })
+    return res.json()
+  }
+
+  function appendToBestContainer(node) {
+    const mount = document.body || document.documentElement
+    if (mount && node && node.parentNode !== mount) mount.appendChild(node)
+  }
+
+  function createApiTopBar() {
+    if (document.getElementById('vwApiTopBar')) return
+
+    const styleId = 'vwApiStyles'
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style')
+      styleSheet.id = styleId
+      styleSheet.innerText = API_UI_CSS
+      document.head.appendChild(styleSheet)
+    }
+
+    const bar = document.createElement('div')
+    bar.id = 'vwApiTopBar'
+    bar.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      max-width: 80vw;
+      height: 48px;
+      background: #111111;
+      border-radius: 40px;
+      border: 1px solid #333;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      color: #fff;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+    `
+    bar.innerHTML = `
+      <div class="vw-api-topbar-inner">
+        <span class="vw-api-loading-ring" aria-hidden="true"></span>
+        <span class="vw-api-loading-text">Bypassing...</span>
+      </div>
+    `
+    const ring = bar.querySelector('.vw-api-loading-ring')
+    if (ring) {
+      ring.style.border = '2px solid rgba(255, 255, 255, 0.22)'
+      ring.style.borderTopColor = '#ffffff'
+      ring.style.borderRightColor = 'rgba(255, 255, 255, 0.7)'
+      ring.style.borderBottomColor = 'rgba(255, 255, 255, 0.22)'
+      ring.style.borderLeftColor = 'rgba(255, 255, 255, 0.22)'
+      ring.style.width = '14px'
+      ring.style.height = '14px'
+      ring.style.display = 'inline-block'
+      ring.style.opacity = '1'
+      ring.style.visibility = 'visible'
+    }
+    appendToBestContainer(bar)
+    if (!document.body) {
+      const onReady = () => {
+        if (bar.isConnected && bar.parentNode !== document.body && document.body) {
+          document.body.appendChild(bar)
+        }
+      }
+      document.addEventListener('DOMContentLoaded', onReady, { once: true })
+    }
+    return bar
+  }
+
+  function removeApiTopBar() {
+    const bar = document.getElementById('vwApiTopBar')
+    if (bar) bar.remove()
+  }
+
+  function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
+    removeApiTopBar()
+
+    const styleId = 'vwApiStyles'
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style')
+      styleSheet.id = styleId
+      styleSheet.innerText = API_UI_CSS
+      document.head.appendChild(styleSheet)
+    }
+
+    const existingCard = document.getElementById('vwApiCard')
+    if (existingCard) existingCard.remove()
+
+    const card = document.createElement('div')
+    card.id = 'vwApiCard'
+    card.className = 'vw-api-card'
+
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'vw-close'
+    closeBtn.textContent = '✕'
+    closeBtn.addEventListener('click', () => card.remove())
+
+    const icon = document.createElement('img')
+    icon.src = ICON_URL
+    icon.className = 'vw-api-icon'
+    icon.alt = 'VW Icon'
+
+    const statusDiv = document.createElement('div')
+    statusDiv.className = 'vw-api-status'
+    statusDiv.textContent = isError ? '❌ Bypass Failed' : '✔️ Bypass Complete!'
+
+    const substatusDiv = document.createElement('div')
+    substatusDiv.className = 'vw-api-substatus'
+    substatusDiv.textContent = isError ? errorMsg : `Completed in ${timeLabel}s`
+
+    const urlDiv = document.createElement('div')
+    urlDiv.className = 'vw-api-url'
+    urlDiv.textContent = isError ? '' : finalUrl
+
+    const buttonsDiv = document.createElement('div')
+    buttonsDiv.className = 'vw-api-buttons'
+
+    if (!isError) {
+      const copyBtn = document.createElement('button')
+      copyBtn.className = 'vw-api-btn vw-api-btn-copy'
+      copyBtn.textContent = '📋 Copy URL'
+      copyBtn.addEventListener('click', () => {
+        copyTextSilent(finalUrl).then(() => {
+          showToast('URL copied to clipboard', false, '📋')
+        })
+      })
+
+      const proceedBtn = document.createElement('button')
+      proceedBtn.className = 'vw-api-btn vw-api-btn-proceed'
+      proceedBtn.textContent = '➡️ Proceed to URL'
+      proceedBtn.addEventListener('click', () => {
+        location.href = finalUrl
+      })
+
+      buttonsDiv.appendChild(copyBtn)
+      buttonsDiv.appendChild(proceedBtn)
+    } else {
+      const okBtn = document.createElement('button')
+      okBtn.className = 'vw-api-btn'
+      okBtn.textContent = 'OK'
+      okBtn.addEventListener('click', () => card.remove())
+      buttonsDiv.appendChild(okBtn)
+    }
+
+    card.appendChild(closeBtn)
+    card.appendChild(icon)
+    card.appendChild(statusDiv)
+    card.appendChild(substatusDiv)
+    if (!isError) card.appendChild(urlDiv)
+    card.appendChild(buttonsDiv)
+
+    appendToBestContainer(card)
   }
 
   async function runApiBypass() {
     try {
-      injectUI(ICON_URL);
-      updateStatus("🔍 Bypassing...", "Connecting to VortixWorld API");
-
-      let accessToken = await initApi();
-      let result = await bypassUrl(location.href, accessToken);
-      if (result.status === "success") {
-        const finalUrl = result.result;
-        const timeLabel = result.time;
-        handleBypassSuccess(finalUrl, timeLabel, 'api');
+      createApiTopBar()
+      const accessToken = await initApi()
+      const result = await bypassUrl(location.href, accessToken)
+      if (result.status === 'success') {
+        const finalUrl = result.result
+        const timeLabel = result.time
+        showApiResultUI(finalUrl, timeLabel, false)
+        shutdown()
       } else {
-        throw new Error(result.result || "Bypass failed");
+        throw new Error(result.result || 'Bypass failed')
       }
     } catch (err) {
-      Logger.error("API bypass failed", err.message);
-      updateStatus("❌ Bypass failed", err.message);
-      showToast(`❌ Bypass failed: ${err.message}`, true);
-      const manualDiv = document.createElement('div');
-      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`;
-      const overlay = document.getElementById('vortixWorldOverlay');
-      if (overlay && overlay.querySelector('.vw-main-content')) {
-        overlay.querySelector('.vw-main-content').appendChild(manualDiv);
-      }
+      Logger.error('API bypass failed', err.message)
+      removeApiTopBar()
+      showApiResultUI('', '', true, err.message)
     }
   }
 
@@ -1242,7 +1874,7 @@
   }
 
   function main() {
-    installLuarmorNavigationGuard();
+    installLuarmorNavigationGuard()
 
     if (window.VW_CONFIG) {
       if (typeof window.VW_CONFIG.luarmorWaitTime === 'number') {
@@ -1253,18 +1885,13 @@
 
     if (isTpiLi()) {
       runLocalTpiLiBypass()
-      return
-    }
-
-    if (isLootHost()) {
+    } else if (isLootHost()) {
       runLocalLootlinkBypass()
-      return
+    } else if (isAllowedHost()) {
+      runApiBypass()
     }
 
-    if (isAllowedHost()) {
-      runApiBypass()
-      return
-    }
+    showToast('Userscript Loaded', false, '🚀')
   }
 
   if (document.readyState === 'loading') {
