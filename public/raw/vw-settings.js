@@ -41,7 +41,7 @@
       height: 48px !important;
       border-radius: 24px !important;
       border: 1px solid rgba(79, 70, 229, 0.5) !important;
-      background: rgba(0, 0, 0, 0.8) !important;
+      background: rgba(15, 23, 42, 0.8) !important;
       backdrop-filter: blur(10px) !important;
       -webkit-backdrop-filter: blur(10px) !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
@@ -79,7 +79,7 @@
         calc(14px + env(safe-area-inset-right))
         calc(14px + env(safe-area-inset-bottom))
         calc(14px + env(safe-area-inset-left)) !important;
-      background: rgba(0, 0, 0, 0.85) !important;
+      background: rgba(0, 0, 0, 0.78) !important;
       z-index: 2147483647 !important;
       display: none !important;
       align-items: center !important;
@@ -102,9 +102,11 @@
       width: min(520px, calc(100vw - 28px)) !important;
       max-width: 100% !important;
       max-height: min(720px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
-      border-radius: 12px !important;
+      border-radius: 28px !important;
       border: 1px solid rgba(79, 70, 229, 0.4) !important;
-      background: #0f0f0f !important;
+      background: rgba(15, 23, 42, 0.93) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55) !important;
       color: #e2e8f0 !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
@@ -205,7 +207,7 @@
       align-items: center !important;
       gap: 12px !important;
       padding: 14px !important;
-      border-radius: 12px !important;
+      border-radius: 20px !important;
       border: 1px solid rgba(79, 70, 229, 0.2) !important;
       background: rgba(0, 0, 0, 0.18) !important;
       min-width: 0 !important;
@@ -367,24 +369,22 @@
       position: fixed !important;
       top: calc(72px + 12px) !important;
       right: calc(14px + env(safe-area-inset-right)) !important;
-      padding: 12px 16px !important;
-      border-radius: 12px !important;
-      background: #111 !important;
-      color: #fff !important;
-      font-weight: 600 !important;
-      font-size: 14px !important;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4) !important;
+      padding: 10px 18px !important;
+      border-radius: 40px !important;
+      background: rgba(15, 23, 42, 0.92) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      color: #e2e8f0 !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
       animation: vw-toast-in 0.22s ease-out !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
       font-family: inherit !important;
       max-width: calc(100vw - 28px) !important;
       word-break: break-word !important;
-    }
-
-    .vw-toast.error {
-      background: #222 !important;
-      color: #ff6b6b !important;
+      border-left: 4px solid #4f46e5 !important;
     }
 
     @keyframes vw-toast-in {
@@ -435,7 +435,7 @@
       min-height: 0 !important;
       overflow-y: auto !important;
       background: rgba(0, 0, 0, 0.4) !important;
-      border-radius: 12px !important;
+      border-radius: 20px !important;
       padding: 12px !important;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
       font-size: 12px !important;
@@ -476,7 +476,7 @@
         width: calc(100vw - 20px) !important;
         max-height: calc(100vh - 20px) !important;
         max-height: calc(100dvh - 20px) !important;
-        border-radius: 12px !important;
+        border-radius: 22px !important;
       }
 
       .vw-header {
@@ -777,7 +777,7 @@
 
       const toast = document.createElement('div')
       toast.className = 'vw-toast'
-      if (isError) toast.classList.add('error')
+      if (isError) toast.style.borderLeftColor = '#ef4444'
       toast.textContent = message
       shadow.appendChild(toast)
 
