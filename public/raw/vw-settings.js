@@ -4,7 +4,7 @@
   if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
-  const ICON_URL = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
+  const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8-A-BC73-409218-A3-F168.jpg'
 
   const keys = {
     autoRedirect: 'vw_auto_redirect',
@@ -40,12 +40,12 @@
       width: 48px !important;
       height: 48px !important;
       border-radius: 24px !important;
-      border: 1px solid rgba(79, 70, 229, 0.5) !important;
-      background: rgba(15, 23, 42, 0.8) !important;
+      border: 1px solid #333 !important;
+      background: #111 !important;
       backdrop-filter: blur(10px) !important;
       -webkit-backdrop-filter: blur(10px) !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-      color: #e2e8f0 !important;
+      color: #fff !important;
       font-size: 22px !important;
       display: flex !important;
       align-items: center !important;
@@ -79,7 +79,7 @@
         calc(14px + env(safe-area-inset-right))
         calc(14px + env(safe-area-inset-bottom))
         calc(14px + env(safe-area-inset-left)) !important;
-      background: rgba(0, 0, 0, 0.78) !important;
+      background: rgba(0, 0, 0, 0.85) !important;
       z-index: 2147483647 !important;
       display: none !important;
       align-items: center !important;
@@ -103,12 +103,12 @@
       max-width: 100% !important;
       max-height: min(720px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
       border-radius: 28px !important;
-      border: 1px solid rgba(79, 70, 229, 0.4) !important;
-      background: rgba(15, 23, 42, 0.93) !important;
+      border: 1px solid #333 !important;
+      background: #111 !important;
       backdrop-filter: blur(14px) !important;
       -webkit-backdrop-filter: blur(14px) !important;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55) !important;
-      color: #e2e8f0 !important;
+      color: #fff !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
       overflow: hidden !important;
       animation: vw-slide-in 0.22s ease-out !important;
@@ -135,7 +135,7 @@
       justify-content: space-between !important;
       gap: 12px !important;
       padding: 16px 18px !important;
-      border-bottom: 1px solid rgba(79, 70, 229, 0.28) !important;
+      border-bottom: 1px solid #333 !important;
       background: rgba(0, 0, 0, 0.25) !important;
       flex: 0 0 auto !important;
       min-width: 0 !important;
@@ -147,7 +147,7 @@
       display: flex !important;
       align-items: center !important;
       gap: 12px !important;
-      color: #4f46e5 !important;
+      color: #fff !important;
       min-width: 0 !important;
     }
 
@@ -155,7 +155,7 @@
       width: 32px !important;
       height: 32px !important;
       border-radius: 12px !important;
-      border: 1px solid rgba(79, 70, 229, 0.5) !important;
+      border: 1px solid #333 !important;
       object-fit: cover !important;
     }
 
@@ -170,9 +170,9 @@
       width: 36px !important;
       height: 36px !important;
       border-radius: 12px !important;
-      border: 1px solid rgba(79, 70, 229, 0.5) !important;
-      background: rgba(0, 0, 0, 0.28) !important;
-      color: #e2e8f0 !important;
+      border: 1px solid #333 !important;
+      background: #1a1a1a !important;
+      color: #fff !important;
       cursor: pointer !important;
       font-size: 18px !important;
       display: flex !important;
@@ -186,8 +186,8 @@
     }
 
     .vw-close-btn:hover {
-      background: #4f46e5 !important;
-      border-color: #4f46e5 !important;
+      background: #2c2c2c !important;
+      border-color: #2c2c2c !important;
     }
 
     .vw-body {
@@ -208,7 +208,7 @@
       gap: 12px !important;
       padding: 14px !important;
       border-radius: 20px !important;
-      border: 1px solid rgba(79, 70, 229, 0.2) !important;
+      border: 1px solid #222 !important;
       background: rgba(0, 0, 0, 0.18) !important;
       min-width: 0 !important;
     }
@@ -227,14 +227,14 @@
     .vw-label-title {
       font-size: 14px !important;
       font-weight: 900 !important;
-      color: #4f46e5 !important;
+      color: #fff !important;
       line-height: 1.2 !important;
       word-break: break-word !important;
     }
 
     .vw-label-desc {
       font-size: 12px !important;
-      color: #94a3b8 !important;
+      color: #aaa !important;
       font-weight: 500 !important;
       line-height: 1.35 !important;
       word-break: break-word !important;
@@ -243,9 +243,9 @@
     .vw-input {
       width: 96px !important;
       max-width: 100% !important;
-      background: rgba(0, 0, 0, 0.5) !important;
-      border: 1px solid rgba(79, 70, 229, 0.25) !important;
-      color: #e2e8f0 !important;
+      background: #1a1a1a !important;
+      border: 1px solid #333 !important;
+      color: #fff !important;
       border-radius: 20px !important;
       padding: 9px 12px !important;
       text-align: center !important;
@@ -266,8 +266,8 @@
     }
 
     .vw-input:focus {
-      border-color: #4f46e5 !important;
-      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25) !important;
+      border-color: #2c2c2c !important;
+      box-shadow: 0 0 0 2px rgba(44,44,44,0.25) !important;
     }
 
     .vw-toggle {
@@ -295,7 +295,7 @@
       left: 0 !important;
       right: 0 !important;
       bottom: 0 !important;
-      background-color: #334155 !important;
+      background-color: #b91c1c !important;
       transition: 0.25s !important;
       border-radius: 999px !important;
       pointer-events: none !important;
@@ -308,13 +308,13 @@
       width: 18px !important;
       left: 3px !important;
       bottom: 3px !important;
-      background-color: #4f46e5 !important;
+      background-color: #fff !important;
       transition: 0.25s !important;
       border-radius: 50% !important;
     }
 
     input:checked + .vw-toggle-slider {
-      background-color: #4f46e5 !important;
+      background-color: #1e7e34 !important;
     }
 
     input:checked + .vw-toggle-slider:before {
@@ -333,9 +333,9 @@
     .vw-btn {
       padding: 10px 16px !important;
       border-radius: 40px !important;
-      border: 1px solid rgba(79, 70, 229, 0.5) !important;
-      background: rgba(0, 0, 0, 0.28) !important;
-      color: #e2e8f0 !important;
+      border: 1px solid #333 !important;
+      background: #1a1a1a !important;
+      color: #fff !important;
       font-weight: 700 !important;
       font-size: 13px !important;
       cursor: pointer !important;
@@ -347,8 +347,8 @@
     }
 
     .vw-btn:hover {
-      background: #4f46e5 !important;
-      border-color: #4f46e5 !important;
+      background: #2c2c2c !important;
+      border-color: #2c2c2c !important;
       transform: translateY(-1px) !important;
     }
 
@@ -357,12 +357,12 @@
     }
 
     .vw-btn-primary {
-      background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
+      background: #2c2c2c !important;
       border: none !important;
     }
 
     .vw-btn-primary:hover {
-      background: linear-gradient(135deg, #4338ca, #3730a3) !important;
+      background: #3a3a3a !important;
     }
 
     .vw-toast {
@@ -371,10 +371,10 @@
       right: calc(14px + env(safe-area-inset-right)) !important;
       padding: 10px 18px !important;
       border-radius: 40px !important;
-      background: rgba(15, 23, 42, 0.92) !important;
+      background: #1a1a1a !important;
       backdrop-filter: blur(8px) !important;
       -webkit-backdrop-filter: blur(8px) !important;
-      color: #e2e8f0 !important;
+      color: #fff !important;
       font-weight: 700 !important;
       font-size: 13px !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
@@ -384,7 +384,7 @@
       font-family: inherit !important;
       max-width: calc(100vw - 28px) !important;
       word-break: break-word !important;
-      border-left: 4px solid #4f46e5 !important;
+      border-left: 4px solid #1e7e34 !important;
     }
 
     @keyframes vw-toast-in {
@@ -408,7 +408,7 @@
       display: flex !important;
       gap: 8px !important;
       margin-bottom: 12px !important;
-      border-bottom: 1px solid rgba(79, 70, 229, 0.3) !important;
+      border-bottom: 1px solid #333 !important;
       padding-bottom: 8px !important;
       flex-wrap: wrap !important;
     }
@@ -416,7 +416,7 @@
     .vw-tab {
       background: transparent !important;
       border: none !important;
-      color: #94a3b8 !important;
+      color: #aaa !important;
       font-weight: 600 !important;
       font-size: 12px !important;
       padding: 6px 12px !important;
@@ -426,7 +426,7 @@
     }
 
     .vw-tab.active {
-      background: #4f46e5 !important;
+      background: #2c2c2c !important;
       color: white !important;
     }
 
@@ -434,19 +434,19 @@
       flex: 1 1 auto !important;
       min-height: 0 !important;
       overflow-y: auto !important;
-      background: rgba(0, 0, 0, 0.4) !important;
+      background: #0a0a0a !important;
       border-radius: 20px !important;
       padding: 12px !important;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
       font-size: 12px !important;
-      border: 1px solid rgba(79, 70, 229, 0.25) !important;
+      border: 1px solid #222 !important;
       white-space: normal !important;
       min-width: 0 !important;
     }
 
     .vw-log-entry {
       padding: 8px 12px !important;
-      border-bottom: 1px solid rgba(79, 70, 229, 0.16) !important;
+      border-bottom: 1px solid #222 !important;
       white-space: pre-wrap !important;
       word-break: break-word !important;
     }
@@ -468,7 +468,7 @@
     }
 
     .vw-log-message {
-      color: #e2e8f0 !important;
+      color: #fff !important;
     }
 
     @media (max-width: 560px) {
@@ -777,7 +777,7 @@
 
       const toast = document.createElement('div')
       toast.className = 'vw-toast'
-      if (isError) toast.style.borderLeftColor = '#ef4444'
+      if (isError) toast.style.borderLeftColor = '#b91c1c'
       toast.textContent = message
       shadow.appendChild(toast)
 
