@@ -456,7 +456,7 @@
     }
 
     .vw-log-level-warn {
-      color: #f97316 !important;
+      color: #f59e0b !important;
     }
 
     .vw-log-level-error {
@@ -627,7 +627,7 @@
           <div class="vw-row">
             <div class="vw-label">
               <div class="vw-label-title">Luarmor Next Wait</div>
-              <div class="vw-label-desc">Delay before enabling Next (0-120)</div>
+              <div class="vw-label-desc">Delay before enabling Next (0-120 seconds)</div>
             </div>
             <input type="number" class="vw-input" id="vwLuarmorWaitTimeInput" min="0" max="120" inputmode="numeric">
           </div>
