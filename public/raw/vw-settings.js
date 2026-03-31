@@ -1,14 +1,3 @@
-// ==UserScript==
-// @name         VortixWorld Settings
-// @namespace    VortixWorldBypasser
-// @version      1.5
-// @description  Settings UI for VortixWorld Bypass
-// @match        *://*/*
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @run-at       document-end
-// ==/UserScript==
-
 (function () {
   'use strict'
 
