@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.2
+// @version      2.3
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -22,6 +22,8 @@
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
   const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+
+  const API_BASE = "https://vortixworld-end.vercel.app"
 
   const LOOT_HOSTS = [
     'loot-link.com',
@@ -88,16 +90,8 @@
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
     autoRedirect: 'vw_auto_redirect',
-    redirectWaitTime: 'vw_redirect_wait_time',
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
-
-  let RedirectWaitTime = (() => {
-    if (typeof window.VW_CONFIG?.redirectWaitTime === 'number') return window.VW_CONFIG.redirectWaitTime
-    const saved = localStorage.getItem(VW_KEYS.redirectWaitTime)
-    const parsed = saved ? parseInt(saved, 10) : NaN
-    return !isNaN(parsed) ? parsed : 5
-  })()
 
   let LuarmorWaitTime = (() => {
     if (typeof window.VW_CONFIG?.luarmorWaitTime === 'number') return window.VW_CONFIG.luarmorWaitTime
@@ -272,25 +266,28 @@
 
   const SHARED_UI_CSS = `
     html,body{margin:0;padding:0;height:100%;overflow:hidden}
-    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;background:radial-gradient(circle at 10% 20%,#0f172a,#030614)!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
+    #vortixWorldOverlay{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;background:#0f0f0f!important;z-index:2147483647!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-family:sans-serif!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;box-sizing:border-box!important;isolation:isolate!important}
     #vortixWorldOverlay *{box-sizing:border-box!important}
-    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(15,23,42,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(59,130,246,0.3)!important;z-index:2147483648!important}
-    .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#3b82f6!important}
+    .vw-header-bar{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:72px!important;padding:0 26px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:rgba(0,0,0,0.7)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(79,70,229,0.3)!important;z-index:2147483648!important}
+    .vw-title{font-weight:900!important;font-size:22px!important;display:flex!important;align-items:center!important;gap:12px!important;color:#4f46e5!important}
     .vw-header-icon{height:34px!important;width:34px!important;border-radius:50%!important;object-fit:cover!important}
-    .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(15,23,42,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:32px!important;border:1px solid rgba(59,130,246,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
+    .vw-main-content{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:600px!important;animation:vw-fade-in .4s cubic-bezier(0.2,0.9,0.4,1.1)!important;position:relative!important;z-index:2147483641!important;padding:20px!important;background:rgba(0,0,0,0.6)!important;backdrop-filter:blur(12px)!important;border-radius:12px!important;border:1px solid rgba(79,70,229,0.3)!important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)!important}
     .vw-icon-img{width:80px!important;height:80px!important;border-radius:50%!important;margin-bottom:25px!important;box-shadow:0 10px 30px -5px rgba(0,0,0,0.4)!important;object-fit:cover!important}
-    .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(59,130,246,0.2)!important;border-top:4px solid #3b82f6!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
+    .vw-spinner{width:48px!important;height:48px!important;border:4px solid rgba(79,70,229,0.2)!important;border-top:4px solid #4f46e5!important;border-radius:50%!important;animation:spin 0.8s linear infinite!important;margin-bottom:20px!important}
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;background:linear-gradient(135deg,#fff,#94a3b8)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
+    .vw-status{font-size:28px!important;font-weight:800!important;text-align:center!important;margin-bottom:12px!important;color:#fff!important}
     .vw-substatus{font-size:15px!important;color:#cbd5e1!important;text-align:center!important;font-weight:500!important;background:rgba(0,0,0,0.3)!important;padding:6px 12px!important;border-radius:40px!important;display:inline-block!important;word-break:break-all!important;max-width:90vw!important}
     .vw-url-container{width:100%;margin:20px 0;padding:12px;background:rgba(0,0,0,0.4);border-radius:12px;word-break:break-all;font-size:12px;color:#94a3b8;font-family:monospace;max-height:100px;overflow-y:auto}
     .vw-button-group{display:flex;gap:12px;width:100%;margin-top:8px}
-    .vw-btn{background:rgba(30,41,59,0.6)!important;color:#e2e8f0!important;border:1px solid #3b82f640!important;padding:12px 20px!important;border-radius:40px!important;font-weight:700!important;cursor:pointer!important;transition:all .2s!important;font-size:14px!important;letter-spacing:0.5px!important;flex:1}
-    .vw-btn:hover{background:#3b82f6!important;border-color:#3b82f6!important;transform:translateY(-1px)!important;color:#fff!important}
+    .vw-btn{background:rgba(30,41,59,0.6)!important;color:#e2e8f0!important;border:1px solid #4f46e540!important;padding:12px 20px!important;border-radius:40px!important;font-weight:700!important;cursor:pointer!important;transition:all .2s!important;font-size:14px!important;letter-spacing:0.5px!important;flex:1}
+    .vw-btn-copy{background:#22c55e!important;border-color:#22c55e!important;color:#fff!important}
+    .vw-btn-proceed{background:#4f46e5!important;border-color:#4f46e5!important;color:#fff!important}
+    .vw-btn-copy:hover{background:#16a34a!important;transform:translateY(-1px)!important}
+    .vw-btn-proceed:hover{background:#4338ca!important;transform:translateY(-1px)!important}
     .vw-btn:disabled{opacity:.45!important;cursor:not-allowed!important;transform:none!important}
     @keyframes vw-fade-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .vw-toast{position:fixed!important;top:calc(72px + 12px)!important;right:calc(14px + env(safe-area-inset-right))!important;padding:10px 18px!important;border-radius:40px!important;background:rgba(15,23,42,0.92)!important;backdrop-filter:blur(8px)!important;color:#e2e8f0!important;font-weight:700!important;font-size:13px!important;box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:'Inter',system-ui,sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important;border-left:4px solid #3b82f6!important}
-    .vw-toast.error{border-left-color:#ef4444!important}
+    .vw-toast{position:fixed!important;top:calc(72px + 12px)!important;right:calc(14px + env(safe-area-inset-right))!important;padding:12px 16px!important;border-radius:12px!important;background:#111!important;color:#fff!important;font-weight:600!important;font-size:14px!important;box-shadow:0 0 20px rgba(0,0,0,0.4)!important;animation:vw-toast-in 0.22s ease-out!important;z-index:2147483648!important;pointer-events:none!important;font-family:sans-serif!important;max-width:calc(100vw - 28px)!important;word-break:break-word!important}
+    .vw-toast.error{background:#222!important;color:#ff6b6b!important}
     @keyframes vw-toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
     @media (max-width:768px){.vw-status{font-size:22px!important}.vw-substatus{font-size:12px!important}.vw-icon-img{width:64px!important;height:64px!important}.vw-header-bar{height:60px!important;padding:0 16px!important}.vw-main-content{padding:16px!important}.vw-toast{top:calc(60px + 12px)!important}}
   `
@@ -523,8 +520,8 @@
       <div id="vwSubStatus" class="vw-substatus">Completed in ${timeLabel}s</div>
       <div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>
       <div class="vw-button-group">
-        <button id="vwCopyBtn" class="vw-btn">📋 Copy URL</button>
-        <button id="vwProceedBtn" class="vw-btn">➡️ Proceed to URL</button>
+        <button id="vwCopyBtn" class="vw-btn vw-btn-copy">📋 Copy URL</button>
+        <button id="vwProceedBtn" class="vw-btn vw-btn-proceed">➡️ Proceed to URL</button>
       </div>
     `
 
@@ -1006,8 +1003,12 @@
       Logger.info('Manual /tc processed successfully')
       showToast('✅ Lootlink bypass successful', false)
     } catch (err) {
-      Logger.warn('Manual /tc request failed after retries', err.message)
-      showToast('⚠️ Lootlink bypass failed, retrying...', true)
+      if (!window.__vw_tc_processed) {
+        Logger.warn('Manual /tc request failed after retries', err.message)
+        showToast('⚠️ Lootlink bypass failed, retrying...', true)
+      } else {
+        Logger.info('Manual request failed but bypass already succeeded – ignoring error')
+      }
     }
   }
 
@@ -1078,8 +1079,6 @@
 
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
-    installLuarmorNavigationGuard()
-
     const cachedResult = getCachedResult(location.href)
     if (cachedResult && !isLuarmorUrl(cachedResult)) {
       Logger.info('Using cached result', `from cache: ${cachedResult}`)
@@ -1182,7 +1181,7 @@
       updateStatus('❌ Bypass failed', err.message)
       showToast(`❌ Bypass failed: ${err.message}`, true)
       const manualDiv = document.createElement('div')
-      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#3b82f6;">Click here to continue manually</a></p>`
+      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`
       const overlay = document.getElementById('vortixWorldOverlay')
       if (overlay && overlay.querySelector('.vw-main-content')) {
         overlay.querySelector('.vw-main-content').appendChild(manualDiv)
@@ -1190,105 +1189,52 @@
     }
   }
 
-  function runRedirectBypass() {
-    const cfgTime = RedirectWaitTime && RedirectWaitTime > 0 ? RedirectWaitTime : 10
-    const config = { time: cfgTime }
-    const TARGET = 'https://' + SITE_HOST + '/userscript.html'
-    installLuarmorNavigationGuard()
+  async function initApi() {
+    const res = await fetch(API_BASE + "/api/auth/anon", { method: "POST", headers: { "Content-Type": "application/json" } });
+    const json = await res.json();
+    return json.accessToken;
+  }
 
-    const originalCreateElement = document.createElement.bind(document)
-    document.createElement = function (elementName) {
-      const el = originalCreateElement(elementName)
-      if (elementName && elementName.toLowerCase() === 'script') el.setAttribute('type', 'text/plain')
-      return el
-    }
+  async function refreshToken(accessToken) {
+    const res = await fetch(API_BASE + "/api/auth/refresh", { method: "POST", headers: { Authorization: "Bearer " + accessToken } });
+    const json = await res.json();
+    return json.accessToken;
+  }
 
-    const params = new URLSearchParams(location.search)
-    const redirectParam = params.get('redirect')
+  async function bypassUrl(url, accessToken) {
+    const res = await fetch(API_BASE + "/api/bypass/direct", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + accessToken },
+      body: JSON.stringify({ url })
+    });
+    return res.json();
+  }
 
-    if (redirectParam) {
-      const rp = String(redirectParam)
+  async function runApiBypass() {
+    try {
+      injectUI(ICON_URL);
+      updateStatus("🔍 Bypassing...", "Connecting to VortixWorld API");
 
-      if (isLuarmorUrl(rp)) {
-        handleLuarmorTarget(rp)
-        return
+      let accessToken = await initApi();
+      let result = await bypassUrl(location.href, accessToken);
+      if (result.status === "success") {
+        const finalUrl = result.result;
+        const timeLabel = result.time;
+        handleBypassSuccess(finalUrl, timeLabel, 'api');
+      } else {
+        throw new Error(result.result || "Bypass failed");
       }
-
-      try {
-        location.href = rp
-      } catch (_) {
-        window.open(rp, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      Logger.error("API bypass failed", err.message);
+      updateStatus("❌ Bypass failed", err.message);
+      showToast(`❌ Bypass failed: ${err.message}`, true);
+      const manualDiv = document.createElement('div');
+      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`;
+      const overlay = document.getElementById('vortixWorldOverlay');
+      if (overlay && overlay.querySelector('.vw-main-content')) {
+        overlay.querySelector('.vw-main-content').appendChild(manualDiv);
       }
-      return
     }
-
-    if (!isAllowedHost()) {
-      const returnUrl = location.href
-      setBypassReturnUrl(returnUrl)
-      copyTextSilent(returnUrl)
-
-      const targetUrl =
-        TARGET +
-        '?url=' +
-        encodeURIComponent(returnUrl) +
-        '&time=' +
-        encodeURIComponent(config.time) +
-        '&return=' +
-        encodeURIComponent(returnUrl)
-
-      setTimeout(() => {
-        location.href = targetUrl
-      }, 1200)
-      return
-    }
-
-    document.documentElement.innerHTML = `
-      <html>
-        <head>
-          <title>VortixWorld USERSCRIPT</title>
-          <meta name="viewport" content="width=device-width,initial-scale=1"/>
-          <style>${SHARED_UI_CSS}</style>
-        </head>
-        <body>
-          <div id="vortixWorldOverlay">
-            <div class="vw-header-bar">
-                <div class="vw-title">
-                    <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
-                    VortixWorld
-                </div>
-            </div>
-            <div class="vw-main-content">
-                <img src="${ICON_URL}" class="vw-icon-img" alt="VortixWorld">
-                <div class="vw-spinner"></div>
-                <div id="vwStatus" class="vw-status">Redirecting...</div>
-                <div id="vwSubStatus" class="vw-substatus">Redirecting in ${config.time} seconds...</div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
-
-    let remaining = config.time
-    const timerEl = document.getElementById('vwSubStatus')
-
-    const interval = setInterval(() => {
-      remaining--
-      if (timerEl) timerEl.innerText = `Redirecting in ${remaining} seconds...`
-      if (remaining <= 0) {
-        clearInterval(interval)
-        const returnUrl = location.href
-        setBypassReturnUrl(returnUrl)
-        copyTextSilent(returnUrl)
-        location.href =
-          TARGET +
-          '?url=' +
-          encodeURIComponent(returnUrl) +
-          '&time=' +
-          encodeURIComponent(config.time) +
-          '&return=' +
-          encodeURIComponent(returnUrl)
-      }
-    }, 1000)
   }
 
   const state = {
@@ -1296,19 +1242,13 @@
   }
 
   function main() {
+    installLuarmorNavigationGuard();
+
     if (window.VW_CONFIG) {
-      if (typeof window.VW_CONFIG.redirectWaitTime === 'number') {
-        RedirectWaitTime = window.VW_CONFIG.redirectWaitTime
-        localStorage.setItem(VW_KEYS.redirectWaitTime, String(RedirectWaitTime))
-      }
       if (typeof window.VW_CONFIG.luarmorWaitTime === 'number') {
         LuarmorWaitTime = window.VW_CONFIG.luarmorWaitTime
         localStorage.setItem(VW_KEYS.luarmorWaitTime, String(LuarmorWaitTime))
       }
-    }
-
-    if (HOST === SITE_HOST) {
-      installLuarmorNavigationGuard()
     }
 
     if (isTpiLi()) {
@@ -1322,7 +1262,7 @@
     }
 
     if (isAllowedHost()) {
-      runRedirectBypass()
+      runApiBypass()
       return
     }
   }
