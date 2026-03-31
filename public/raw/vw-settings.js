@@ -1,4 +1,15 @@
-;(function () {
+// ==UserScript==
+// @name         VortixWorld Settings
+// @namespace    VortixWorldBypasser
+// @version      1.5
+// @description  Settings UI for VortixWorld Bypass
+// @match        *://*/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @run-at       document-end
+// ==/UserScript==
+
+(function () {
   'use strict'
 
   if (window.top !== window.self) return
@@ -8,7 +19,6 @@
 
   const keys = {
     autoRedirect: 'vw_auto_redirect',
-    redirectWaitTime: 'vw_redirect_wait_time',
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
 
@@ -41,8 +51,8 @@
       width: 48px !important;
       height: 48px !important;
       border-radius: 24px !important;
-      border: 1px solid rgba(59, 130, 246, 0.5) !important;
-      background: rgba(15, 23, 42, 0.8) !important;
+      border: 1px solid rgba(79, 70, 229, 0.5) !important;
+      background: rgba(0, 0, 0, 0.8) !important;
       backdrop-filter: blur(10px) !important;
       -webkit-backdrop-filter: blur(10px) !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
@@ -62,7 +72,7 @@
 
     .vw-gear-btn:hover {
       transform: translateY(-2px) scale(1.05) !important;
-      box-shadow: 0 12px 40px rgba(59, 130, 246, 0.35) !important;
+      box-shadow: 0 12px 40px rgba(79, 70, 229, 0.35) !important;
     }
 
     .vw-gear-btn:active {
@@ -80,7 +90,7 @@
         calc(14px + env(safe-area-inset-right))
         calc(14px + env(safe-area-inset-bottom))
         calc(14px + env(safe-area-inset-left)) !important;
-      background: rgba(0, 0, 0, 0.78) !important;
+      background: rgba(0, 0, 0, 0.85) !important;
       z-index: 2147483647 !important;
       display: none !important;
       align-items: center !important;
@@ -103,11 +113,9 @@
       width: min(520px, calc(100vw - 28px)) !important;
       max-width: 100% !important;
       max-height: min(720px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
-      border-radius: 28px !important;
-      border: 1px solid rgba(59, 130, 246, 0.4) !important;
-      background: rgba(15, 23, 42, 0.93) !important;
-      backdrop-filter: blur(14px) !important;
-      -webkit-backdrop-filter: blur(14px) !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(79, 70, 229, 0.4) !important;
+      background: #0f0f0f !important;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55) !important;
       color: #e2e8f0 !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
@@ -136,7 +144,7 @@
       justify-content: space-between !important;
       gap: 12px !important;
       padding: 16px 18px !important;
-      border-bottom: 1px solid rgba(59, 130, 246, 0.28) !important;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.28) !important;
       background: rgba(0, 0, 0, 0.25) !important;
       flex: 0 0 auto !important;
       min-width: 0 !important;
@@ -148,7 +156,7 @@
       display: flex !important;
       align-items: center !important;
       gap: 12px !important;
-      color: #3b82f6 !important;
+      color: #4f46e5 !important;
       min-width: 0 !important;
     }
 
@@ -156,7 +164,7 @@
       width: 32px !important;
       height: 32px !important;
       border-radius: 12px !important;
-      border: 1px solid rgba(59, 130, 246, 0.5) !important;
+      border: 1px solid rgba(79, 70, 229, 0.5) !important;
       object-fit: cover !important;
     }
 
@@ -171,7 +179,7 @@
       width: 36px !important;
       height: 36px !important;
       border-radius: 12px !important;
-      border: 1px solid rgba(59, 130, 246, 0.5) !important;
+      border: 1px solid rgba(79, 70, 229, 0.5) !important;
       background: rgba(0, 0, 0, 0.28) !important;
       color: #e2e8f0 !important;
       cursor: pointer !important;
@@ -187,8 +195,8 @@
     }
 
     .vw-close-btn:hover {
-      background: #3b82f6 !important;
-      border-color: #3b82f6 !important;
+      background: #4f46e5 !important;
+      border-color: #4f46e5 !important;
     }
 
     .vw-body {
@@ -208,8 +216,8 @@
       align-items: center !important;
       gap: 12px !important;
       padding: 14px !important;
-      border-radius: 20px !important;
-      border: 1px solid rgba(59, 130, 246, 0.2) !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(79, 70, 229, 0.2) !important;
       background: rgba(0, 0, 0, 0.18) !important;
       min-width: 0 !important;
     }
@@ -228,7 +236,7 @@
     .vw-label-title {
       font-size: 14px !important;
       font-weight: 900 !important;
-      color: #3b82f6 !important;
+      color: #4f46e5 !important;
       line-height: 1.2 !important;
       word-break: break-word !important;
     }
@@ -245,7 +253,7 @@
       width: 96px !important;
       max-width: 100% !important;
       background: rgba(0, 0, 0, 0.5) !important;
-      border: 1px solid rgba(59, 130, 246, 0.25) !important;
+      border: 1px solid rgba(79, 70, 229, 0.25) !important;
       color: #e2e8f0 !important;
       border-radius: 20px !important;
       padding: 9px 12px !important;
@@ -267,8 +275,8 @@
     }
 
     .vw-input:focus {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+      border-color: #4f46e5 !important;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25) !important;
     }
 
     .vw-toggle {
@@ -309,13 +317,13 @@
       width: 18px !important;
       left: 3px !important;
       bottom: 3px !important;
-      background-color: #3b82f6 !important;
+      background-color: #4f46e5 !important;
       transition: 0.25s !important;
       border-radius: 50% !important;
     }
 
     input:checked + .vw-toggle-slider {
-      background-color: #3b82f6 !important;
+      background-color: #4f46e5 !important;
     }
 
     input:checked + .vw-toggle-slider:before {
@@ -334,7 +342,7 @@
     .vw-btn {
       padding: 10px 16px !important;
       border-radius: 40px !important;
-      border: 1px solid rgba(59, 130, 246, 0.5) !important;
+      border: 1px solid rgba(79, 70, 229, 0.5) !important;
       background: rgba(0, 0, 0, 0.28) !important;
       color: #e2e8f0 !important;
       font-weight: 700 !important;
@@ -348,8 +356,8 @@
     }
 
     .vw-btn:hover {
-      background: #3b82f6 !important;
-      border-color: #3b82f6 !important;
+      background: #4f46e5 !important;
+      border-color: #4f46e5 !important;
       transform: translateY(-1px) !important;
     }
 
@@ -358,34 +366,36 @@
     }
 
     .vw-btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+      background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
       border: none !important;
     }
 
     .vw-btn-primary:hover {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      background: linear-gradient(135deg, #4338ca, #3730a3) !important;
     }
 
     .vw-toast {
       position: fixed !important;
       top: calc(72px + 12px) !important;
       right: calc(14px + env(safe-area-inset-right)) !important;
-      padding: 10px 18px !important;
-      border-radius: 40px !important;
-      background: rgba(15, 23, 42, 0.92) !important;
-      backdrop-filter: blur(8px) !important;
-      -webkit-backdrop-filter: blur(8px) !important;
-      color: #e2e8f0 !important;
-      font-weight: 700 !important;
-      font-size: 13px !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+      padding: 12px 16px !important;
+      border-radius: 12px !important;
+      background: #111 !important;
+      color: #fff !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4) !important;
       animation: vw-toast-in 0.22s ease-out !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
       font-family: inherit !important;
       max-width: calc(100vw - 28px) !important;
       word-break: break-word !important;
-      border-left: 4px solid #3b82f6 !important;
+    }
+
+    .vw-toast.error {
+      background: #222 !important;
+      color: #ff6b6b !important;
     }
 
     @keyframes vw-toast-in {
@@ -409,7 +419,7 @@
       display: flex !important;
       gap: 8px !important;
       margin-bottom: 12px !important;
-      border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.3) !important;
       padding-bottom: 8px !important;
       flex-wrap: wrap !important;
     }
@@ -427,7 +437,7 @@
     }
 
     .vw-tab.active {
-      background: #3b82f6 !important;
+      background: #4f46e5 !important;
       color: white !important;
     }
 
@@ -436,18 +446,18 @@
       min-height: 0 !important;
       overflow-y: auto !important;
       background: rgba(0, 0, 0, 0.4) !important;
-      border-radius: 20px !important;
+      border-radius: 12px !important;
       padding: 12px !important;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
       font-size: 12px !important;
-      border: 1px solid rgba(59, 130, 246, 0.25) !important;
+      border: 1px solid rgba(79, 70, 229, 0.25) !important;
       white-space: normal !important;
       min-width: 0 !important;
     }
 
     .vw-log-entry {
       padding: 8px 12px !important;
-      border-bottom: 1px solid rgba(59, 130, 246, 0.16) !important;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.16) !important;
       white-space: pre-wrap !important;
       word-break: break-word !important;
     }
@@ -477,7 +487,7 @@
         width: calc(100vw - 20px) !important;
         max-height: calc(100vh - 20px) !important;
         max-height: calc(100dvh - 20px) !important;
-        border-radius: 22px !important;
+        border-radius: 12px !important;
       }
 
       .vw-header {
@@ -627,14 +637,6 @@
 
           <div class="vw-row">
             <div class="vw-label">
-              <div class="vw-label-title">Redirect Wait Time</div>
-              <div class="vw-label-desc">Delay before redirecting to bypass site (0-60)</div>
-            </div>
-            <input type="number" class="vw-input" id="vwWaitTimeInput" min="0" max="60" inputmode="numeric">
-          </div>
-
-          <div class="vw-row">
-            <div class="vw-label">
               <div class="vw-label-title">Luarmor Next Wait</div>
               <div class="vw-label-desc">Delay before enabling Next (0-120)</div>
             </div>
@@ -682,7 +684,6 @@
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
     const autoToggle = shadow.querySelector('#vwAutoToggle')
-    const waitTimeInput = shadow.querySelector('#vwWaitTimeInput')
     const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
@@ -787,7 +788,7 @@
 
       const toast = document.createElement('div')
       toast.className = 'vw-toast'
-      if (isError) toast.style.borderLeftColor = '#ef4444'
+      if (isError) toast.classList.add('error')
       toast.textContent = message
       shadow.appendChild(toast)
 
@@ -821,7 +822,7 @@
 
       const focusTarget = panel === 'console'
         ? shadow.querySelector('#vwCopyConsoleBtn')
-        : shadow.querySelector('#vwWaitTimeInput')
+        : shadow.querySelector('#vwLuarmorWaitTimeInput')
 
       if (focusTarget && typeof focusTarget.focus === 'function') {
         setTimeout(() => {
@@ -847,21 +848,17 @@
     function loadSettings() {
       const auto = getStoredValue(keys.autoRedirect, true)
       autoToggle.checked = auto === true
-      waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
       luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-      const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
 
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
       if (window.VW_CONFIG) {
-        window.VW_CONFIG.redirectWaitTime = newWaitTime
         window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
         window.VW_CONFIG.keys = keys
       }
