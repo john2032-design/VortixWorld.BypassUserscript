@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.6
+// @version      2.7
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
-// @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
+// @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
 // @grant        none
 // @license      MIT
 // @run-at       document-start
@@ -38,7 +38,21 @@
     'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
   ]
 
-  const UA = navigator.userAgent
+  // Setup Custom UserAgent logic
+  const savedUaOpt = (() => {
+    try { return localStorage.getItem('vw_user_agent_option') || 'default' } catch (_) { return 'default' }
+  })()
+
+  const UA_OPTIONS = {
+    win10_chrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    mac_safari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15',
+    android_chrome: 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+    android_samsung: 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/21.0 Chrome/110.0.5481.154 Mobile Safari/537.36',
+    ios_safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+  }
+
+  const CUSTOM_UA = (savedUaOpt !== 'default' && UA_OPTIONS[savedUaOpt]) ? UA_OPTIONS[savedUaOpt] : navigator.userAgent
+  const UA = CUSTOM_UA
   const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   const isAndroid = /Android/.test(UA)
   const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(UA)
@@ -404,15 +418,13 @@
   let initialKey = null
   let initialKeySet = false
   let lastLuaClickTime = 0
-  const LUA_CLICK_COOLDOWN = 6000
+  let hasClickedNextOnce = false
+  let hasClickedProgressOnce = false
+  const LUA_CLICK_COOLDOWN = 10000
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
     autoLuaTimers = []
-  }
-
-  function canLuaClick() {
-     return (Date.now() - lastLuaClickTime) >= LUA_CLICK_COOLDOWN;
   }
 
   function triggerNativeLuarmor(btnId) {
@@ -444,8 +456,16 @@
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
         if (btn && !btn.disabled) {
-           if (canLuaClick()) {
+           let shouldClick = false;
+           if (isIOS) {
+               if (Date.now() - lastLuaClickTime >= LUA_CLICK_COOLDOWN) shouldClick = true;
+           } else {
+               if (!hasClickedProgressOnce) shouldClick = true;
+           }
+
+           if (shouldClick) {
                lastLuaClickTime = Date.now();
+               hasClickedProgressOnce = true;
                triggerNativeLuarmor(btn.id);
                if (btn.id === 'newkeybtn') {
                    stopAutoLuarmor();
@@ -462,24 +482,21 @@
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (canLuaClick()) {
-          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
-          lastLuaClickTime = Date.now();
-          triggerNativeLuarmor('nextbtn')
-          autoLuaNavAttempted = true
-          autoLuaTimers.push(setTimeout(() => {
-            if (autoLuaActive && window.location.href === window.location.href) {
-              Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
-              autoLuaNavAttempted = false
-              attemptNext()
-            }
-          }, 3000))
-      } else {
-          autoLuaTimers.push(setTimeout(attemptNext, 1000))
-      }
-    } else {
-      autoLuaTimers.push(setTimeout(attemptNext, 600))
+        let shouldClick = false;
+        if (isIOS) {
+            if (Date.now() - lastLuaClickTime >= LUA_CLICK_COOLDOWN) shouldClick = true;
+        } else {
+            if (!hasClickedNextOnce) shouldClick = true;
+        }
+
+        if (shouldClick) {
+            Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+            lastLuaClickTime = Date.now();
+            hasClickedNextOnce = true;
+            triggerNativeLuarmor('nextbtn')
+        }
     }
+    autoLuaTimers.push(setTimeout(attemptNext, 1000))
   }
 
   function monitorKey() {
@@ -509,6 +526,9 @@
     localStorage.setItem('vw_auto_luarmor_active', 'true')
     autoLuaNavAttempted = false
     initialKeySet = false
+    hasClickedNextOnce = false
+    hasClickedProgressOnce = false
+    lastLuaClickTime = 0
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -1018,54 +1038,29 @@
 
   function selectFallbackTask(tasks) {
     if (!Array.isArray(tasks) || tasks.length === 0) return null
-    const preferred = tasks.find(t => t.auto_complete_seconds === 30)
+    // CRITICAL FIX: Ensure we do NOT try to pick task 17 again for fallback
+    const safeTasks = tasks.filter(t => t.task_id !== 17)
+    if (safeTasks.length === 0) return null
+    
+    const preferred = safeTasks.find(t => t.auto_complete_seconds === 30)
     if (preferred) return preferred
-    const second = tasks.find(t => t.auto_complete_seconds === 40)
+    const second = safeTasks.find(t => t.auto_complete_seconds === 40)
     if (second) return second
-    const third = tasks.find(t => t.auto_complete_seconds === 50)
+    const third = safeTasks.find(t => t.auto_complete_seconds === 50)
     if (third) return third
-    const fourth = tasks.find(t => t.auto_complete_seconds === 60)
+    const fourth = safeTasks.find(t => t.auto_complete_seconds === 60)
     if (fourth) return fourth
-    return tasks[0]
+    return safeTasks[0]
   }
 
   function processTcResponse(data, originalFetch) {
     Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
     const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
-    const runFallback = async () => {
+    const runFallback = () => {
       Logger.warn('Running fallback task selection')
       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
-
-      // Filter out task 17 completely so the fallback doesn't mistakenly pick it
-      let availableTasks = Array.isArray(data) ? data.filter(t => t.task_id !== 17) : []
-      let fallbackTask = selectFallbackTask(availableTasks)
-
-      // If no suitable fallback was in the initial response, fetch a fresh list directly
-      if (!fallbackTask || !fallbackTask.urid) {
-        Logger.info('No fallback tasks in current data, requesting new tasks...')
-        try {
-          const syncDomain = typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : null
-          if (syncDomain) {
-            const tcUrl = `https://${syncDomain}/tc`
-            const payload = { bl: [17] } // Explicitly blacklist task 17 to get time-based tasks
-            const res = await originalFetch(tcUrl, {
-              method: 'POST',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            })
-            const newData = await res.json()
-            if (Array.isArray(newData)) {
-              availableTasks = newData.filter(t => t.task_id !== 17)
-              fallbackTask = selectFallbackTask(availableTasks)
-            }
-          }
-        } catch (e) {
-          Logger.error('Failed to fetch new fallback tasks', e)
-        }
-      }
-
+      const fallbackTask = selectFallbackTask(data)
       if (fallbackTask && fallbackTask.urid) {
         Logger.info('Using fallback task for local WebSocket', fallbackTask)
         if (fallbackTask.auto_complete_seconds) {
@@ -1115,22 +1110,31 @@
           if (config && config.method && config.method.toUpperCase() === 'POST') {
             let newBody = null
             let originalBody = config.body
+            let parsedObj = null
+            
             if (originalBody && typeof originalBody === 'string') {
-              try {
-                const parsed = JSON.parse(originalBody)
-                if (!parsed.bl) {
-                  parsed.bl = BL_TASKS
-                  newBody = JSON.stringify(parsed)
-                }
-              } catch (e) {}
+              try { parsedObj = JSON.parse(originalBody) } catch (e) {}
             } else if (originalBody && typeof originalBody === 'object') {
-              if (!originalBody.bl) {
-                const newBodyObj = { ...originalBody, bl: BL_TASKS }
-                newBody = JSON.stringify(newBodyObj)
-              }
+              parsedObj = { ...originalBody }
             } else {
-              newBody = JSON.stringify({ bl: BL_TASKS })
+              parsedObj = {}
             }
+
+            if (parsedObj) {
+              let changed = false
+              if (!parsedObj.bl) {
+                parsedObj.bl = BL_TASKS
+                changed = true
+              }
+              if (!isMobile && parsedObj.max_tasks !== 3) {
+                parsedObj.max_tasks = 3
+                changed = true
+              }
+              if (changed) {
+                newBody = JSON.stringify(parsedObj)
+              }
+            }
+            
             if (newBody) {
               const newConfig = {
                 ...config,
@@ -1159,62 +1163,6 @@
       } catch (_) {}
       return originalFetch(url, config)
     }
-  }
-
-  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
-    for (let i = 0; i <= retries; i++) {
-      try {
-        const res = await fetch(url, options)
-        if (res.ok) return res
-        if (i === retries) throw new Error(`HTTP ${res.status}`)
-      } catch (err) {
-        if (i === retries) throw err
-      }
-      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
-    }
-  }
-
-  async function sendTcManually() {
-    if (window.__vw_tc_processed) return
-    const originalFetch = window.fetch
-    const syncDomain = INCENTIVE_SYNCER_DOMAIN
-    if (!syncDomain) return
-    const tcUrl = `https://${syncDomain}/tc`
-    const payload = { bl: BL_TASKS }
-    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
-    try {
-      const res = await fetchWithRetry(tcUrl, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }, // Removed Hardcoded User Agent
-        body: JSON.stringify(payload)
-      }, 2, 1000)
-      const data = await res.json()
-      processTcResponse(data, originalFetch)
-      window.__vw_tc_processed = true
-      Logger.info('Manual /tc processed successfully')
-      showToast('Lootlink bypass successful', false, '✅')
-    } catch (err) {
-      if (!window.__vw_tc_processed) {
-        Logger.warn('Manual /tc request failed after retries', err.message)
-        showToast('Lootlink bypass failed, retrying...', true, '⚠️')
-      } else {
-        Logger.info('Manual request failed but bypass already succeeded – ignoring error')
-      }
-    }
-  }
-
-  function startManualCheck() {
-    const interval = setInterval(() => {
-      if (window.__vw_tc_processed) {
-        clearInterval(interval)
-        return
-      }
-      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
-        clearInterval(interval)
-        sendTcManually()
-      }
-    }, 100)
   }
 
   function modifyParentElement(targetElement) {
@@ -1265,6 +1213,10 @@
 
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
+    
+    try {
+      Object.defineProperty(navigator, 'userAgent', { get: () => CUSTOM_UA })
+    } catch(e) { }
 
     const cachedResult = getCachedResult(location.href)
     if (cachedResult) {
@@ -1282,7 +1234,7 @@
     updateStatus('Loading...', 'Preparing bypass')
     setupOptimizedObserver()
     initLootlinkFetchOverride()
-    startManualCheck()
+    
     cleanupManager.setTimeout(() => {
       if (!window.__vw_tc_processed) {
         Logger.warn('Bypass seems stuck, checking for unlock element again')
