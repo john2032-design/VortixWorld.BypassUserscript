@@ -39,19 +39,17 @@
       width: 48px !important;
       height: 48px !important;
       border-radius: 24px !important;
-      border: 1px solid #2a2a2a !important;
-      background: #101010 !important;
-      backdrop-filter: blur(10px) !important;
-      -webkit-backdrop-filter: blur(10px) !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
-      color: #fff !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+      color: #e0e0e0 !important;
       font-size: 22px !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
       cursor: pointer !important;
       user-select: none !important;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+      transition: all 0.2s ease !important;
       pointer-events: auto !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
       -webkit-tap-highlight-color: transparent !important;
@@ -59,12 +57,13 @@
     }
 
     .vw-gear-btn:hover {
-      transform: translateY(-2px) scale(1.05) !important;
-      box-shadow: 0 12px 40px rgba(255, 255, 255, 0.08) !important;
+      transform: translateY(-2px) scale(1.02) !important;
+      box-shadow: 6px 6px 12px #141414, -6px -6px 12px #282828 !important;
     }
 
     .vw-gear-btn:active {
       transform: scale(0.98) !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
     }
 
     .vw-backdrop {
@@ -78,7 +77,7 @@
         calc(14px + env(safe-area-inset-right))
         calc(14px + env(safe-area-inset-bottom))
         calc(14px + env(safe-area-inset-left)) !important;
-      background: rgba(0, 0, 0, 0.85) !important;
+      background: rgba(0, 0, 0, 0.6) !important;
       z-index: 2147483647 !important;
       display: none !important;
       align-items: center !important;
@@ -88,8 +87,6 @@
       overflow: auto !important;
       overscroll-behavior: contain !important;
       -webkit-overflow-scrolling: touch !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
       pointer-events: auto !important;
     }
 
@@ -102,12 +99,10 @@
       max-width: 100% !important;
       max-height: min(720px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
       border-radius: 28px !important;
-      border: 1px solid #2a2a2a !important;
-      background: #101010 !important;
-      backdrop-filter: blur(14px) !important;
-      -webkit-backdrop-filter: blur(14px) !important;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55) !important;
-      color: #fff !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: 10px 10px 20px #141414, -10px -10px 20px #282828 !important;
+      color: #e0e0e0 !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
       overflow: hidden !important;
       animation: vw-slide-in 0.22s ease-out !important;
@@ -134,19 +129,20 @@
       justify-content: space-between !important;
       gap: 12px !important;
       padding: 16px 18px !important;
-      border-bottom: 1px solid #2a2a2a !important;
-      background: rgba(255, 255, 255, 0.03) !important;
+      border-bottom: none !important;
+      box-shadow: 0 4px 8px -4px #141414 !important;
+      background: #1e1e1e !important;
       flex: 0 0 auto !important;
       min-width: 0 !important;
     }
 
     .vw-title {
-      font-weight: 900 !important;
+      font-weight: 800 !important;
       font-size: 18px !important;
       display: flex !important;
       align-items: center !important;
       gap: 12px !important;
-      color: #fff !important;
+      color: #e0e0e0 !important;
       min-width: 0 !important;
     }
 
@@ -154,7 +150,8 @@
       width: 32px !important;
       height: 32px !important;
       border-radius: 12px !important;
-      border: 1px solid #2a2a2a !important;
+      border: none !important;
+      box-shadow: 2px 2px 4px #141414, -2px -2px 4px #282828 !important;
       object-fit: cover !important;
     }
 
@@ -168,12 +165,13 @@
     .vw-close-btn {
       width: 36px !important;
       height: 36px !important;
-      border-radius: 12px !important;
-      border: 1px solid #2a2a2a !important;
-      background: #1a1a1a !important;
-      color: #fff !important;
+      border-radius: 50% !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important;
+      color: #aaa !important;
       cursor: pointer !important;
-      font-size: 18px !important;
+      font-size: 16px !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -184,16 +182,15 @@
       touch-action: manipulation !important;
     }
 
-    .vw-close-btn:hover {
-      background: #2a2a2a !important;
-      border-color: #3a3a3a !important;
+    .vw-close-btn:active {
+      box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important;
     }
 
     .vw-body {
       padding: 16px 18px 18px !important;
       display: flex !important;
       flex-direction: column !important;
-      gap: 14px !important;
+      gap: 16px !important;
       flex: 1 1 auto !important;
       min-height: 0 !important;
       overflow: auto !important;
@@ -205,10 +202,11 @@
       grid-template-columns: minmax(0, 1fr) 96px !important;
       align-items: center !important;
       gap: 12px !important;
-      padding: 14px !important;
+      padding: 16px !important;
       border-radius: 20px !important;
-      border: 1px solid #262626 !important;
-      background: rgba(255, 255, 255, 0.03) !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
       min-width: 0 !important;
     }
 
@@ -225,15 +223,15 @@
 
     .vw-label-title {
       font-size: 14px !important;
-      font-weight: 900 !important;
-      color: #fff !important;
+      font-weight: 800 !important;
+      color: #e0e0e0 !important;
       line-height: 1.2 !important;
       word-break: break-word !important;
     }
 
     .vw-label-desc {
       font-size: 12px !important;
-      color: #b0b0b0 !important;
+      color: #a0a0a0 !important;
       font-weight: 500 !important;
       line-height: 1.35 !important;
       word-break: break-word !important;
@@ -242,8 +240,8 @@
     .vw-toggle {
       position: relative !important;
       display: inline-block !important;
-      width: 48px !important;
-      height: 24px !important;
+      width: 50px !important;
+      height: 26px !important;
     }
 
     .vw-toggle input {
@@ -264,7 +262,8 @@
       left: 0 !important;
       right: 0 !important;
       bottom: 0 !important;
-      background-color: #b91c1c !important;
+      background-color: #1e1e1e !important;
+      box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important;
       transition: 0.25s !important;
       border-radius: 999px !important;
       pointer-events: none !important;
@@ -275,36 +274,35 @@
       content: "" !important;
       height: 18px !important;
       width: 18px !important;
-      left: 3px !important;
-      bottom: 3px !important;
-      background-color: #fff !important;
+      left: 4px !important;
+      bottom: 4px !important;
+      background-color: #ef4444 !important;
+      box-shadow: 2px 2px 4px #141414;
       transition: 0.25s !important;
       border-radius: 50% !important;
     }
 
-    input:checked + .vw-toggle-slider {
-      background-color: #16a34a !important;
-    }
-
     input:checked + .vw-toggle-slider:before {
       transform: translateX(24px) !important;
+      background-color: #4ade80 !important;
     }
 
     .vw-actions {
       display: flex !important;
       align-items: center !important;
       justify-content: flex-end !important;
-      gap: 10px !important;
+      gap: 12px !important;
       padding-top: 6px !important;
       flex-wrap: wrap !important;
     }
 
     .vw-btn {
-      padding: 10px 16px !important;
+      padding: 10px 18px !important;
       border-radius: 40px !important;
-      border: 1px solid #303030 !important;
-      background: #151515 !important;
-      color: #fff !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+      color: #e0e0e0 !important;
       font-weight: 700 !important;
       font-size: 13px !important;
       cursor: pointer !important;
@@ -315,23 +313,14 @@
       min-width: 0 !important;
     }
 
-    .vw-btn:hover {
-      background: #242424 !important;
-      border-color: #3a3a3a !important;
-      transform: translateY(-1px) !important;
-    }
-
     .vw-btn:active {
-      transform: translateY(0) scale(0.99) !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+      transform: translateY(1px) !important;
     }
 
     .vw-btn-primary {
-      background: #2a2a2a !important;
-      border: 1px solid #3a3a3a !important;
-    }
-
-    .vw-btn-primary:hover {
-      background: #3a3a3a !important;
+      color: #fff !important;
+      background: #1e1e1e !important;
     }
 
     .vw-toast {
@@ -340,13 +329,11 @@
       right: calc(14px + env(safe-area-inset-right)) !important;
       padding: 10px 18px !important;
       border-radius: 40px !important;
-      background: #151515 !important;
-      backdrop-filter: blur(8px) !important;
-      -webkit-backdrop-filter: blur(8px) !important;
-      color: #fff !important;
+      background: #1e1e1e !important;
+      box-shadow: 6px 6px 12px #141414, -6px -6px 12px #282828 !important;
+      color: #e0e0e0 !important;
       font-weight: 700 !important;
       font-size: 13px !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
       animation: vw-toast-in 0.22s ease-out !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
@@ -375,69 +362,62 @@
 
     .vw-tabs {
       display: flex !important;
-      gap: 8px !important;
-      margin-bottom: 12px !important;
-      border-bottom: 1px solid #2a2a2a !important;
-      padding-bottom: 8px !important;
+      gap: 12px !important;
+      margin-bottom: 8px !important;
       flex-wrap: wrap !important;
     }
 
     .vw-tab {
-      background: transparent !important;
+      background: #1e1e1e !important;
       border: none !important;
-      color: #b0b0b0 !important;
+      color: #a0a0a0 !important;
       font-weight: 600 !important;
       font-size: 12px !important;
-      padding: 6px 12px !important;
-      border-radius: 20px !important;
+      padding: 8px 16px !important;
+      border-radius: 40px !important;
       cursor: pointer !important;
       transition: all 0.2s !important;
+      box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important;
     }
 
     .vw-tab.active {
-      background: #2a2a2a !important;
-      color: white !important;
+      box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important;
+      color: #e0e0e0 !important;
     }
 
     .vw-console {
       flex: 1 1 auto !important;
       min-height: 0 !important;
       overflow-y: auto !important;
-      background: #0b0b0b !important;
+      background: #1e1e1e !important;
       border-radius: 20px !important;
-      padding: 12px !important;
+      padding: 16px !important;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
       font-size: 12px !important;
-      border: 1px solid #262626 !important;
+      border: none !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
       white-space: normal !important;
       min-width: 0 !important;
     }
 
     .vw-log-entry {
-      padding: 8px 12px !important;
-      border-bottom: 1px solid #222 !important;
+      padding: 8px 0 !important;
+      border-bottom: 1px solid #2a2a2a !important;
       white-space: pre-wrap !important;
       word-break: break-word !important;
     }
-
-    .vw-log-level-info {
-      color: #22c55e !important;
+    
+    .vw-log-entry:last-child {
+      border-bottom: none !important;
     }
 
-    .vw-log-level-warn {
-      color: #f59e0b !important;
-    }
-
-    .vw-log-level-error {
-      color: #ef4444 !important;
-    }
-
-    .vw-log-level-websocket {
-      color: #a855f7 !important;
-    }
+    .vw-log-level-info { color: #4ade80 !important; }
+    .vw-log-level-warn { color: #fbbf24 !important; }
+    .vw-log-level-error { color: #f87171 !important; }
+    .vw-log-level-websocket { color: #c084fc !important; }
 
     .vw-log-message {
-      color: #fff !important;
+      color: #e0e0e0 !important;
     }
 
     @media (max-width: 560px) {
