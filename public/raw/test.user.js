@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.5
+// @version      2.6
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -21,7 +21,6 @@
   const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
-  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
   const API_BASE = 'https://vortixworld-end.vercel.app'
 
   const LOOT_HOSTS = [
@@ -1034,10 +1033,39 @@
     Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
     const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
-    const runFallback = () => {
+    const runFallback = async () => {
       Logger.warn('Running fallback task selection')
       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
-      const fallbackTask = selectFallbackTask(data)
+
+      // Filter out task 17 completely so the fallback doesn't mistakenly pick it
+      let availableTasks = Array.isArray(data) ? data.filter(t => t.task_id !== 17) : []
+      let fallbackTask = selectFallbackTask(availableTasks)
+
+      // If no suitable fallback was in the initial response, fetch a fresh list directly
+      if (!fallbackTask || !fallbackTask.urid) {
+        Logger.info('No fallback tasks in current data, requesting new tasks...')
+        try {
+          const syncDomain = typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : null
+          if (syncDomain) {
+            const tcUrl = `https://${syncDomain}/tc`
+            const payload = { bl: [17] } // Explicitly blacklist task 17 to get time-based tasks
+            const res = await originalFetch(tcUrl, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+            const newData = await res.json()
+            if (Array.isArray(newData)) {
+              availableTasks = newData.filter(t => t.task_id !== 17)
+              fallbackTask = selectFallbackTask(availableTasks)
+            }
+          }
+        } catch (e) {
+          Logger.error('Failed to fetch new fallback tasks', e)
+        }
+      }
+
       if (fallbackTask && fallbackTask.urid) {
         Logger.info('Using fallback task for local WebSocket', fallbackTask)
         if (fallbackTask.auto_complete_seconds) {
@@ -1158,7 +1186,7 @@
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': ANDROID_UA },
+        headers: { 'Content-Type': 'application/json' }, // Removed Hardcoded User Agent
         body: JSON.stringify(payload)
       }, 2, 1000)
       const data = await res.json()
@@ -1237,10 +1265,6 @@
 
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
-    
-    try {
-      Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
-    } catch(e) { }
 
     const cachedResult = getCachedResult(location.href)
     if (cachedResult) {
