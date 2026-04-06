@@ -1,19 +1,21 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.5
+// @version      2.6
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
-// @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
+// @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @license      MIT
+// @grant        GM_deleteValue
+// @grant        GM_listValues
+// @grant        unsafeWindow
 // @run-at       document-start
 // ==/UserScript==
 
-;(function () {
+(function () {
   'use strict'
 
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
@@ -35,7 +37,7 @@
     'linkvertise.com', 'admaven.com', 'work.ink', 'shortearn.eu',
     'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
     'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
-    'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
+    'direct-links.org', 'link-center.net', 'link-hub.net',
     'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
   ]
 
@@ -48,31 +50,6 @@
   if (isAndroid) document.documentElement.classList.add('vw-android')
   if (isMobile) document.documentElement.classList.add('vw-mobile')
   if (!isMobile) document.documentElement.classList.add('vw-desktop')
-
-  function getStoredValue(key, defaultValue) {
-    if (typeof GM_getValue === 'function') {
-      try {
-        const val = GM_getValue(key)
-        if (val !== undefined && val !== null) return val
-      } catch (_) {}
-    }
-    try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue !== null) {
-        if (typeof defaultValue === 'boolean') return lsValue === 'true'
-        return lsValue
-      }
-    } catch (_) {}
-    return defaultValue
-  }
-
-  function getVWUserAgent() {
-    const savedUA = getStoredValue('vw_user_agent', 'default')
-    if (savedUA && savedUA !== 'default') return savedUA
-    return navigator.userAgent
-  }
-
-  const CUSTOM_UA = getVWUserAgent()
 
   function hostMatchesAny(list) {
     const h = HOST
@@ -95,8 +72,9 @@
     FALLBACK_CHECK_DELAY: 15000
   })
 
-  const VW_KEYS = window.VW_CONFIG?.keys || {
-    autoRedirect: 'vw_auto_redirect'
+  const VW_KEYS = {
+    autoRedirect: 'vw_auto_redirect',
+    userAgent: 'vw_user_agent'
   }
 
   window.__vw_logs = window.__vw_logs || []
@@ -219,6 +197,67 @@
       return String(url).includes('ads.luarmor.net')
     }
   }
+
+  function getStoredValue(key, defaultValue) {
+    if (typeof GM_getValue === 'function') {
+      try {
+        return GM_getValue(key, defaultValue)
+      } catch (_) {}
+    }
+    try {
+      const lsValue = localStorage.getItem(key)
+      if (lsValue === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return lsValue === 'true'
+      if (typeof defaultValue === 'number') {
+        const n = parseInt(lsValue, 10)
+        return Number.isFinite(n) ? n : defaultValue
+      }
+      return lsValue
+    } catch (_) {
+      return defaultValue
+    }
+  }
+
+  function setStoredValue(key, value) {
+    if (typeof GM_setValue === 'function') {
+      try {
+        GM_setValue(key, value)
+      } catch (_) {}
+    }
+    try {
+      localStorage.setItem(key, String(value))
+    } catch (_) {}
+  }
+
+  function getSelectedUA() {
+    let ua = getStoredValue(VW_KEYS.userAgent, '')
+    if (ua && ua.trim().length > 0) return ua
+    return 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+  }
+
+  function overrideUserAgent(uaString) {
+    if (!uaString) return
+    try {
+      Object.defineProperty(navigator, 'userAgent', {
+        get: () => uaString,
+        configurable: true
+      })
+      Object.defineProperty(navigator, 'platform', {
+        get: () => {
+          if (uaString.includes('Android')) return 'Linux armv8l'
+          if (uaString.includes('iPhone') || uaString.includes('iPad')) return 'iPhone'
+          return 'Win32'
+        },
+        configurable: true
+      })
+      Logger.info(`UserAgent overridden to: ${uaString}`)
+    } catch (e) {
+      Logger.error('Failed to override userAgent', e)
+    }
+  }
+
+  const SELECTED_UA = getSelectedUA()
+  overrideUserAgent(SELECTED_UA)
 
   const SHARED_UI_CSS = `
     :root {
@@ -430,7 +469,8 @@
   let initialKey = null
   let initialKeySet = false
   let lastLuaClickTime = 0
-  const LUA_CLICK_COOLDOWN = 10000
+  const LUA_CLICK_COOLDOWN = 6000
+  let iosIntervalId = null
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
@@ -470,17 +510,12 @@
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
         if (btn && !btn.disabled) {
-           if (isIOS) {
-               if (canLuaClick()) {
-                   lastLuaClickTime = Date.now();
-                   triggerNativeLuarmor(btn.id);
-                   if (btn.id === 'newkeybtn') { stopAutoLuarmor(); return; }
-               }
-           } else {
-               if (!btn.dataset.vwClicked) {
-                   btn.dataset.vwClicked = 'true';
-                   triggerNativeLuarmor(btn.id);
-                   if (btn.id === 'newkeybtn') { stopAutoLuarmor(); return; }
+           if (canLuaClick()) {
+               lastLuaClickTime = Date.now();
+               triggerNativeLuarmor(btn.id);
+               if (btn.id === 'newkeybtn') {
+                   stopAutoLuarmor();
+                   return;
                }
            }
         }
@@ -493,17 +528,9 @@
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (isIOS) {
-          if (canLuaClick()) {
-              Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn (iOS)')
-              lastLuaClickTime = Date.now();
-              triggerNativeLuarmor('nextbtn')
-              autoLuaTimers.push(setTimeout(attemptNext, 10000))
-          } else {
-              autoLuaTimers.push(setTimeout(attemptNext, 1000))
-          }
-      } else {
-          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn (Android/Desktop)')
+      if (canLuaClick()) {
+          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+          lastLuaClickTime = Date.now();
           triggerNativeLuarmor('nextbtn')
           autoLuaNavAttempted = true
           autoLuaTimers.push(setTimeout(() => {
@@ -513,6 +540,8 @@
               attemptNext()
             }
           }, 3000))
+      } else {
+          autoLuaTimers.push(setTimeout(attemptNext, 1000))
       }
     } else {
       autoLuaTimers.push(setTimeout(attemptNext, 600))
@@ -540,6 +569,17 @@
     autoLuaTimers.push(setTimeout(monitorKey, 1000))
   }
 
+  function iosClickInterval() {
+    if (!autoLuaActive) return
+    const btn = document.getElementById('nextbtn') || document.querySelector('.continue-button') || document.querySelector('button[type="submit"]')
+    if (btn && btn.offsetParent !== null && !btn.disabled) {
+      if (canLuaClick()) {
+        lastLuaClickTime = Date.now()
+        triggerNativeLuarmor(btn.id || (btn.className.split(' ')[0]))
+      }
+    }
+  }
+
   function startAutoLuarmor() {
     if (autoLuaActive) return
     autoLuaActive = true
@@ -559,9 +599,14 @@
         statusSpan.textContent = "● Running"
       }
     }
-    checkProgress()
-    attemptNext()
-    monitorKey()
+    if (isIOS) {
+      if (iosIntervalId) clearInterval(iosIntervalId)
+      iosIntervalId = setInterval(iosClickInterval, 10000)
+    } else {
+      checkProgress()
+      attemptNext()
+      monitorKey()
+    }
   }
 
   function stopAutoLuarmor() {
@@ -569,6 +614,10 @@
     autoLuaActive = false
     localStorage.setItem('vw_auto_luarmor_active', 'false')
     clearAutoLuaTimeouts()
+    if (iosIntervalId) {
+      clearInterval(iosIntervalId)
+      iosIntervalId = null
+    }
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -815,7 +864,8 @@
   }
 
   function isAutoRedirectEnabled() {
-    return getStoredValue(VW_KEYS.autoRedirect, true)
+    const saved = getStoredValue(VW_KEYS.autoRedirect, true)
+    return saved === true
   }
 
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
@@ -987,7 +1037,7 @@
       const timeoutId = setTimeout(() => controller.abort(), 8000)
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
         body: JSON.stringify(payload),
         signal: controller.signal
       })
@@ -1085,15 +1135,7 @@
       }
     }
 
-    const fallbackToMethod2 = () => {
-      Logger.warn('Method 1 failed, re-fetching /tc without task 17');
-      updateStatus('Method 1 Failed/Timeout', 'Using Method 2');
-      if (!BL_TASKS.includes(17)) BL_TASKS.push(17);
-      window.__vw_tc_processed = false;
-      sendTcManually();
-    }
-
-    if (task17 && task17.ad_url && !BL_TASKS.includes(17)) {
+    if (task17 && task17.ad_url) {
       Logger.info('Found task 17, using skipped.lol')
       const taskUrl = task17.ad_url
       completeTaskViaSkippedLol(taskUrl).then(() => {
@@ -1104,12 +1146,12 @@
             Logger.warn('Method 1 WS timed out, shutting down and switching to Method 2')
             primaryWs.disconnect()
             window.primaryWebSocket = null
-            fallbackToMethod2()
+            runFallback()
           }
-        }, 8000)
+        }, 10000)
       }).catch(err => {
-        Logger.error('Skipped.lol request failed, falling back to Method 2 directly', err)
-        fallbackToMethod2()
+        Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
+        runFallback()
       })
     } else {
       runFallback()
@@ -1135,25 +1177,22 @@
                 const parsed = JSON.parse(originalBody)
                 if (!parsed.bl) {
                   parsed.bl = BL_TASKS
-                  if (!isMobile) parsed.max_tasks = 3;
-                  newBody = JSON.stringify(parsed)
                 }
+                if (!parsed.max_tasks) {
+                  parsed.max_tasks = 3
+                }
+                newBody = JSON.stringify(parsed)
               } catch (e) {}
             } else if (originalBody && typeof originalBody === 'object') {
-              if (!originalBody.bl) {
-                const newBodyObj = { ...originalBody, bl: BL_TASKS }
-                if (!isMobile) newBodyObj.max_tasks = 3;
-                newBody = JSON.stringify(newBodyObj)
-              }
+              const newBodyObj = { ...originalBody, bl: BL_TASKS, max_tasks: 3 }
+              newBody = JSON.stringify(newBodyObj)
             } else {
-              const bodyObj = { bl: BL_TASKS }
-              if (!isMobile) bodyObj.max_tasks = 3;
-              newBody = JSON.stringify(bodyObj)
+              newBody = JSON.stringify({ bl: BL_TASKS, max_tasks: 3 })
             }
             if (newBody) {
               const newConfig = {
                 ...config,
-                headers: { ...config.headers, 'Content-Type': 'application/json' },
+                headers: { ...config.headers, 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
                 body: newBody
               }
               return originalFetch(url, newConfig).then(response => {
@@ -1199,14 +1238,13 @@
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
-    const payload = { bl: BL_TASKS }
-    if (!isMobile) payload.max_tasks = 3;
-    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
+    const payload = { bl: BL_TASKS, max_tasks: 3 }
+    Logger.info('Sending manual POST /tc request with bl array and max_tasks', JSON.stringify(payload))
     try {
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': CUSTOM_UA },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
         body: JSON.stringify(payload)
       }, 2, 1000)
       const data = await res.json()
@@ -1286,12 +1324,6 @@
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
     
-    try {
-      if (CUSTOM_UA !== navigator.userAgent) {
-          Object.defineProperty(navigator, 'userAgent', { get: () => CUSTOM_UA })
-      }
-    } catch(e) { }
-
     const cachedResult = getCachedResult(location.href)
     if (cachedResult) {
       if (!isLuarmorUrl(cachedResult)) {
@@ -1357,7 +1389,7 @@
       const alias = location.pathname.slice(1)
       if (!alias) throw new Error('No alias found in URL')
       Logger.info('TPI.LI alias', alias)
-      const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      const response = await fetch(location.href, { headers: { 'User-Agent': getSelectedUA() } })
       const html = await response.text()
       Logger.info('Fetched TPI.LI HTML', `${html.length} bytes`)
       let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
@@ -1386,7 +1418,7 @@
   }
 
   async function initApi() {
-    const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() } })
     const json = await res.json()
     return json.accessToken
   }
@@ -1394,7 +1426,7 @@
   async function bypassUrl(url, accessToken) {
     const res = await fetch(API_BASE + '/api/bypass/direct', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken, 'User-Agent': getSelectedUA() },
       body: JSON.stringify({ url })
     })
     return res.json()
@@ -1533,6 +1565,18 @@
   }
 
   const state = { processStartTime: Date.now() }
+
+  function storageSyncHandler(e) {
+    if (e.key === VW_KEYS.userAgent) {
+      Logger.info('UserAgent changed in another tab, reloading to apply')
+      location.reload()
+    }
+    if (e.key === VW_KEYS.autoRedirect) {
+      Logger.info('AutoRedirect setting changed in another tab, syncing')
+    }
+  }
+
+  window.addEventListener('storage', storageSyncHandler)
 
   function main() {
     if (HOST.includes('luarmor.net')) {
