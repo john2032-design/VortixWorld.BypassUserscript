@@ -6,7 +6,7 @@
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
-// @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
+// @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @license      MIT
