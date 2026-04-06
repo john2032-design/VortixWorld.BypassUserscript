@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto Luarmor & Link Shortener Bypass
 // @namespace    https://github.com/camper
-// @version      1.3
+// @version      1.4
 // @description  Automatically collects Luarmor keys, clicks through ads, and bypasses link shorteners using a remote API.
 // @author       Camper
 // @match        *://*.luarmor.net/*
@@ -24,7 +24,6 @@
     'use strict';
 
     const API_BYPASS_URL = 'https://lootlinkcom.vercel.app/api/bypass?url=';
-
     const currentUrl = window.location.href;
     const hostname = window.location.hostname;
     const isLuarmor = hostname.includes('luarmor.net');
@@ -33,37 +32,21 @@
         if (!element) return false;
         try {
             const rect = element.getBoundingClientRect();
-            const isVisible = rect.width > 0 && rect.height > 0;
-            if (!isVisible) return false;
+            if (rect.width === 0 || rect.height === 0) return false;
             element.focus();
-            const touchStart = new TouchEvent('touchstart', {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-                touches: [new Touch({ identifier: Date.now(), target: element, clientX: rect.left + 1, clientY: rect.top + 1, radiusX: 1, radiusY: 1, rotationAngle: 0, force: 1 })],
-                targetTouches: [],
-                changedTouches: []
+            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(eventType => {
+                const event = new MouseEvent(eventType, {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    button: 0,
+                    buttons: 1,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                element.dispatchEvent(event);
             });
-            element.dispatchEvent(touchStart);
-            const touchEnd = new TouchEvent('touchend', {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-                touches: [],
-                targetTouches: [],
-                changedTouches: [new Touch({ identifier: Date.now(), target: element, clientX: rect.left + 1, clientY: rect.top + 1, radiusX: 1, radiusY: 1, rotationAngle: 0, force: 0 })]
-            });
-            element.dispatchEvent(touchEnd);
-            const mouseEvent = new MouseEvent('click', {
-                view: window,
-                bubbles: true,
-                cancelable: true,
-                button: 0,
-                pointerId: 1,
-                pressure: 1,
-                isPrimary: true
-            });
-            element.dispatchEvent(mouseEvent);
+            if (element.onclick) element.onclick(new Event('click'));
             element.click();
             return true;
         } catch(e) {
@@ -72,13 +55,36 @@
         }
     }
 
+    function forceNavigation(button) {
+        if (!button) return false;
+        if (button.tagName === 'A' && button.href) {
+            window.location.href = button.href;
+            return true;
+        }
+        const form = button.closest('form');
+        if (form) {
+            form.submit();
+            return true;
+        }
+        const onclickAttr = button.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes('window.location')) {
+            const match = onclickAttr.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+            if (match && match[1]) {
+                window.location.href = match[1];
+                return true;
+            }
+        }
+        return false;
+    }
+
     if (isLuarmor) {
         localStorage.setItem('ppaccepted', 'true');
         localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25');
-        console.log('Keys injected: ppaccepted & trufflemayo');
+        console.log('[AutoLuarmor] Keys injected');
 
         let isPaused = false;
         let currentKey = "N/A";
+        let navAttempted = false;
 
         if (document.getElementById('autoLuaUI')) return;
 
@@ -108,7 +114,6 @@
                     background: linear-gradient(135deg, #7b2cbf, #c77dff);
                     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
                 }
-                #autoLuaUI .subtitle { font-size: 11px; color: #a0a0c0; margin-bottom: 14px; }
                 #autoLuaUI .info-box {
                     background: #0f0f14; border: 1px solid #2a2a40;
                     border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
@@ -145,7 +150,6 @@
                     display: inline-block; margin-right: 6px;
                 }
             </style>
-
             <div id="autoLuaUI" style="
                 width:320px;
                 background:linear-gradient(180deg,#1b1b27,#16161f);
@@ -164,11 +168,9 @@
                         <span id="keyDisplay" class="key-val">N/A</span>
                     </div>
                 </div>
-
                 <div class="btn-group">
                     <button id="toggleBtn" class="btn">Pause</button>
                 </div>
-
                 <div class="footer">Made by: Camper</div>
             </div>
         `;
@@ -182,17 +184,13 @@
         const toggleBtn = ui.querySelector("#toggleBtn");
         const keyDisplay = ui.querySelector("#keyDisplay");
 
-        toggleBtn.addEventListener("mouseenter", () => {
-            toggleBtn.style.background = "rgba(255,255,255,0.2)";
-        });
-        toggleBtn.addEventListener("mouseleave", () => {
-            toggleBtn.style.background = "";
-        });
-
         toggleBtn.addEventListener("click", () => {
             isPaused = !isPaused;
             toggleBtn.innerHTML = isPaused ? "Resume" : "Pause";
-            if (!isPaused) setTimeout(() => location.reload(), 500);
+            if (!isPaused) {
+                navAttempted = false;
+                onLoad();
+            }
         });
 
         function setKey(key) {
@@ -204,10 +202,10 @@
             const blacklist = document.querySelector('.swal2-x-mark');
             const loader = document.querySelector('.loader');
             const captcha = document.getElementById('captchafield');
-            if (blacklist && blacklist.offsetParent !== null) return { type: "blacklist", blocked: true };
-            if (loader && loader.offsetParent !== null) return { type: "loader", blocked: true };
-            if (captcha && captcha.offsetParent !== null) return { type: "captcha", blocked: true };
-            return { type: null, blocked: false };
+            if (blacklist && blacklist.offsetParent !== null) return true;
+            if (loader && loader.offsetParent !== null) return true;
+            if (captcha && captcha.offsetParent !== null) return true;
+            return false;
         }
 
         function grabKeyOnce() {
@@ -219,17 +217,9 @@
             }
         }
 
-        function onLoad() {
-            if (isPaused) return;
-            if (isBlocked().blocked) { setTimeout(onLoad, 500); return; }
-            grabKeyOnce();
-            checkProgress();
-            waitForButtonToBeClickable();
-        }
-
         function checkProgress() {
             if (isPaused) return;
-            if (isBlocked().blocked) return;
+            if (isBlocked()) return;
             const progressElement = document.getElementById('adprogressp');
             if (!progressElement) return;
             const progressParts = progressElement.textContent.match(/(\d+)\/(\d+)/);
@@ -247,31 +237,31 @@
             }
         }
 
-        let btnClicked = false;
-        function waitForButtonToBeClickable() {
-            if (isPaused || btnClicked) return;
-            if (isBlocked().blocked) { setTimeout(waitForButtonToBeClickable, 500); return; }
+        async function waitForButtonToBeClickable() {
+            if (isPaused || navAttempted) return;
+            if (isBlocked()) { setTimeout(waitForButtonToBeClickable, 500); return; }
             const btn = document.getElementById('nextbtn');
             if (btn && btn.offsetParent !== null && !(btn.style.cursor === 'not-allowed' || btn.disabled)) {
+                console.log('[AutoLuarmor] Clicking nextbtn');
                 simulateClick(btn);
-                btnClicked = true;
-                setTimeout(checkWindowFocus, 1000);
+                navAttempted = true;
+                setTimeout(() => {
+                    if (window.location.href === currentUrl) {
+                        console.log('[AutoLuarmor] Navigation failed, forcing redirect');
+                        forceNavigation(btn);
+                    }
+                }, 1500);
             } else {
                 setTimeout(waitForButtonToBeClickable, 500);
             }
         }
 
-        function checkWindowFocus() {
-            if (isPaused || btnClicked) return;
-            if (isBlocked().blocked) return;
-            if (!document.hasFocus()) { setTimeout(checkWindowFocus, 500); return; }
-            setTimeout(() => {
-                const btn = document.getElementById('nextbtn');
-                if (btn && btn.offsetParent !== null && !(btn.style.cursor === 'not-allowed' || btn.disabled)) {
-                    simulateClick(btn);
-                    btnClicked = true;
-                }
-            }, 500);
+        function onLoad() {
+            if (isPaused) return;
+            if (isBlocked()) { setTimeout(onLoad, 500); return; }
+            grabKeyOnce();
+            checkProgress();
+            waitForButtonToBeClickable();
         }
 
         if (document.readyState === "complete") {
@@ -281,26 +271,16 @@
         }
     } else {
         const shortenerDomains = [
-            'loot-link.com',
-            'lootdest.org',
-            'lootdest.com',
-            'lootlink.org',
-            'lootlinks.co',
-            'lootdest.info',
-            'links-loot.com',
-            'linksloot.net',
-            'work.ink',
-            'workink.net',
-            'linkvertise.com'
+            'loot-link.com', 'lootdest.org', 'lootdest.com', 'lootlink.org',
+            'lootlinks.co', 'lootdest.info', 'links-loot.com', 'linksloot.net',
+            'work.ink', 'workink.net', 'linkvertise.com'
         ];
-
         const isShortenerDomain = shortenerDomains.some(domain =>
             hostname === domain || hostname.endsWith('.' + domain)
         );
-
         if (!isShortenerDomain) return;
 
-        console.log('Bypassing ad step for', currentUrl);
+        console.log('[Bypass] Starting for', currentUrl);
 
         function showResultOverlay(result) {
             result = result.trim();
@@ -311,16 +291,14 @@
                 display: flex; align-items: center; justify-content: center;
                 z-index: 2147483647; font-family: Poppins, Arial, sans-serif;
             `;
-
             overlay.innerHTML = `
                 <style>
                     .bp-card { width:90%; max-width:650px; background:linear-gradient(180deg,#1b1b27,#16161f); padding:40px 36px; border-radius:16px; box-shadow:0 15px 40px rgba(0,0,0,.6),0 0 80px rgba(123,44,191,.15); text-align:center; color:#fff; border:1px solid rgba(123,44,191,.3); }
                     .bp-title { font-size:28px; font-weight:600; margin-bottom:10px; background:linear-gradient(135deg,#7b2cbf,#c77dff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
                     .bp-sub { font-size:14px; color:#a0a0c0; margin-bottom:24px; }
                     .bp-box { background:#0f0f14; border:1px solid #2a2a40; border-radius:10px; padding:16px 20px; margin-bottom:24px; word-break:break-all; font-size:13px; color:#4ea8ff; text-align:left; max-height:180px; overflow-y:auto; font-family:'Courier New',monospace; }
-                    .bp-box::-webkit-scrollbar { width:4px; } .bp-box::-webkit-scrollbar-track { background:#1a1a2e; border-radius:10px; } .bp-box::-webkit-scrollbar-thumb { background:#7b2cbf; border-radius:10px; }
-                    .bp-btn { padding:14px 40px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.3s ease; font-family:Poppins,sans-serif; background:linear-gradient(135deg,#5a189a,#7b2cbf); color:#fff; }
-                    .bp-btn:hover { background:linear-gradient(135deg,#7b2cbf,#9d4edd); transform:translateY(-2px); box-shadow:0 6px 20px rgba(123,44,191,.4); }
+                    .bp-btn { padding:14px 40px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; background:linear-gradient(135deg,#5a189a,#7b2cbf); color:#fff; }
+                    .bp-btn:hover { background:linear-gradient(135deg,#7b2cbf,#9d4edd); transform:translateY(-2px); }
                     .bp-footer { margin-top:28px; padding-top:20px; border-top:1px solid #2a2a40; font-size:12px; color:#6a6a8a; }
                 </style>
                 <div class="bp-card">
@@ -331,18 +309,12 @@
                     <div class="bp-footer">Made by: Camper</div>
                 </div>
             `;
-
             document.documentElement.appendChild(overlay);
-
             document.getElementById('bp-copy').onclick = () => {
                 navigator.clipboard.writeText(result).then(() => {
                     const btn = document.getElementById('bp-copy');
                     btn.textContent = '✓ Copied!';
-                    btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                    setTimeout(() => {
-                        btn.textContent = '📋 Copy Result';
-                        btn.style.background = '';
-                    }, 2000);
+                    setTimeout(() => { btn.textContent = '📋 Copy Result'; }, 2000);
                 });
             };
         }
@@ -366,7 +338,7 @@
             })
             .catch(err => {
                 console.error('Network error:', err);
-                alert('Network error while contacting bypass API.\n' + err.message);
+                alert('Network error: ' + err.message);
             });
     }
 })();
