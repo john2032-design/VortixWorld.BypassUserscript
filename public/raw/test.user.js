@@ -1,21 +1,25 @@
 // ==UserScript==
 // @name         Auto Luarmor & Link Shortener Bypass
-// @namespace    https://github.com/camper
-// @version      1.4
+// @namespace    https://github.com/afk.l0l
+// @version      2.0
 // @description  Automatically collects Luarmor keys, clicks through ads, and bypasses link shorteners using a remote API.
-// @author       Camper
+// @author       @afk.l0l
 // @match        *://*.luarmor.net/*
-// @match        *://loot-link.com/*
-// @match        *://lootdest.org/*
-// @match        *://lootdest.com/*
-// @match        *://lootlink.org/*
-// @match        *://lootlinks.co/*
-// @match        *://lootdest.info/*
-// @match        *://links-loot.com/*
-// @match        *://linksloot.net/*
-// @match        *://work.ink/*
-// @match        *://workink.net/*
-// @match        *://linkvertise.com/*
+// @match        *://*.loot-link.com/*
+// @match        *://*.lootdest.org/*
+// @match        *://*.lootdest.com/*
+// @match        *://*.lootlink.org/*
+// @match        *://*.lootlinks.co/*
+// @match        *://*.lootdest.info/*
+// @match        *://*.links-loot.com/*
+// @match        *://*.linksloot.net/*
+// @match        *://*.work.ink/*
+// @match        *://*.workink.net/*
+// @match        *://*.linkvertise.com/*
+// @match        *://*.tpi.li/*
+// @match        *://*.exe.io/*
+// @match        *://*.shrinkearn.com/*
+// @match        *://*.shortingly.com/*
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -34,20 +38,28 @@
             const rect = element.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return false;
             element.focus();
-            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(eventType => {
-                const event = new MouseEvent(eventType, {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true,
-                    button: 0,
-                    buttons: 1,
-                    clientX: rect.left + rect.width / 2,
-                    clientY: rect.top + rect.height / 2
-                });
-                element.dispatchEvent(event);
+            
+            ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(eventType => {
+                try {
+                    let event;
+                    if (eventType.startsWith('touch')) {
+                        event = new Event(eventType, { bubbles: true, cancelable: true });
+                    } else {
+                        event = new MouseEvent(eventType, {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true,
+                            button: 0,
+                            buttons: 1,
+                            clientX: rect.left + rect.width / 2,
+                            clientY: rect.top + rect.height / 2
+                        });
+                    }
+                    element.dispatchEvent(event);
+                } catch(e) {}
             });
-            if (element.onclick) element.onclick(new Event('click'));
-            element.click();
+            
+            try { element.click(); } catch(e2) {}
             return true;
         } catch(e) {
             try { element.click(); } catch(e2) {}
@@ -82,96 +94,89 @@
         localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25');
         console.log('[AutoLuarmor] Keys injected');
 
-        let isPaused = false;
-        let currentKey = "N/A";
+        let isActive = localStorage.getItem('autoLua_isActive') === 'true';
         let navAttempted = false;
+        let currentKey = "N/A";
+        let activeTimers = [];
+
+        function clearAllTimeouts() {
+            for (const timer of activeTimers) {
+                clearTimeout(timer);
+            }
+            activeTimers = [];
+        }
 
         if (document.getElementById('autoLuaUI')) return;
 
         const ui = document.createElement("div");
+        ui.id = "autoLuaUI";
+        
         ui.style.cssText = `
             position: fixed;
-            bottom: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
-            width: auto;
-            max-width: 400px;
-            background: transparent;
-            color: #fff;
+            width: max-content;
+            min-width: 280px;
+            background: rgba(13,13,13,0.85);
+            color: #ffffff;
             font-family: Poppins, Arial, sans-serif;
             z-index: 2147483647;
-            font-size: 13px;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #333333;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         `;
 
         ui.innerHTML = `
             <style>
                 #autoLuaUI * { box-sizing: border-box; font-family: Poppins, Arial, sans-serif; }
-                #autoLuaUI .title {
-                    font-size: 18px; font-weight: 600; margin-bottom: 6px;
-                    background: linear-gradient(135deg, #7b2cbf, #c77dff);
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                .top-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 8px 16px;
+                    width: 100%;
                 }
-                #autoLuaUI .info-box {
-                    background: #0f0f14; border: 1px solid #2a2a40;
-                    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+                .title {
+                    font-size: 15px;
+                    font-weight: 600;
+                    background: linear-gradient(135deg, #cccccc, #ffffff);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    letter-spacing: 0.5px;
+                    margin-right: 15px;
                 }
-                #autoLuaUI .info-row {
-                    display: flex; justify-content: space-between;
-                    align-items: center; gap: 8px;
+                .control-btn {
+                    background: #333333;
+                    color: #ffffff;
+                    border: none;
+                    padding: 6px 16px;
+                    border-radius: 40px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-family: Poppins, sans-serif;
                 }
-                #autoLuaUI .label { color: #a0a0c0; font-size: 11px; white-space: nowrap; }
-                #autoLuaUI .key-val {
-                    font-family: 'Courier New', monospace; font-size: 11px;
-                    color: #4ea8ff; word-break: break-all; text-align: right;
+                .control-btn:hover {
+                    background: #555555;
+                    transform: scale(1.02);
                 }
-                #autoLuaUI .btn-group { display: flex; gap: 8px; margin-bottom: 14px; }
-                #autoLuaUI .btn {
-                    flex: 1; padding: 10px; border: none; border-radius: 10px;
-                    font-size: 12px; font-weight: 600; cursor: pointer;
-                    transition: all 0.3s ease; font-family: Poppins, sans-serif;
-                }
-                #autoLuaUI #toggleBtn {
-                    background: linear-gradient(135deg, #7b2cbf, #5a189a); color: #fff;
-                }
-                #autoLuaUI #toggleBtn:hover {
-                    background: linear-gradient(135deg, #9d4edd, #7b2cbf);
-                    transform: translateY(-2px); box-shadow: 0 6px 20px rgba(123,44,191,.4);
-                }
-                #autoLuaUI .footer {
-                    margin-top: 14px; padding-top: 12px; border-top: 1px solid #2a2a40;
-                    font-size: 10px; color: #6a6a8a; text-align: center;
-                }
-                #autoLuaUI .dot {
-                    width: 8px; height: 8px; background: #4ade80;
-                    border-radius: 50%; box-shadow: 0 0 8px #4ade80;
-                    display: inline-block; margin-right: 6px;
+                .status {
+                    font-size: 11px;
+                    color: #aaaaaa;
+                    margin-right: 10px;
                 }
             </style>
-            <div id="autoLuaUI" style="
-                width:320px;
-                background:linear-gradient(180deg,#1b1b27,#16161f);
-                border-radius:16px;
-                padding:16px;
-                box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 40px rgba(123,44,191,.15);
-                border:1px solid rgba(123,44,191,.3);
-                pointer-events: auto;">
-                <div style="display:flex; align-items:center; margin-bottom:4px;">
-                    <span class="dot"></span>
-                    <div class="title">Auto Luarmor</div>
+            <div class="top-bar">
+                <div class="title">⚡ Auto Lua</div>
+                <div style="display: flex; align-items: center;">
+                    <span class="status" id="autoStatus">● Idle</span>
+                    <button id="startStopBtn" class="control-btn">Start</button>
                 </div>
-                <div class="info-box">
-                    <div class="info-row">
-                        <span class="label">Key</span>
-                        <span id="keyDisplay" class="key-val">N/A</span>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button id="toggleBtn" class="btn">Pause</button>
-                </div>
-                <div class="footer">Made by: Camper</div>
             </div>
         `;
 
@@ -181,21 +186,57 @@
             document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ui));
         }
 
-        const toggleBtn = ui.querySelector("#toggleBtn");
-        const keyDisplay = ui.querySelector("#keyDisplay");
+        const startStopBtn = ui.querySelector("#startStopBtn");
+        const statusSpan = ui.querySelector("#autoStatus");
 
-        toggleBtn.addEventListener("click", () => {
-            isPaused = !isPaused;
-            toggleBtn.innerHTML = isPaused ? "Resume" : "Pause";
-            if (!isPaused) {
-                navAttempted = false;
-                onLoad();
+        function updateUIForState() {
+            if (isActive) {
+                startStopBtn.textContent = "Stop";
+                statusSpan.innerHTML = "● Running";
+                statusSpan.style.color = "#4ade80";
+            } else {
+                startStopBtn.textContent = "Start";
+                statusSpan.innerHTML = "● Idle";
+                statusSpan.style.color = "#aaaaaa";
+            }
+        }
+
+        function stopAutomation() {
+            isActive = false;
+            localStorage.setItem('autoLua_isActive', 'false');
+            clearAllTimeouts();
+            updateUIForState();
+            console.log('[AutoLuarmor] Stopped by user');
+        }
+
+        function startAutomation(isInitialLoad = false) {
+            if (isActive && !isInitialLoad) return;
+            isActive = true;
+            localStorage.setItem('autoLua_isActive', 'true');
+            navAttempted = false;
+            clearAllTimeouts();
+            updateUIForState();
+            
+            if (!isInitialLoad) console.log('[AutoLuarmor] Started by user');
+            
+            // Give the page slightly more time to load its listeners if it's an initial auto-load
+            const delay = isInitialLoad ? 1000 : 300;
+            const timer = setTimeout(() => {
+                if (isActive) onLoad();
+            }, delay);
+            activeTimers.push(timer);
+        }
+
+        startStopBtn.addEventListener("click", () => {
+            if (isActive) {
+                stopAutomation();
+            } else {
+                startAutomation();
             }
         });
 
         function setKey(key) {
             currentKey = key;
-            if (keyDisplay) keyDisplay.textContent = key;
         }
 
         function isBlocked() {
@@ -218,7 +259,7 @@
         }
 
         function checkProgress() {
-            if (isPaused) return;
+            if (!isActive) return;
             if (isBlocked()) return;
             const progressElement = document.getElementById('adprogressp');
             if (!progressElement) return;
@@ -237,76 +278,169 @@
             }
         }
 
-        async function waitForButtonToBeClickable() {
-            if (isPaused || navAttempted) return;
-            if (isBlocked()) { setTimeout(waitForButtonToBeClickable, 500); return; }
+        function waitForButtonToBeClickable() {
+            if (!isActive || navAttempted) return;
+            if (isBlocked()) {
+                const timer = setTimeout(waitForButtonToBeClickable, 500);
+                activeTimers.push(timer);
+                return;
+            }
             const btn = document.getElementById('nextbtn');
             if (btn && btn.offsetParent !== null && !(btn.style.cursor === 'not-allowed' || btn.disabled)) {
                 console.log('[AutoLuarmor] Clicking nextbtn');
                 simulateClick(btn);
                 navAttempted = true;
-                setTimeout(() => {
-                    if (window.location.href === currentUrl) {
-                        console.log('[AutoLuarmor] Navigation failed, forcing redirect');
-                        forceNavigation(btn);
+                
+                // Enhanced Fallback: If it didn't work, reset and try again
+                const fallbackTimer = setTimeout(() => {
+                    if (isActive && window.location.href === currentUrl) {
+                        console.log('[AutoLuarmor] Click seemed to fail, retrying...');
+                        navAttempted = false; // Reset so it can try clicking again
+                        forceNavigation(btn); // Try forcing as a backup
+                        waitForButtonToBeClickable(); // Re-enter the loop
                     }
-                }, 1500);
+                }, 2500);
+                activeTimers.push(fallbackTimer);
             } else {
-                setTimeout(waitForButtonToBeClickable, 500);
+                const timer = setTimeout(waitForButtonToBeClickable, 500);
+                activeTimers.push(timer);
             }
         }
 
         function onLoad() {
-            if (isPaused) return;
-            if (isBlocked()) { setTimeout(onLoad, 500); return; }
+            if (!isActive) return;
+            if (isBlocked()) {
+                const timer = setTimeout(onLoad, 500);
+                activeTimers.push(timer);
+                return;
+            }
             grabKeyOnce();
             checkProgress();
             waitForButtonToBeClickable();
         }
 
-        if (document.readyState === "complete") {
-            onLoad();
+        if (isActive) {
+            startAutomation(true); 
         } else {
-            window.addEventListener("load", onLoad);
+            updateUIForState();
         }
+
     } else {
         const shortenerDomains = [
             'loot-link.com', 'lootdest.org', 'lootdest.com', 'lootlink.org',
             'lootlinks.co', 'lootdest.info', 'links-loot.com', 'linksloot.net',
-            'work.ink', 'workink.net', 'linkvertise.com'
+            'work.ink', 'workink.net', 'linkvertise.com', 'tpi.li',
+            'exe.io', 'shrinkearn.com', 'shortingly.com'
         ];
         const isShortenerDomain = shortenerDomains.some(domain =>
             hostname === domain || hostname.endsWith('.' + domain)
         );
         if (!isShortenerDomain) return;
 
+        const badge = document.createElement('div');
+        badge.textContent = '⏳ Bypassing...';
+        badge.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #222222;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: Poppins, Arial, sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 2147483647;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            pointer-events: none;
+        `;
+        document.body.appendChild(badge);
+
         console.log('[Bypass] Starting for', currentUrl);
 
-        function showResultOverlay(result) {
-            result = result.trim();
+        function showLuarmorExpiryOverlay(url) {
+            badge.remove();
+            let timeLeft = 7;
             const overlay = document.createElement('div');
             overlay.style.cssText = `
                 position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                background: linear-gradient(135deg, #0f0f14 0%, #1a1a2e 100%);
+                background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(5px);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 2147483647; font-family: Poppins, Arial, sans-serif;
+            `;
+            // Removed the URL div from here
+            overlay.innerHTML = `
+                <style>
+                    .hash-card { width:90%; max-width:500px; background:#111111; padding:30px 25px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.8); text-align:center; color:#ffffff; border:1px solid #333333; }
+                    .hash-title { font-size:24px; font-weight:600; margin-bottom:15px; color:#ffffff; }
+                    .hash-timer { font-size:36px; font-weight:bold; margin:20px 0; color:#ff5555; }
+                    .hash-btn { padding:12px 30px; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; background:#333333; color:#ffffff; margin-top:10px; }
+                    .hash-btn:hover { background:#555555; }
+                    .hash-footer { margin-top:25px; font-size:11px; color:#888888; }
+                </style>
+                <div class="hash-card">
+                    <div class="hash-title">⚠️ Expiring Hash Detected</div>
+                    <div>This hash expires in:</div>
+                    <div class="hash-timer" id="countdown">7</div>
+                    <button class="hash-btn" id="redirectNow">🔗 Go to Link Now</button>
+                    <div class="hash-footer">Made by: @afk.l0l</div>
+                </div>
+            `;
+            document.documentElement.appendChild(overlay);
+
+            const timerElem = overlay.querySelector('#countdown');
+            const btn = overlay.querySelector('#redirectNow');
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerElem.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    timerElem.textContent = "Expired!";
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.textContent = '⏰ Hash Expired';
+                }
+            }, 1000);
+
+            btn.onclick = () => {
+                if (timeLeft > 0) {
+                    window.location.href = url;
+                } else {
+                    alert('Hash has expired. Please refresh and try again.');
+                }
+            };
+        }
+
+        function showResultOverlay(result) {
+            result = result.trim();
+            if (result.includes('ads.luarmor.net') && result.includes('?hash=')) {
+                showLuarmorExpiryOverlay(result);
+                return;
+            }
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(5px);
                 display: flex; align-items: center; justify-content: center;
                 z-index: 2147483647; font-family: Poppins, Arial, sans-serif;
             `;
             overlay.innerHTML = `
                 <style>
-                    .bp-card { width:90%; max-width:650px; background:linear-gradient(180deg,#1b1b27,#16161f); padding:40px 36px; border-radius:16px; box-shadow:0 15px 40px rgba(0,0,0,.6),0 0 80px rgba(123,44,191,.15); text-align:center; color:#fff; border:1px solid rgba(123,44,191,.3); }
-                    .bp-title { font-size:28px; font-weight:600; margin-bottom:10px; background:linear-gradient(135deg,#7b2cbf,#c77dff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-                    .bp-sub { font-size:14px; color:#a0a0c0; margin-bottom:24px; }
-                    .bp-box { background:#0f0f14; border:1px solid #2a2a40; border-radius:10px; padding:16px 20px; margin-bottom:24px; word-break:break-all; font-size:13px; color:#4ea8ff; text-align:left; max-height:180px; overflow-y:auto; font-family:'Courier New',monospace; }
-                    .bp-btn { padding:14px 40px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; background:linear-gradient(135deg,#5a189a,#7b2cbf); color:#fff; }
-                    .bp-btn:hover { background:linear-gradient(135deg,#7b2cbf,#9d4edd); transform:translateY(-2px); }
-                    .bp-footer { margin-top:28px; padding-top:20px; border-top:1px solid #2a2a40; font-size:12px; color:#6a6a8a; }
+                    .bp-card { width:90%; max-width:650px; background:#111111; padding:40px 36px; border-radius:16px; box-shadow:0 15px 40px rgba(0,0,0,.8); text-align:center; color:#ffffff; border:1px solid #333333; }
+                    .bp-title { font-size:28px; font-weight:600; margin-bottom:10px; color:#ffffff; }
+                    .bp-sub { font-size:14px; color:#cccccc; margin-bottom:24px; }
+                    .bp-box { background:#1a1a1a; border:1px solid #333333; border-radius:10px; padding:16px 20px; margin-bottom:24px; word-break:break-all; font-size:13px; color:#88ccff; text-align:left; max-height:180px; overflow-y:auto; font-family:'Courier New',monospace; }
+                    .bp-btn { padding:14px 40px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; background:#333333; color:#ffffff; }
+                    .bp-btn:hover { background:#555555; transform:translateY(-2px); }
+                    .bp-footer { margin-top:28px; padding-top:20px; border-top:1px solid #333333; font-size:12px; color:#888888; }
                 </style>
                 <div class="bp-card">
                     <div class="bp-title">✓ Bypass Successful</div>
                     <div class="bp-sub">Your result is ready</div>
                     <div class="bp-box" id="bp-result">${result}</div>
                     <button class="bp-btn" id="bp-copy">📋 Copy Result</button>
-                    <div class="bp-footer">Made by: Camper</div>
+                    <div class="bp-footer">Made by: @afk.l0l</div>
                 </div>
             `;
             document.documentElement.appendChild(overlay);
@@ -332,11 +466,17 @@
                     } catch(e) {}
                     showResultOverlay(finalResult);
                 } else {
+                    badge.textContent = '❌ Bypass failed';
+                    badge.style.background = '#222222';
+                    badge.style.color = '#ff8888';
                     console.error('Bypass failed:', data);
                     alert('Failed to bypass this link.\n' + (data.result || 'Unknown error'));
                 }
             })
             .catch(err => {
+                badge.textContent = '⚠️ Network error';
+                badge.style.background = '#222222';
+                badge.style.color = '#ff8888';
                 console.error('Network error:', err);
                 alert('Network error: ' + err.message);
             });
