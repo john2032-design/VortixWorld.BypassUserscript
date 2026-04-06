@@ -1,4 +1,4 @@
-;(function () {
+(function () {
   'use strict'
 
   if (window.top !== window.self) return
@@ -211,12 +211,13 @@
       min-width: 0 !important;
     }
 
-    .vw-row-toggle {
-      grid-template-columns: minmax(0, 1fr) auto !important;
+    .vw-row-select {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
     }
 
-    .vw-row-stack {
-      grid-template-columns: 1fr !important;
+    .vw-row-toggle {
+      grid-template-columns: minmax(0, 1fr) auto !important;
     }
 
     .vw-label {
@@ -244,31 +245,22 @@
 
     .vw-select {
       width: 100% !important;
-      padding: 10px 14px !important;
-      background: #1a1a1a !important;
-      color: #e0e0e0 !important;
+      padding: 12px 14px !important;
+      border-radius: 40px !important;
       border: none !important;
-      border-radius: 12px !important;
-      box-shadow: inset 2px 2px 5px #141414, inset -2px -2px 5px #282828 !important;
+      background: #1e1e1e !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+      color: #e0e0e0 !important;
       font-family: inherit !important;
       font-size: 13px !important;
-      font-weight: 600 !important;
-      outline: none !important;
-      appearance: none !important;
+      font-weight: 500 !important;
       cursor: pointer !important;
-      margin-top: 8px !important;
+      outline: none !important;
     }
 
     .vw-select option {
       background: #1e1e1e !important;
       color: #e0e0e0 !important;
-    }
-    
-    .vw-select optgroup {
-      background: #141414 !important;
-      color: #a0a0a0 !important;
-      font-style: normal !important;
-      font-weight: 700 !important;
     }
 
     .vw-toggle {
@@ -506,15 +498,29 @@
     }
   `
 
+  const UA_OPTIONS = [
+    { group: 'iOS', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1' },
+    { group: 'iOS', ua: 'Mozilla/5.0 (iPad; CPU OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1' },
+    { group: 'iOS', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1' },
+    { group: 'iOS', ua: 'Mozilla/5.0 (iPod touch; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1' },
+    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 13; SM-S908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36' },
+    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36' },
+    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36' },
+    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 10; SM-A515F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Mobile Safari/537.36' },
+    { group: 'Desktop', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36' },
+    { group: 'Desktop', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0' },
+    { group: 'Desktop', ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15' },
+    { group: 'Desktop', ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36' }
+  ]
+
   function hasGM() {
-    return typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined'
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
 
   function getStoredValue(key, defaultValue) {
     if (hasGM()) {
       try {
-        const val = GM_getValue(key)
-        if (val !== undefined && val !== null) return val
+        return GM_getValue(key, defaultValue)
       } catch (_) {}
     }
 
@@ -587,6 +593,16 @@
           <button class="vw-close-btn" type="button" aria-label="Close settings">✕</button>
         </div>
         <div class="vw-body">
+          <div class="vw-row vw-row-select">
+            <div class="vw-label">
+              <div class="vw-label-title">User Agent</div>
+              <div class="vw-label-desc">Select device User Agent for bypass</div>
+            </div>
+            <select id="vwUserAgentSelect" class="vw-select">
+              ${UA_OPTIONS.map(opt => `<option value="${escapeHtml(opt.ua)}">${escapeHtml(opt.group)} - ${escapeHtml(opt.ua.substring(0, 60))}...</option>`).join('')}
+            </select>
+          </div>
+
           <div class="vw-row vw-row-toggle">
             <div class="vw-label">
               <div class="vw-label-title">Auto Redirect</div>
@@ -596,33 +612,6 @@
               <input type="checkbox" id="vwAutoToggle">
               <span class="vw-toggle-slider"></span>
             </label>
-          </div>
-
-          <div class="vw-row vw-row-stack">
-            <div class="vw-label">
-              <div class="vw-label-title">User Agent Override</div>
-              <div class="vw-label-desc">Spoof your device for bypassing lootlink smoothly</div>
-            </div>
-            <select id="vwUaSelect" class="vw-select">
-                <option value="default">Default (Current Device Browser)</option>
-                <optgroup label="iOS">
-                    <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1">iPhone Safari (iOS 16)</option>
-                    <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/117.0.5938.108 Mobile/15E148 Safari/604.1">iPhone Chrome (iOS 17)</option>
-                    <option value="Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1">iPad Safari (iOS 16)</option>
-                </optgroup>
-                <optgroup label="Android">
-                    <option value="Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36">Samsung Galaxy S23 (Android 13)</option>
-                    <option value="Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36">Google Pixel 6 (Android 12)</option>
-                    <option value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36">Samsung Galaxy S10 (Android 10)</option>
-                    <option value="Mozilla/5.0 (Android 11; Mobile; rv:109.0) Gecko/110.0 Firefox/110.0">Generic Android Firefox</option>
-                </optgroup>
-                <optgroup label="Desktop / PC">
-                    <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36">Windows Chrome</option>
-                    <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15">Mac OS Safari</option>
-                    <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0">Windows Firefox</option>
-                    <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47">Windows Edge</option>
-                </optgroup>
-            </select>
           </div>
 
           <div class="vw-actions">
@@ -666,7 +655,7 @@
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
     const autoToggle = shadow.querySelector('#vwAutoToggle')
-    const uaSelect = shadow.querySelector('#vwUaSelect')
+    const uaSelect = shadow.querySelector('#vwUserAgentSelect')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
@@ -830,20 +819,31 @@
     function loadSettings() {
       const auto = getStoredValue(keys.autoRedirect, true)
       autoToggle.checked = auto === true
-      
-      const ua = getStoredValue(keys.userAgent, 'default')
-      const optionExists = Array.from(uaSelect.options).some(opt => opt.value === ua)
-      uaSelect.value = optionExists ? ua : 'default'
+
+      const savedUA = getStoredValue(keys.userAgent, '')
+      if (savedUA) {
+        const optionExists = Array.from(uaSelect.options).some(opt => opt.value === savedUA)
+        if (optionExists) {
+          uaSelect.value = savedUA
+        } else {
+          uaSelect.value = UA_OPTIONS[4].ua
+        }
+      } else {
+        uaSelect.value = UA_OPTIONS[4].ua
+      }
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-      const newUa = uaSelect.value
+      const newUA = uaSelect.value
 
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue(keys.userAgent, newUa)
+      setStoredValue(keys.userAgent, newUA)
 
-      showToast(hasGM() ? '✓ Saved across all tabs!' : '✓ Settings saved locally!')
+      showToast(hasGM() ? '✓ Settings saved globally! Page will reload to apply UA' : '✓ Settings saved! Page will reload to apply UA')
+      setTimeout(() => {
+        location.reload()
+      }, 1500)
     }
 
     gearBtn.addEventListener('click', (e) => {
