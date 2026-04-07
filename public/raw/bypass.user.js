@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.5
+// @version      2.6
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -402,18 +402,11 @@
   let autoLuaActive = false
   let autoLuaNavAttempted = false
   let autoLuaTimers = []
-  let initialKey = null
-  let initialKeySet = false
-  let lastLuaClickTime = 0
-  const LUA_CLICK_COOLDOWN = 6000
+  let clickedButtons = new Set()
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
     autoLuaTimers = []
-  }
-
-  function canLuaClick() {
-     return (Date.now() - lastLuaClickTime) >= LUA_CLICK_COOLDOWN;
   }
 
   function triggerNativeLuarmor(btnId) {
@@ -445,12 +438,12 @@
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
         if (btn && !btn.disabled) {
-           if (canLuaClick()) {
-               lastLuaClickTime = Date.now();
-               triggerNativeLuarmor(btn.id);
+           if (!clickedButtons.has(btn.id)) {
+               clickedButtons.add(btn.id)
+               triggerNativeLuarmor(btn.id)
                if (btn.id === 'newkeybtn') {
-                   stopAutoLuarmor();
-                   return;
+                   stopAutoLuarmor()
+                   return
                }
            }
         }
@@ -463,45 +456,15 @@
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (canLuaClick()) {
-          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
-          lastLuaClickTime = Date.now();
-          triggerNativeLuarmor('nextbtn')
-          autoLuaNavAttempted = true
-          autoLuaTimers.push(setTimeout(() => {
-            if (autoLuaActive && window.location.href === window.location.href) {
-              Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
-              autoLuaNavAttempted = false
-              attemptNext()
-            }
-          }, 3000))
-      } else {
-          autoLuaTimers.push(setTimeout(attemptNext, 1000))
-      }
-    } else {
-      autoLuaTimers.push(setTimeout(attemptNext, 600))
+        if (!clickedButtons.has('nextbtn')) {
+            clickedButtons.add('nextbtn')
+            Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+            triggerNativeLuarmor('nextbtn')
+            autoLuaNavAttempted = true
+            return
+        }
     }
-  }
-
-  function monitorKey() {
-    if (!autoLuaActive) return
-    const keyElement = document.querySelector('h6.mb-0.text-sm')
-    if (keyElement) {
-      const text = keyElement.textContent.trim()
-      if (!initialKeySet) {
-        initialKey = text
-        initialKeySet = true
-      } else if (text !== initialKey && text.length > 0) {
-        stopAutoLuarmor()
-        return
-      }
-    } else {
-      if (!initialKeySet) {
-        initialKey = ''
-        initialKeySet = true
-      }
-    }
-    autoLuaTimers.push(setTimeout(monitorKey, 1000))
+    autoLuaTimers.push(setTimeout(attemptNext, 600))
   }
 
   function startAutoLuarmor() {
@@ -509,7 +472,7 @@
     autoLuaActive = true
     localStorage.setItem('vw_auto_luarmor_active', 'true')
     autoLuaNavAttempted = false
-    initialKeySet = false
+    clickedButtons.clear()
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -525,7 +488,6 @@
     }
     checkProgress()
     attemptNext()
-    monitorKey()
   }
 
   function stopAutoLuarmor() {
@@ -939,7 +901,7 @@
     }
   }
 
-  const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
+  const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17)
 
   async function completeTaskViaSkippedLol(taskUrl) {
     const endpoint = 'https://skipped.lol/api/evade/ll'
@@ -991,7 +953,7 @@
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
       maxDelay: CONFIG.MAX_RECONNECT_DELAY,
       heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-      maxRetries: 3
+      maxRetries: 5
     })
 
     if (isFallback) {
