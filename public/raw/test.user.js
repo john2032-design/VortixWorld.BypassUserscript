@@ -11,7 +11,7 @@
 // @grant        GM_setValue
 // @license      MIT
 // @run-at       document-start
-// ==/ || ==UserScript==
+// ==UserScript==
 
 ;(function () {
   'use strict'
