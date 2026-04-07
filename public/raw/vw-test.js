@@ -473,7 +473,7 @@
   `
 
   function hasGM() {
-    return typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined'
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
 
   function getStoredValue(key, defaultValue) {
