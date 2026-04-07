@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.8
+// @version      2.5
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
-// @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_getValue
 // @license      MIT
 // @run-at       document-start
 // ==/UserScript==
@@ -20,7 +20,9 @@
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
   const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png'
   const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png'
+  const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
   const API_BASE = 'https://vortixworld-end.vercel.app'
 
   const LOOT_HOSTS = [
@@ -70,43 +72,8 @@
   })
 
   const VW_KEYS = window.VW_CONFIG?.keys || {
-    autoRedirect: 'vw_auto_redirect',
-    userAgent: 'vw_user_agent'
+    autoRedirect: 'vw_auto_redirect'
   }
-
-  function getStoredValue(key, defaultValue) {
-    if (typeof GM_getValue === 'function') {
-      try {
-        return GM_getValue(key, defaultValue)
-      } catch (_) {}
-    }
-    try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
-      if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
-        return Number.isFinite(n) ? n : defaultValue
-      }
-      return lsValue
-    } catch (_) {
-      return defaultValue
-    }
-  }
-
-  function getEffectiveUA() {
-    const stored = getStoredValue(VW_KEYS.userAgent, null)
-    if (stored && stored !== '') return stored
-    if (isIOS) return 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
-    if (isAndroid) return 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36'
-    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36'
-  }
-
-  const ANDROID_UA = getEffectiveUA()
-
-  try {
-    Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA, configurable: false })
-  } catch (e) {}
 
   window.__vw_logs = window.__vw_logs || []
   const LOG_STYLE = {
@@ -120,7 +87,12 @@
 
   const Logger = {
     _push(level, msg, data) {
-      const entry = { timestamp: new Date().toISOString(), level, message: msg, data: data !== undefined ? String(data) : '' }
+      const entry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message: msg,
+        data: data !== undefined ? String(data) : ''
+      }
       window.__vw_logs.push(entry)
       if (window.__vw_logs.length > 500) window.__vw_logs.shift()
     },
@@ -167,31 +139,51 @@
   }
 
   let isShutdown = false
+
   function shutdown() {
     if (isShutdown) return
     isShutdown = true
     cleanupManager.clearAll()
-    if (window.bypassObserver) { window.bypassObserver.disconnect(); window.bypassObserver = null }
-    if (window.primaryWebSocket) { window.primaryWebSocket.disconnect(); window.primaryWebSocket = null }
-    if (window.fallbackWebSocket) { window.fallbackWebSocket.disconnect(); window.fallbackWebSocket = null }
-    if (window.activeWebSocket) { window.activeWebSocket.disconnect(); window.activeWebSocket = null }
+    if (window.bypassObserver) {
+      window.bypassObserver.disconnect()
+      window.bypassObserver = null
+    }
+    if (window.primaryWebSocket) {
+      window.primaryWebSocket.disconnect()
+      window.primaryWebSocket = null
+    }
+    if (window.fallbackWebSocket) {
+      window.fallbackWebSocket.disconnect()
+      window.fallbackWebSocket = null
+    }
+    if (window.activeWebSocket) {
+      window.activeWebSocket.disconnect()
+      window.activeWebSocket = null
+    }
   }
 
   async function copyTextSilent(text) {
     try {
       if (!text) return false
-      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(String(text)); return true }
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(String(text))
+        return true
+      }
     } catch (_) {}
     try {
       const ta = document.createElement('textarea')
       ta.value = String(text)
-      ta.style.cssText = 'position:fixed;left:-9999px;top:0'
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      ta.style.top = '0'
       ;(document.body || document.documentElement).appendChild(ta)
-      ta.focus(); ta.select()
+      ta.focus()
+      ta.select()
       const ok = document.execCommand('copy')
       ta.remove()
       return !!ok
-    } catch (_) { return false }
+    } catch (_) {}
+    return false
   }
 
   function isLuarmorUrl(url) {
@@ -199,7 +191,9 @@
       const u = new URL(String(url), location.href)
       const h = (u.hostname || '').toLowerCase()
       return h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net')
-    } catch (_) { return String(url).includes('ads.luarmor.net') }
+    } catch (_) {
+      return String(url).includes('ads.luarmor.net')
+    }
   }
 
   const SHARED_UI_CSS = `
@@ -406,15 +400,51 @@
     }
   }
 
-  let autoLuaActive = false, autoLuaNavAttempted = false, autoLuaTimers = [], initialKey = null, initialKeySet = false, lastLuaClickTime = 0
-  const LUA_CLICK_COOLDOWN = isIOS ? 10000 : 0
+  let autoLuaActive = false
+  let autoLuaNavAttempted = false
+  let autoLuaTimers = []
+  let luaClickedIds = new Set()
+  let lastLuaClickTime = 0
 
-  function clearAutoLuaTimeouts() { autoLuaTimers.forEach(clearTimeout); autoLuaTimers = [] }
-  function canLuaClick() { return isIOS ? (Date.now() - lastLuaClickTime) >= LUA_CLICK_COOLDOWN : true }
+  function clearAutoLuaTimeouts() {
+    autoLuaTimers.forEach(clearTimeout)
+    autoLuaTimers = []
+  }
+
+  function attemptLuaClick(btn) {
+    if (!btn || !btn.id) return false
+    if (isIOS) {
+        if (Date.now() - lastLuaClickTime >= 10000) {
+            lastLuaClickTime = Date.now();
+            triggerNativeLuarmor(btn.id);
+            return true;
+        }
+    } else {
+        if (!luaClickedIds.has(btn.id)) {
+            luaClickedIds.add(btn.id);
+            triggerNativeLuarmor(btn.id);
+            return true;
+        }
+    }
+    return false;
+  }
 
   function triggerNativeLuarmor(btnId) {
+    const scriptContent = `
+      try {
+        const btn = document.getElementById('${btnId}');
+        if (btn) {
+          if (typeof k !== 'undefined' && k.event && typeof k.event.dispatch === 'function') {
+            const mockEvent = { target: btn, type: 'click', preventDefault: () => {}, stopPropagation: () => {} };
+            k.event.dispatch.call(btn, mockEvent);
+          } else {
+            btn.click();
+          }
+        }
+      } catch (e) { }
+    `
     const script = document.createElement('script')
-    script.textContent = `try{const btn=document.getElementById('${btnId}');if(btn){if(typeof k!=='undefined'&&k.event&&typeof k.event.dispatch==='function'){const mockEvent={target:btn,type:'click',preventDefault:()=>{},stopPropagation:()=>{}};k.event.dispatch.call(btn,mockEvent)}else btn.click();}}catch(e){}`
+    script.textContent = scriptContent
     ;(document.head || document.documentElement).appendChild(script)
     script.remove()
   }
@@ -427,55 +457,62 @@
       if (match && match[1] === match[2]) {
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
-        if (btn && !btn.disabled && canLuaClick()) {
-          lastLuaClickTime = Date.now()
-          triggerNativeLuarmor(btn.id)
-          if (btn.id === 'newkeybtn') stopAutoLuarmor()
+        if (btn && !btn.disabled) {
+           if (attemptLuaClick(btn)) {
+               if (btn.id === 'newkeybtn') {
+                   stopAutoLuarmor();
+                   return;
+               }
+           }
         }
       }
     }
-    autoLuaTimers.push(setTimeout(checkProgress, isIOS ? 1000 : 500))
+    autoLuaTimers.push(setTimeout(checkProgress, 1000))
   }
 
   function attemptNext() {
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (canLuaClick()) {
-        lastLuaClickTime = Date.now()
-        triggerNativeLuarmor('nextbtn')
-        if (!isIOS) { stopAutoLuarmor(); return }
-        autoLuaNavAttempted = true
-        autoLuaTimers.push(setTimeout(() => { if (autoLuaActive) autoLuaNavAttempted = false; attemptNext() }, 3000))
-      } else { autoLuaTimers.push(setTimeout(attemptNext, 1000)) }
-    } else { autoLuaTimers.push(setTimeout(attemptNext, 600)) }
-  }
-
-  function monitorKey() {
-    if (!autoLuaActive) return
-    const keyElement = document.querySelector('h6.mb-0.text-sm')
-    if (keyElement) {
-      const text = keyElement.textContent.trim()
-      if (!initialKeySet) { initialKey = text; initialKeySet = true }
-      else if (text !== initialKey && text.length > 0) stopAutoLuarmor()
-    } else { if (!initialKeySet) { initialKey = ''; initialKeySet = true } }
-    if (isIOS) autoLuaTimers.push(setTimeout(monitorKey, 1000))
+      if (attemptLuaClick(btn)) {
+          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+          autoLuaNavAttempted = true
+          autoLuaTimers.push(setTimeout(() => {
+            if (autoLuaActive && window.location.href === window.location.href) {
+              Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
+              autoLuaNavAttempted = false
+              if (!isIOS) luaClickedIds.delete('nextbtn');
+              attemptNext()
+            }
+          }, 3000))
+      } else {
+          autoLuaTimers.push(setTimeout(attemptNext, 1000))
+      }
+    } else {
+      autoLuaTimers.push(setTimeout(attemptNext, 600))
+    }
   }
 
   function startAutoLuarmor() {
     if (autoLuaActive) return
     autoLuaActive = true
     localStorage.setItem('vw_auto_luarmor_active', 'true')
-    autoLuaNavAttempted = false; initialKeySet = false
+    autoLuaNavAttempted = false
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
-      const btn = ui.querySelector('#startStopBtn'), span = ui.querySelector('#autoStatus')
-      if (btn) btn.textContent = 'Stop', btn.style.color = '#ef4444'
-      if (span) span.style.color = '#4ade80', span.textContent = '● Running'
+      const startStopBtn = ui.querySelector("#startStopBtn")
+      const statusSpan = ui.querySelector("#autoStatus")
+      if (startStopBtn) {
+          startStopBtn.textContent = "Stop"
+          startStopBtn.style.color = "#ef4444"
+      }
+      if (statusSpan) {
+        statusSpan.style.color = "#4ade80"
+        statusSpan.textContent = "● Running"
+      }
     }
     checkProgress()
-    if (isIOS) { attemptNext(); monitorKey() }
-    else { autoLuaTimers.push(setTimeout(() => { if (autoLuaActive) attemptNext() }, 2000)) }
+    attemptNext()
   }
 
   function stopAutoLuarmor() {
@@ -485,9 +522,16 @@
     clearAutoLuaTimeouts()
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
-      const btn = ui.querySelector('#startStopBtn'), span = ui.querySelector('#autoStatus')
-      if (btn) btn.textContent = 'Start', btn.style.color = '#e0e0e0'
-      if (span) span.style.color = '#a0a0a0', span.textContent = '● Idle'
+      const startStopBtn = ui.querySelector("#startStopBtn")
+      const statusSpan = ui.querySelector("#autoStatus")
+      if (startStopBtn) {
+          startStopBtn.textContent = "Start"
+          startStopBtn.style.color = "#e0e0e0"
+      }
+      if (statusSpan) {
+        statusSpan.style.color = "#a0a0a0"
+        statusSpan.textContent = "● Idle"
+      }
     }
   }
 
@@ -514,12 +558,22 @@
     const appendUiSafely = () => {
       document.body.appendChild(ui)
       const startStopBtn = ui.querySelector("#startStopBtn")
-      if (localStorage.getItem('vw_auto_luarmor_active') === 'true') startAutoLuarmor()
-      else stopAutoLuarmor()
-      startStopBtn.onclick = () => { if (autoLuaActive) stopAutoLuarmor(); else startAutoLuarmor() }
+      if (localStorage.getItem('vw_auto_luarmor_active') === 'true') {
+          startAutoLuarmor();
+      } else {
+          stopAutoLuarmor();
+      }
+      startStopBtn.onclick = () => {
+        if (autoLuaActive) stopAutoLuarmor()
+        else startAutoLuarmor()
+      }
     }
-    if (document.body) appendUiSafely()
-    else document.addEventListener('DOMContentLoaded', appendUiSafely)
+
+    if (document.body) {
+      appendUiSafely()
+    } else {
+      document.addEventListener('DOMContentLoaded', appendUiSafely)
+    }
   }
 
   function runAutoLuarmor() {
@@ -542,7 +596,10 @@
     return decodedChars.join('')
   }
 
-  let uiInjected = false, bypassStart = performance.now(), countdownTimerId = null, currentRemainingSeconds = 60
+  let uiInjected = false
+  let bypassStart = performance.now()
+  let countdownTimerId = null
+  let currentRemainingSeconds = 60
 
   function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -609,8 +666,14 @@
     `
     const copyBtn = document.getElementById('vwCopyBtn')
     const proceedBtn = document.getElementById('vwProceedBtn')
-    if (copyBtn) copyBtn.addEventListener('click', () => copyTextSilent(finalUrl).then(() => showToast('URL copied to clipboard', false, '📋')))
-    if (proceedBtn) proceedBtn.addEventListener('click', () => location.href = finalUrl)
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        copyTextSilent(finalUrl).then(() => { showToast('URL copied to clipboard', false, '📋') })
+      })
+    }
+    if (proceedBtn) {
+      proceedBtn.addEventListener('click', () => { location.href = finalUrl })
+    }
   }
 
   function escapeHtml(str) {
@@ -630,7 +693,7 @@
     if (s) s.innerText = sub
     const spinner = document.getElementById('vwSpinner')
     if (spinner) {
-      if (main.includes('Complete') || main.includes('Redirecting')) spinner.style.display = 'none'
+      if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none'
       else spinner.style.display = 'block'
     }
   }
@@ -678,23 +741,36 @@
 
   function showToast(message, isError = false, emoji = null) {
     if (window.top !== window.self) return
+
     const container = ensureToastContainer()
     const toast = document.createElement('div')
     toast.className = 'vw-toast'
     if (isError) toast.style.borderLeftColor = '#b91c1c'
     const emojiChar = emoji || (isError ? '⚠️' : '✓')
-    toast.innerHTML = `<div class="vw-toast-content"><span class="vw-toast-emoji">${emojiChar}</span><span class="vw-toast-text">${message}</span></div><div class="vw-toast-progress"></div>`
+    toast.innerHTML = `
+      <div class="vw-toast-content">
+        <span class="vw-toast-emoji">${emojiChar}</span>
+        <span class="vw-toast-text">${message}</span>
+      </div>
+      <div class="vw-toast-progress"></div>
+    `
     container.appendChild(toast)
     const progressBar = toast.querySelector('.vw-toast-progress')
     progressBar.style.animation = 'vw-toast-progress 5s linear forwards'
     const removeToast = () => { if (toast && toast.remove) toast.remove() }
     const timeoutId = setTimeout(removeToast, 5000)
-    progressBar.addEventListener('animationend', () => { clearTimeout(timeoutId); removeToast() })
+    progressBar.addEventListener('animationend', () => {
+      clearTimeout(timeoutId)
+      removeToast()
+    })
   }
 
   function isAutoRedirectEnabled() {
-    const saved = getStoredValue(VW_KEYS.autoRedirect, true)
-    return saved === true
+    if (typeof GM_getValue === 'function') {
+      try { return GM_getValue(VW_KEYS.autoRedirect, true); } catch(_) {}
+    }
+    const saved = localStorage.getItem(VW_KEYS.autoRedirect)
+    return saved !== null ? saved === 'true' : true
   }
 
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
@@ -710,7 +786,7 @@
     if (forceCompleteUI) {
       injectUI()
       showCompleteUI(url, timeLabel)
-      if (auto) setTimeout(() => location.href = url, 3000)
+      if (auto) setTimeout(() => { location.href = url }, 3000)
       shutdown()
       return
     }
@@ -719,7 +795,7 @@
       if (bypassType === 'tpili') showToast(`Bypassed in ${timeLabel}s`, false, '✅')
       else if (bypassType === 'lootlink') showToast('Bypass successful', false, '✅')
       else showToast(`Bypassed in ${timeLabel}s`, false, '✅')
-      setTimeout(() => location.href = url, 1000)
+      setTimeout(() => { location.href = url }, 1000)
     } else {
       injectUI()
       showCompleteUI(url, timeLabel)
@@ -738,6 +814,8 @@
       this.reconnectTimeout = null
       this.heartbeatTimer = null
       this.retryCount = 0
+      this.heartbeatCount = 0
+      this.lastLoggedCount = 0
       this.resolved = false
     }
 
@@ -750,213 +828,432 @@
         this.ws.onmessage = e => this.onMessage(e)
         this.ws.onclose = () => this.handleReconnect()
         this.ws.onerror = e => this.onError(e)
-      } catch (e) { Logger.error('Unhandled exception', e); this.handleReconnect() }
+      } catch (e) {
+        Logger.error('Unhandled exception thrown', e)
+        this.handleReconnect()
+      }
     }
 
     onOpen() {
       if (isShutdown) return
-      Logger.websocket('WebSocket opened', this.url)
+      Logger.websocket('WebSocket connection opened', this.url)
       this.retryCount = 0
       this.reconnectDelay = CONFIG.INITIAL_RECONNECT_DELAY
-      if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout)
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout)
+        cleanupManager.timeouts.delete(this.reconnectTimeout)
+        this.reconnectTimeout = null
+      }
       this.sendHeartbeat()
-      this.heartbeatTimer = cleanupManager.setInterval(() => { if (this.ws?.readyState === WebSocket.OPEN) this.sendHeartbeat() }, this.heartbeatInterval)
+      this.heartbeatTimer = cleanupManager.setInterval(() => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) this.sendHeartbeat()
+        else clearInterval(this.heartbeatTimer)
+      }, this.heartbeatInterval)
     }
 
-    sendHeartbeat() { if (this.ws?.readyState === WebSocket.OPEN) this.ws.send('0') }
+    sendHeartbeat() {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send('0')
+        this.heartbeatCount++
+      }
+    }
 
     handleReconnect() {
       if (isShutdown) return
-      if (this.heartbeatTimer) clearInterval(this.heartbeatTimer)
-      if (this.retryCount >= this.maxRetries) { Logger.error('WebSocket fatal', 'Max retries'); return }
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer)
+        cleanupManager.intervals.delete(this.heartbeatTimer)
+        this.heartbeatTimer = null
+      }
+      if (this.retryCount >= this.maxRetries) {
+        Logger.error('WebSocket fatal error', 'Max retries exceeded')
+        return
+      }
       this.retryCount++
       const delay = Math.min(this.reconnectDelay * Math.pow(2, this.retryCount - 1), this.maxDelay)
-      Logger.warn('WebSocket reconnect', `Retry ${this.retryCount} in ${delay}ms`)
-      this.reconnectTimeout = cleanupManager.setTimeout(() => this.connect(), delay)
+      Logger.warn('WebSocket connection slow to open', `Retry ${this.retryCount} in ${delay}ms`)
+      this.reconnectTimeout = cleanupManager.setTimeout(() => {
+        Logger.websocket('WebSocket url opened', this.url)
+        this.connect()
+      }, delay)
     }
 
     onMessage(event) {
       if (isShutdown) return
-      if (event.data?.includes('r:')) {
+      if (event.data && event.data.includes('r:')) {
         let publisherLink = event.data.replace('r:', '').trim()
+        Logger.info('Received publisher link from WebSocket', publisherLink)
         if (publisherLink) {
           let finalUrl = publisherLink
           const isBase64 = /^[A-Za-z0-9+/=]+$/.test(publisherLink)
           if (isBase64) {
-            try { finalUrl = decodeURIComponent(decodeURIxor(publisherLink)); Logger.info('Decoded URL', finalUrl) }
-            catch (e) { Logger.error('Base64 decode failed', e); finalUrl = publisherLink }
+            try {
+              finalUrl = decodeURIComponent(decodeURIxor(publisherLink))
+              Logger.info('Decoded final URL', finalUrl)
+            } catch (e) {
+              Logger.error('Base64 decode failed, using raw', e)
+              finalUrl = publisherLink
+            }
+          } else {
+            Logger.info('Not base64, using raw as final URL', finalUrl)
           }
+
           if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
             this.disconnect()
             const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
             if (!isLuarmorUrl(finalUrl)) saveResultToCache(location.href, finalUrl)
+            else Logger.info('Skipping cache because final URL is luarmor', finalUrl)
             this.resolved = true
             handleBypassSuccess(finalUrl, duration, 'lootlink')
+          } else {
+            Logger.error('Invalid final URL received', finalUrl)
           }
         }
       }
     }
 
-    onError(error) { Logger.error('WebSocket error', error) }
+    onError(error) { Logger.error('WebSocket fatal error', error) }
 
     disconnect() {
-      if (this.heartbeatTimer) clearInterval(this.heartbeatTimer)
-      if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout)
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer)
+        cleanupManager.intervals.delete(this.heartbeatTimer)
+        this.heartbeatTimer = null
+      }
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout)
+        cleanupManager.timeouts.delete(this.reconnectTimeout)
+        this.reconnectTimeout = null
+      }
       if (this.ws) this.ws.close()
     }
   }
 
-  let BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
-  if (!isMobile) BL_TASKS = [1, 2, 3]
+  const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
 
   async function completeTaskViaSkippedLol(taskUrl) {
     const endpoint = 'https://skipped.lol/api/evade/ll'
     let urlToSend = taskUrl
-    if (urlToSend?.startsWith('//')) urlToSend = 'https:' + urlToSend
+    if (urlToSend && urlToSend.startsWith('//')) urlToSend = 'https:' + urlToSend
     const payload = { ID: 17, URL: urlToSend }
     try {
-      Logger.info('Sending to skipped.lol', JSON.stringify(payload))
+      Logger.info('Sending request to skipped.lol', JSON.stringify(payload))
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 8000)
-      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal })
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
       clearTimeout(timeoutId)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const raw = await res.text()
-      Logger.info('Skipped.lol response', raw)
-      const parsed = JSON.parse(raw)
-      return parsed?.status === 'ok'
-    } catch (err) { Logger.error('skipped.lol failed', err); throw err }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const rawText = await response.text()
+      Logger.info('Raw response from skipped.lol', rawText)
+      let parsed = null
+      try {
+        parsed = JSON.parse(rawText)
+        Logger.info('Parsed JSON response', JSON.stringify(parsed, null, 2))
+      } catch (e) {
+        Logger.warn('Response not JSON, ignoring', e.message)
+      }
+      if (parsed && parsed.status === 'ok') {
+        Logger.info('Skipped.lol confirmed task completion')
+        return true
+      } else {
+        throw new Error('Unexpected response from skipped.lol')
+      }
+    } catch (err) {
+      Logger.error('Error calling skipped.lol', err)
+      throw err
+    }
   }
 
   function startWebSocketForTask(taskData, isFallback = false) {
-    if (!taskData?.urid) { Logger.error('Missing task data'); return null }
+    if (!taskData || !taskData.urid) {
+      Logger.error('Missing task data for WebSocket', taskData)
+      return null
+    }
     const { urid, task_id } = taskData
     const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-    const ws = new RobustWebSocket(wsUrl, { initialDelay: CONFIG.INITIAL_RECONNECT_DELAY, maxDelay: CONFIG.MAX_RECONNECT_DELAY, heartbeat: CONFIG.HEARTBEAT_INTERVAL, maxRetries: 3 })
-    if (isFallback) window.fallbackWebSocket = ws
-    else window.primaryWebSocket = ws
+    Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback})`, wsUrl)
+    const ws = new RobustWebSocket(wsUrl, {
+      initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
+      maxDelay: CONFIG.MAX_RECONNECT_DELAY,
+      heartbeat: CONFIG.HEARTBEAT_INTERVAL,
+      maxRetries: 3
+    })
+
+    if (isFallback) {
+      window.fallbackWebSocket = ws
+    } else {
+      window.primaryWebSocket = ws
+    }
+    
     window.activeWebSocket = ws
+
     ws.connect()
-    try { navigator.sendBeacon(`https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`) } catch (_) {}
-    fetch(`https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`, { credentials: 'include' }).catch(() => {})
+
+    try {
+      const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+      navigator.sendBeacon(beaconUrl)
+      Logger.info('Sent beacon', beaconUrl)
+    } catch (_) {}
+
+    const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`
+    fetch(tdUrl, { credentials: 'include' }).catch(() => {})
+    Logger.info('Fetched td URL', tdUrl)
+
     return ws
   }
 
   function selectFallbackTask(tasks) {
-    if (!Array.isArray(tasks) || !tasks.length) return null
-    return tasks.find(t => t.auto_complete_seconds === 30) ||
-           tasks.find(t => t.auto_complete_seconds === 40) ||
-           tasks.find(t => t.auto_complete_seconds === 50) ||
-           tasks.find(t => t.auto_complete_seconds === 60) ||
-           tasks[0]
+    if (!Array.isArray(tasks) || tasks.length === 0) return null
+    const preferred = tasks.find(t => t.auto_complete_seconds === 30)
+    if (preferred) return preferred
+    const second = tasks.find(t => t.auto_complete_seconds === 40)
+    if (second) return second
+    const third = tasks.find(t => t.auto_complete_seconds === 50)
+    if (third) return third
+    const fourth = tasks.find(t => t.auto_complete_seconds === 60)
+    if (fourth) return fourth
+    return tasks[0]
   }
 
   function processTcResponse(data, originalFetch) {
-    Logger.info('Processing /tc', JSON.stringify(data, null, 2))
-    const task17 = Array.isArray(data) ? data.find(i => i.task_id === 17) : null
-    const runFallback = () => {
-      Logger.warn('Fallback task selection')
-      updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
-      const fallback = selectFallbackTask(data)
-      if (fallback?.urid) {
-        if (fallback.auto_complete_seconds) startCountdown(fallback.auto_complete_seconds)
-        startWebSocketForTask(fallback, true)
-      } else { Logger.error('No fallback task'); updateStatus('❌ Bypass failed', 'No suitable task') }
+    Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
+    const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
+    const fallbackTask = selectFallbackTask(data)
+
+    let fallbackTimer = fallbackTask ? fallbackTask.auto_complete_seconds : 60
+    let method1Failed = false
+
+    const activateFallbackUI = () => {
+       if (method1Failed) return
+       method1Failed = true
+       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
+       if (fallbackTask && fallbackTask.auto_complete_seconds) {
+           startCountdown(fallbackTimer > 0 ? fallbackTimer : fallbackTask.auto_complete_seconds)
+       } else {
+           updateStatus('❌ Bypass failed', 'No suitable fallback task')
+       }
     }
-    if (task17?.ad_url) {
-      completeTaskViaSkippedLol(task17.ad_url).then(() => {
+
+    if (fallbackTask && fallbackTask.urid) {
+      Logger.info('Initiating fallback task WS in background to prevent timeout');
+      startWebSocketForTask(fallbackTask, true);
+      const bgInterval = setInterval(() => {
+        if (fallbackTimer > 0) fallbackTimer--;
+        if (fallbackTimer <= 0) clearInterval(bgInterval);
+      }, 1000);
+    }
+
+    if (task17 && task17.ad_url) {
+      Logger.info('Found task 17, using skipped.lol')
+      updateStatus('Bypassing...', 'Trying Method 1 (skipped.lol)')
+      const taskUrl = task17.ad_url
+      completeTaskViaSkippedLol(taskUrl).then(() => {
+        if (method1Failed) return
+        Logger.info('Skipped.lol success, starting Method 1 WebSocket')
         const primaryWs = startWebSocketForTask(task17, false)
-        const timeoutId = setTimeout(() => { if (primaryWs && !primaryWs.resolved) { primaryWs.disconnect(); runFallback() } }, 12000)
-        cleanupManager.timeouts.add(timeoutId)
-      }).catch(err => { Logger.error('skipped.lol fallback', err); runFallback() })
-    } else { runFallback() }
+        setTimeout(() => {
+          if (primaryWs && !primaryWs.resolved) {
+            Logger.warn('Method 1 WS timed out, switching UI to Method 2')
+            primaryWs.disconnect()
+            window.primaryWebSocket = null
+            activateFallbackUI()
+          }
+        }, 8000)
+      }).catch(err => {
+        Logger.error('Skipped.lol request failed, falling back', err)
+        activateFallbackUI()
+      })
+    } else {
+      Logger.warn('Task 17 not found, exclusively using Method 2')
+      activateFallbackUI()
+    }
+    return true
   }
 
   function initLootlinkFetchOverride() {
     const originalFetch = window.fetch
-    window.fetch = function(url, config) {
+    window.fetch = function (url, config) {
       try {
-        const urlStr = typeof url === 'string' ? url : url?.url || ''
-        if (typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' && urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+        const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
+        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
+          return originalFetch(url, config)
+        }
+        if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
           if (window.__vw_tc_processed) return originalFetch(url, config)
-          let newBody = null
-          const originalBody = config?.body
-          if (originalBody && typeof originalBody === 'string') {
-            try { const parsed = JSON.parse(originalBody); if (!parsed.bl) { parsed.bl = BL_TASKS; newBody = JSON.stringify(parsed) } } catch(e) {}
-          } else if (originalBody && typeof originalBody === 'object') {
-            if (!originalBody.bl) newBody = JSON.stringify({ ...originalBody, bl: BL_TASKS })
-          } else { newBody = JSON.stringify({ bl: BL_TASKS }) }
-          if (newBody) {
-            const newConfig = { ...config, headers: { ...config.headers, 'Content-Type': 'application/json' }, body: newBody }
-            return originalFetch(url, newConfig).then(res => res.clone().json().then(data => { processTcResponse(data, originalFetch); window.__vw_tc_processed = true; return new Response(JSON.stringify(data), res) }).catch(() => res))
+          if (config && config.method && config.method.toUpperCase() === 'POST') {
+            let newBody = null
+            let originalBody = config.body
+            let newBodyObj = typeof originalBody === 'object' ? { ...originalBody } : {}
+            
+            if (originalBody && typeof originalBody === 'string') {
+              try {
+                newBodyObj = JSON.parse(originalBody)
+              } catch (e) {}
+            }
+            
+            newBodyObj.bl = BL_TASKS
+            if (!isMobile) {
+                newBodyObj.max_tasks = 3
+            }
+            newBody = JSON.stringify(newBodyObj)
+
+            if (newBody) {
+              const newConfig = {
+                ...config,
+                headers: { ...config.headers, 'Content-Type': 'application/json' },
+                body: newBody
+              }
+              return originalFetch(url, newConfig).then(response => {
+                if (!response.ok) return response
+                return response.clone().json().then(data => {
+                  processTcResponse(data, originalFetch)
+                  window.__vw_tc_processed = true
+                  return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
+                }).catch(() => response)
+              }).catch(err => originalFetch(url, config))
+            }
           }
+          return originalFetch(url, config).then(response => {
+            if (!response.ok) return response
+            return response.clone().json().then(data => {
+              processTcResponse(data, originalFetch)
+              window.__vw_tc_processed = true
+              return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
+            }).catch(() => response)
+          }).catch(err => originalFetch(url, config))
         }
       } catch (_) {}
       return originalFetch(url, config)
     }
   }
 
+  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, options)
+        if (res.ok) return res
+        if (i === retries) throw new Error(`HTTP ${res.status}`)
+      } catch (err) {
+        if (i === retries) throw err
+      }
+      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
+    }
+  }
+
   async function sendTcManually() {
     if (window.__vw_tc_processed) return
+    const originalFetch = window.fetch
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
     const payload = { bl: BL_TASKS }
-    Logger.info('Manual POST /tc')
+    if (!isMobile) payload.max_tasks = 3
+    
+    Logger.info('Sending manual POST /tc request with custom payload', JSON.stringify(payload))
     try {
-      const res = await fetch(tcUrl, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'User-Agent': ANDROID_UA }, body: JSON.stringify(payload) })
+      const res = await fetchWithRetry(tcUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': ANDROID_UA },
+        body: JSON.stringify(payload)
+      }, 2, 1000)
       const data = await res.json()
-      processTcResponse(data, window.fetch)
+      processTcResponse(data, originalFetch)
       window.__vw_tc_processed = true
+      Logger.info('Manual /tc processed successfully')
       showToast('Lootlink bypass successful', false, '✅')
-    } catch (err) { if (!window.__vw_tc_processed) Logger.warn('Manual /tc failed', err.message) }
+    } catch (err) {
+      if (!window.__vw_tc_processed) {
+        Logger.warn('Manual /tc request failed after retries', err.message)
+        showToast('Lootlink bypass failed, retrying...', true, '⚠️')
+      } else {
+        Logger.info('Manual request failed but bypass already succeeded – ignoring error')
+      }
+    }
   }
 
   function startManualCheck() {
     const interval = setInterval(() => {
-      if (window.__vw_tc_processed) { clearInterval(interval); return }
-      if (typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' && typeof INCENTIVE_SERVER_DOMAIN !== 'undefined' && typeof KEY !== 'undefined') {
-        clearInterval(interval); sendTcManually()
+      if (window.__vw_tc_processed) {
+        clearInterval(interval)
+        return
+      }
+      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
+        clearInterval(interval)
+        sendTcManually()
       }
     }, 100)
-    cleanupManager.setTimeout(() => { if (!window.__vw_tc_processed) sendTcManually() }, 8000)
   }
 
   function modifyParentElement(targetElement) {
-    const parent = targetElement.parentElement
-    if (!parent) return
+    const parentElement = targetElement.parentElement
+    if (!parentElement) return
     state.processStartTime = Date.now()
     bypassStart = performance.now()
-    parent.innerHTML = ''
-    parent.style.cssText = 'height:0!important;overflow:hidden!important;visibility:hidden!important'
+    parentElement.innerHTML = ''
+    parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
     injectUI()
     updateStatus('Loading...', 'Waiting for task data')
   }
 
   function setupOptimizedObserver() {
-    const target = document.body || document.documentElement
-    const observer = new MutationObserver((mutations, obs) => {
-      if (isShutdown) { obs.disconnect(); return }
+    const targetContainer = document.body || document.documentElement
+    const observer = new MutationObserver((mutationsList, observerRef) => {
+      if (isShutdown) {
+        observerRef.disconnect()
+        return
+      }
       const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-      for (const m of mutations) {
-        if (m.type !== 'childList') continue
-        const added = Array.from(m.addedNodes).filter(n => n.nodeType === 1)
-        const found = added.flatMap(el => [el, ...Array.from(el.querySelectorAll('*'))]).find(el => unlockText.some(t => el.textContent?.includes(t)))
-        if (found) { modifyParentElement(found); obs.disconnect(); return }
+      for (const mutation of mutationsList) {
+        if (mutation.type !== 'childList') continue
+        const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1)
+        const found = addedElements.flatMap(el => [el, ...Array.from(el.querySelectorAll('*'))]).find(el => {
+          const text = el.textContent
+          return text && unlockText.some(t => text.includes(t))
+        })
+        if (found) {
+          modifyParentElement(found)
+          observerRef.disconnect()
+          return
+        }
       }
     })
     window.bypassObserver = observer
-    observer.observe(target, { childList: true, subtree: true })
-    const existing = Array.from(document.querySelectorAll('*')).find(el => ['UNLOCK CONTENT','Unlock Content','Complete Task','Get Reward','Claim Reward'].some(t => el.textContent?.includes(t)))
-    if (existing) { modifyParentElement(existing); observer.disconnect() }
+    observer.observe(targetContainer, { childList: true, subtree: true })
+    const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+    const existing = Array.from(document.querySelectorAll('*')).find(el => {
+      const text = el.textContent
+      return text && unlockText.some(t => text.includes(t))
+    })
+    if (existing) {
+      modifyParentElement(existing)
+      observer.disconnect()
+    }
   }
 
   function runLocalLootlinkBypass() {
-    Logger.info('Lootlink bypass started')
-    const cached = getCachedResult(location.href)
-    if (cached) {
-      if (!isLuarmorUrl(cached)) { handleBypassSuccess(cached, '0.00 (cached)', 'lootlink', true); return }
-      else { showHashExpireUI(cached); return }
+    Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
+    
+    try {
+      Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
+    } catch(e) { }
+
+    const cachedResult = getCachedResult(location.href)
+    if (cachedResult) {
+      if (!isLuarmorUrl(cachedResult)) {
+        Logger.info('Using cached result', `from cache: ${cachedResult}`)
+        handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink', true)
+        return
+      } else {
+        Logger.info('Cached result is luarmor, showing hash expire UI', cachedResult)
+        showHashExpireUI(cachedResult)
+        return
+      }
     }
     injectUI()
     updateStatus('Loading...', 'Preparing bypass')
@@ -965,100 +1262,234 @@
     startManualCheck()
     cleanupManager.setTimeout(() => {
       if (!window.__vw_tc_processed) {
-        const unlockText = ['UNLOCK CONTENT','Unlock Content','Complete Task','Get Reward','Claim Reward']
-        const el = Array.from(document.querySelectorAll('*')).find(e => unlockText.some(t => e.textContent?.includes(t)))
-        if (el) modifyParentElement(el)
-        else updateStatus('Bypass delayed', 'Retrying...')
+        Logger.warn('Bypass seems stuck, checking for unlock element again')
+        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+        const existing = Array.from(document.querySelectorAll('*')).find(el => {
+          const text = el.textContent
+          return text && unlockText.some(t => text.includes(t))
+        })
+        if (existing) modifyParentElement(existing)
+        else updateStatus('Bypass delayed', 'Trying alternative method...')
       }
     }, CONFIG.FALLBACK_CHECK_DELAY)
     window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
   const RESULT_CACHE_KEY = 'vw_lootlink_results'
+
   function saveResultToCache(originalUrl, resultUrl) {
-    try { let cache = JSON.parse(localStorage.getItem(RESULT_CACHE_KEY) || '{}'); cache[originalUrl] = resultUrl; localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache)) } catch(e) {}
+    try {
+      let cache = {}
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (existing) {
+        try { cache = JSON.parse(existing) } catch (_) {}
+      }
+      cache[originalUrl] = resultUrl
+      localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
+      Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
+    } catch (e) { Logger.warn('Failed to cache result', e) }
   }
+
   function getCachedResult(originalUrl) {
-    try { const cache = JSON.parse(localStorage.getItem(RESULT_CACHE_KEY) || '{}'); return cache[originalUrl] || null } catch(e) { return null }
+    try {
+      const existing = localStorage.getItem(RESULT_CACHE_KEY)
+      if (!existing) return null
+      const cache = JSON.parse(existing)
+      return cache[originalUrl] || null
+    } catch (_) { return null }
   }
 
   async function runLocalTpiLiBypass() {
     const startTime = Date.now()
+    Logger.info('VortixWorld local tpi.li bypass enabled')
     injectUI(ICON_URL)
-    updateStatus('Fetching tpi.li link...', 'Extracting token')
+    updateStatus('Fetching tpi.li link...', 'Extracting token, please wait')
     try {
       const alias = location.pathname.slice(1)
-      if (!alias) throw new Error('No alias')
-      const html = await (await fetch(location.href, { headers: { 'User-Agent': ANDROID_UA } })).text()
-      let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/) || html.match(/value="([^"]+)"\s+name="token"/)
-      if (!tokenMatch) throw new Error('Token not found')
+      if (!alias) throw new Error('No alias found in URL')
+      Logger.info('TPI.LI alias', alias)
+      const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      const html = await response.text()
+      Logger.info('Fetched TPI.LI HTML', `${html.length} bytes`)
+      let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
+      if (!tokenMatch) tokenMatch = html.match(/value="([^"]+)"\s+name="token"/)
+      if (!tokenMatch) throw new Error('Token not found in page')
       const token = tokenMatch[1]
+      Logger.info('Token extracted', token.substring(0, 20) + '...')
       const offset = 40 + 4 + alias.length + 4
       if (token.length < offset) throw new Error('Token too short')
-      const finalUrl = atob(token.slice(offset))
-      if (!finalUrl?.startsWith('http')) throw new Error('Invalid URL')
+      const tokenPart = token.slice(offset)
+      Logger.info('Token part for decoding', tokenPart)
+      const finalUrl = atob(tokenPart)
+      Logger.info('Decoded final URL', finalUrl)
+      if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL')
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
       handleBypassSuccess(finalUrl, duration, 'tpili')
     } catch (err) {
-      Logger.error('tpi.li failed', err.message)
+      Logger.error('tpi.li bypass failed', err.message)
       updateStatus('❌ Bypass failed', err.message)
       showToast(`Bypass failed: ${err.message}`, true, '⚠️')
+      const manualDiv = document.createElement('div')
+      manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`
+      const overlay = document.getElementById('vortixWorldOverlay')
+      if (overlay && overlay.querySelector('.vw-main-content')) overlay.querySelector('.vw-main-content').appendChild(manualDiv)
     }
   }
 
   async function initApi() {
     const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-    return (await res.json()).accessToken
+    const json = await res.json()
+    return json.accessToken
   }
-  async function bypassUrl(url, token) {
-    const res = await fetch(API_BASE + '/api/bypass/direct', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ url }) })
+
+  async function bypassUrl(url, accessToken) {
+    const res = await fetch(API_BASE + '/api/bypass/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+      body: JSON.stringify({ url })
+    })
     return res.json()
   }
-  function appendToBestContainer(node) { (document.body || document.documentElement).appendChild(node) }
+
+  function appendToBestContainer(node) {
+    const mount = document.body || document.documentElement
+    if (mount && node && node.parentNode !== mount) mount.appendChild(node)
+  }
+
   function createApiTopBar() {
     if (document.getElementById('vwApiTopBar')) return
-    const style = document.createElement('style'); style.id = 'vwApiStyles'; style.textContent = API_UI_CSS; document.head.appendChild(style)
-    const bar = document.createElement('div'); bar.id = 'vwApiTopBar'; bar.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);width:300px;max-width:80vw;height:48px;background:#1e1e1e;border-radius:40px;box-shadow:6px 6px 12px #141414,-6px -6px 12px #282828;z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui;font-size:14px;color:#e0e0e0;font-weight:500'
-    bar.innerHTML = `<div class="vw-api-topbar-inner"><span class="vw-api-loading-ring"></span><span class="vw-api-loading-text">Bypassing...</span></div>`
+    const styleId = 'vwApiStyles'
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style')
+      styleSheet.id = styleId
+      styleSheet.innerText = API_UI_CSS
+      document.head.appendChild(styleSheet)
+    }
+    const bar = document.createElement('div')
+    bar.id = 'vwApiTopBar'
+    bar.style.cssText = `
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 300px;
+      max-width: 80vw; height: 48px; background: #1e1e1e; border-radius: 40px; border: none;
+      box-shadow: 6px 6px 12px #141414, -6px -6px 12px #282828; z-index: 2147483647;
+      display: flex; align-items: center; justify-content: center; font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px; color: #e0e0e0; font-weight: 500;
+    `
+    bar.innerHTML = `
+      <div class="vw-api-topbar-inner">
+        <span class="vw-api-loading-ring" aria-hidden="true"></span>
+        <span class="vw-api-loading-text">Bypassing...</span>
+      </div>
+    `
     appendToBestContainer(bar)
+    if (!document.body) {
+      const onReady = () => {
+        if (bar.isConnected && bar.parentNode !== document.body && document.body) document.body.appendChild(bar)
+      }
+      document.addEventListener('DOMContentLoaded', onReady, { once: true })
+    }
     return bar
   }
-  function removeApiTopBar() { document.getElementById('vwApiTopBar')?.remove() }
+
+  function removeApiTopBar() {
+    const bar = document.getElementById('vwApiTopBar')
+    if (bar) bar.remove()
+  }
+
   function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
     removeApiTopBar()
-    const style = document.createElement('style'); style.id = 'vwApiStyles'; style.textContent = API_UI_CSS; document.head.appendChild(style)
-    const existing = document.getElementById('vwApiCard'); if (existing) existing.remove()
-    const card = document.createElement('div'); card.id = 'vwApiCard'; card.className = 'vw-api-card'
-    card.innerHTML = `<button class="vw-close">✕</button><img src="${ICON_URL}" class="vw-api-icon"><div class="vw-api-status">${isError ? '❌ Bypass Failed' : '✔️ Bypass Complete!'}</div><div class="vw-api-substatus">${isError ? errorMsg : `Completed in ${timeLabel}s`}</div>${!isError ? `<div class="vw-api-url">${escapeHtml(finalUrl)}</div>` : ''}<div class="vw-api-buttons"></div>`
-    const closeBtn = card.querySelector('.vw-close'); closeBtn.onclick = () => card.remove()
-    const btnsDiv = card.querySelector('.vw-api-buttons')
-    if (!isError) {
-      const copyBtn = document.createElement('button'); copyBtn.className = 'vw-api-btn vw-api-btn-copy'; copyBtn.textContent = '📋 Copy URL'; copyBtn.onclick = () => copyTextSilent(finalUrl).then(() => showToast('URL copied', false, '📋'))
-      const proceedBtn = document.createElement('button'); proceedBtn.className = 'vw-api-btn vw-api-btn-proceed'; proceedBtn.textContent = '➡️ Proceed'; proceedBtn.onclick = () => location.href = finalUrl
-      btnsDiv.append(copyBtn, proceedBtn)
-    } else {
-      const okBtn = document.createElement('button'); okBtn.className = 'vw-api-btn'; okBtn.textContent = 'OK'; okBtn.onclick = () => card.remove()
-      btnsDiv.appendChild(okBtn)
+    const styleId = 'vwApiStyles'
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style')
+      styleSheet.id = styleId
+      styleSheet.innerText = API_UI_CSS
+      document.head.appendChild(styleSheet)
     }
+    const existingCard = document.getElementById('vwApiCard')
+    if (existingCard) existingCard.remove()
+    const card = document.createElement('div')
+    card.id = 'vwApiCard'
+    card.className = 'vw-api-card'
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'vw-close'
+    closeBtn.textContent = '✕'
+    closeBtn.addEventListener('click', () => card.remove())
+    const icon = document.createElement('img')
+    icon.src = ICON_URL
+    icon.className = 'vw-api-icon'
+    icon.alt = 'VW Icon'
+    const statusDiv = document.createElement('div')
+    statusDiv.className = 'vw-api-status'
+    statusDiv.textContent = isError ? '❌ Bypass Failed' : '✔️ Bypass Complete!'
+    const substatusDiv = document.createElement('div')
+    substatusDiv.className = 'vw-api-substatus'
+    substatusDiv.textContent = isError ? errorMsg : `Completed in ${timeLabel}s`
+    const urlDiv = document.createElement('div')
+    urlDiv.className = 'vw-api-url'
+    urlDiv.textContent = isError ? '' : finalUrl
+    const buttonsDiv = document.createElement('div')
+    buttonsDiv.className = 'vw-api-buttons'
+    if (!isError) {
+      const copyBtn = document.createElement('button')
+      copyBtn.className = 'vw-api-btn vw-api-btn-copy'
+      copyBtn.textContent = '📋 Copy URL'
+      copyBtn.addEventListener('click', () => {
+        copyTextSilent(finalUrl).then(() => { showToast('URL copied to clipboard', false, '📋') })
+      })
+      const proceedBtn = document.createElement('button')
+      proceedBtn.className = 'vw-api-btn vw-api-btn-proceed'
+      proceedBtn.textContent = '➡️ Proceed to URL'
+      proceedBtn.addEventListener('click', () => { location.href = finalUrl })
+      buttonsDiv.appendChild(copyBtn)
+      buttonsDiv.appendChild(proceedBtn)
+    } else {
+      const okBtn = document.createElement('button')
+      okBtn.className = 'vw-api-btn'
+      okBtn.textContent = 'OK'
+      okBtn.addEventListener('click', () => card.remove())
+      buttonsDiv.appendChild(okBtn)
+    }
+    card.appendChild(closeBtn)
+    card.appendChild(icon)
+    card.appendChild(statusDiv)
+    card.appendChild(substatusDiv)
+    if (!isError) card.appendChild(urlDiv)
+    card.appendChild(buttonsDiv)
     appendToBestContainer(card)
   }
+
   async function runApiBypass() {
     try {
       createApiTopBar()
-      const token = await initApi()
-      const result = await bypassUrl(location.href, token)
+      const accessToken = await initApi()
+      const result = await bypassUrl(location.href, accessToken)
       if (result.status === 'success') {
         const finalUrl = result.result
-        if (isLuarmorUrl(finalUrl)) { removeApiTopBar(); showHashExpireUI(finalUrl); shutdown() }
-        else { showApiResultUI(finalUrl, result.time, false); shutdown() }
-      } else throw new Error(result.result || 'Bypass failed')
-    } catch (err) { Logger.error('API bypass failed', err.message); removeApiTopBar(); showApiResultUI('', '', true, err.message) }
+        const timeLabel = result.time
+        if (isLuarmorUrl(finalUrl)) {
+          removeApiTopBar()
+          showHashExpireUI(finalUrl)
+          shutdown()
+        } else {
+          showApiResultUI(finalUrl, timeLabel, false)
+          shutdown()
+        }
+      } else {
+        throw new Error(result.result || 'Bypass failed')
+      }
+    } catch (err) {
+      Logger.error('API bypass failed', err.message)
+      removeApiTopBar()
+      showApiResultUI('', '', true, err.message)
+    }
   }
 
   const state = { processStartTime: Date.now() }
 
   function main() {
-    if (HOST.includes('luarmor.net')) { runAutoLuarmor(); return }
+    if (HOST.includes('luarmor.net')) {
+      runAutoLuarmor()
+      return
+    }
     if (isTpiLi()) runLocalTpiLiBypass()
     else if (isLootHost()) runLocalLootlinkBypass()
     else if (isAllowedHost()) runApiBypass()
