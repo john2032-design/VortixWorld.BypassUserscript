@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.6
+// @version      2.5
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
-// @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_setValue
 // @license      MIT
 // @run-at       document-start
 // ==/UserScript==
@@ -401,9 +401,9 @@
   }
 
   let autoLuaActive = false
+  let autoLuaNavAttempted = false
+  let autoLuaProgressClicked = false
   let autoLuaTimers = []
-  let hasClickedGetKey = false
-  let hasClickedNext = false
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
@@ -438,13 +438,13 @@
       if (match && match[1] === match[2]) {
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
-        if (btn && !btn.disabled && !hasClickedGetKey) {
-           hasClickedGetKey = true
-           triggerNativeLuarmor(btn.id)
-           if (btn.id === 'newkeybtn') {
-               stopAutoLuarmor()
-               return
-           }
+        if (btn && !btn.disabled && !autoLuaProgressClicked) {
+             autoLuaProgressClicked = true
+             triggerNativeLuarmor(btn.id)
+             if (btn.id === 'newkeybtn') {
+                 stopAutoLuarmor()
+             }
+             return
         }
       }
     }
@@ -452,12 +452,12 @@
   }
 
   function attemptNext() {
-    if (!autoLuaActive || hasClickedNext) return
+    if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-        hasClickedNext = true
         Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
         triggerNativeLuarmor('nextbtn')
+        autoLuaNavAttempted = true
     } else {
       autoLuaTimers.push(setTimeout(attemptNext, 600))
     }
@@ -467,8 +467,8 @@
     if (autoLuaActive) return
     autoLuaActive = true
     localStorage.setItem('vw_auto_luarmor_active', 'true')
-    hasClickedNext = false
-    hasClickedGetKey = false
+    autoLuaNavAttempted = false
+    autoLuaProgressClicked = false
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -571,36 +571,6 @@
   let bypassStart = performance.now()
   let countdownTimerId = null
   let currentRemainingSeconds = 60
-
-  function promptFallbackUI(fallbackCallback) {
-    const overlay = document.getElementById('vortixWorldOverlay')
-    if (!overlay) return
-    const mainContent = overlay.querySelector('.vw-main-content')
-    if (!mainContent) return
-    const iconImg = mainContent.querySelector('.vw-icon-img')
-    if (iconImg) iconImg.style.display = 'none'
-    const spinner = mainContent.querySelector('#vwSpinner')
-    if (spinner) spinner.style.display = 'none'
-    mainContent.innerHTML = `
-      <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
-      <div id="vwStatus" class="vw-status" style="color:#ef4444; font-size:1.4rem;">Method 1 Failed</div>
-      <div id="vwSubStatus" class="vw-substatus" style="white-space: normal; line-height:1.4;">Reload To Try Again Or Click Button Below To Use Method 2</div>
-      <div class="vw-button-group" style="margin-top: 20px;">
-        <button id="vwReloadBtnUi" class="vw-btn vw-btn-copy">🔄 Reload</button>
-        <button id="vwMethod2Btn" class="vw-btn vw-btn-proceed">⚙️ Method 2</button>
-      </div>
-    `
-    document.getElementById('vwReloadBtnUi').onclick = () => location.reload()
-    document.getElementById('vwMethod2Btn').onclick = () => {
-      mainContent.innerHTML = `
-        <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
-        <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Using Method 2...</div>
-        <div id="vwSubStatus" class="vw-substatus">Starting fallback</div>
-      `
-      fallbackCallback()
-    }
-  }
 
   function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -768,9 +738,12 @@
 
   function isAutoRedirectEnabled() {
     if (typeof GM_getValue !== 'undefined') {
-        try {
-            return GM_getValue(VW_KEYS.autoRedirect, true);
-        } catch (_) {}
+      try {
+        const gmVal = GM_getValue(VW_KEYS.autoRedirect)
+        if (gmVal !== undefined && gmVal !== null) {
+          return gmVal === true || String(gmVal) === 'true'
+        }
+      } catch (e) {}
     }
     const saved = localStorage.getItem(VW_KEYS.autoRedirect)
     return saved !== null ? saved === 'true' : true
@@ -1029,7 +1002,7 @@
 
     const runFallback = () => {
       Logger.warn('Running fallback task selection')
-      updateStatus('Method 2', 'Finding suitable task')
+      updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
       const fallbackTask = selectFallbackTask(data)
       if (fallbackTask && fallbackTask.urid) {
         Logger.info('Using fallback task for local WebSocket', fallbackTask)
@@ -1051,15 +1024,15 @@
         const primaryWs = startWebSocketForTask(task17, false)
         setTimeout(() => {
           if (primaryWs && !primaryWs.resolved) {
-            Logger.warn('Method 1 WS timed out, asking for fallback UI')
+            Logger.warn('Method 1 WS timed out, shutting down and switching to Method 2')
             primaryWs.disconnect()
             window.primaryWebSocket = null
-            promptFallbackUI(runFallback)
+            runFallback()
           }
         }, 8000)
       }).catch(err => {
-        Logger.error('Skipped.lol request failed, prompting fallback UI', err)
-        promptFallbackUI(runFallback)
+        Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
+        runFallback()
       })
     } else {
       runFallback()
@@ -1083,19 +1056,18 @@
             if (originalBody && typeof originalBody === 'string') {
               try {
                 const parsed = JSON.parse(originalBody)
-                if (!parsed.bl || !parsed.max_tasks) {
+                if (!parsed.bl) {
                   parsed.bl = BL_TASKS
-                  parsed.max_tasks = 3
                   newBody = JSON.stringify(parsed)
                 }
               } catch (e) {}
             } else if (originalBody && typeof originalBody === 'object') {
-              if (!originalBody.bl || !originalBody.max_tasks) {
-                const newBodyObj = { ...originalBody, bl: BL_TASKS, max_tasks: 3 }
+              if (!originalBody.bl) {
+                const newBodyObj = { ...originalBody, bl: BL_TASKS }
                 newBody = JSON.stringify(newBodyObj)
               }
             } else {
-              newBody = JSON.stringify({ bl: BL_TASKS, max_tasks: 3 })
+              newBody = JSON.stringify({ bl: BL_TASKS })
             }
             if (newBody) {
               const newConfig = {
@@ -1146,8 +1118,8 @@
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
-    const payload = { bl: BL_TASKS, max_tasks: 3 }
-    Logger.info('Sending manual POST /tc request with bl array and max_tasks 3', JSON.stringify(payload))
+    const payload = { bl: BL_TASKS }
+    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
     try {
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
