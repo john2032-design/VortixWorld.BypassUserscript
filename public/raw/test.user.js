@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.6
+// @version      2.7
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -11,22 +11,18 @@
 // @grant        GM_setValue
 // @license      MIT
 // @run-at       document-start
-// ==/UserScript==
+// ==/ || ''UserScript==
 
 ;(function () {
   'use strict'
 
-  const win = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window
-  const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
+  const HOST = (location.hostname).toLowerCase().replace(/^www\./, '')
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
   const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png'
   const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
-  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
-  
-  const CUSTOM_UA = (typeof GM_getValue !== 'undefined') ? GM_getValue('vw_user_agent', ANDROID_UA) : (localStorage.getItem('vw_user_agent') || ANDROID_UA)
-  
+  const DEFAULT_ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
   const API_BASE = 'https://vortixworld-end.vercel.app'
 
   const LOOT_HOSTS = [
@@ -44,16 +40,15 @@
     'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
   ]
 
-  const ORIGINAL_UA = navigator.userAgent
-  const isIOS = /iPad|iPhone|iPod/.test(ORIGINAL_UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  const isAndroid = /Android/.test(ORIGINAL_UA)
-  const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(ORIGINAL_UA)
-  const isDesktop = !isMobile
+  const UA = navigator.userAgent
+  const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const isAndroid = /Android/.test(UA)
+  const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(UA)
 
   if (isIOS) document.documentElement.classList.add('vw-ios')
   if (isAndroid) document.documentElement.classList.add('vw-android')
   if (isMobile) document.documentElement.classList.add('vw-mobile')
-  if (isDesktop) document.documentElement.classList.add('vw-desktop')
+  if (!isMobile) document.documentElement.classList.add('vw-desktop')
 
   function hostMatchesAny(list) {
     const h = HOST
@@ -76,11 +71,39 @@
     FALLBACK_CHECK_DELAY: 15000
   })
 
-  const VW_KEYS = win.VW_CONFIG?.keys || {
-    autoRedirect: 'vw_auto_redirect'
+  const VW_KEYS = window.VW_CONFIG?.keys || {
+    autoRedirect: 'vw_auto_redirect',
+    userAgent: 'vw_user_agent'
   }
 
-  win.__vw_logs = win.__vw_logs || []
+  function getStoredValue(key, defaultValue) {
+    if (typeof GM_getValue === 'function') {
+      try {
+        return GM_getValue(key, defaultValue)
+      } catch (_) {}
+    }
+    try {
+      const lsValue = localStorage.getItem(key)
+      if (lsValue === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return lsValue === 'true'
+      if (typeof defaultValue === 'number') {
+        const n = parseInt(lsValue, 10)
+        return Number.isFinite(n) ? n : defaultValue
+      }
+      return lsValue
+    } catch (_) {
+      return defaultValue
+    }
+  }
+
+  function getEffectiveUA() {
+    const stored = getStoredValue(VW_KEYS.userAgent, DEFAULT_ANDROID_UA)
+    return stored || DEFAULT_ANDROID_UA
+  }
+
+  const ANDROID_UA = getEffectiveUA()
+
+  window.__vw_logs = window.__vw_logs || []
   const LOG_STYLE = {
     base: 'font-weight:800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
     info: 'color:#22c55e;',
@@ -98,8 +121,8 @@
         message: msg,
         data: data !== undefined ? String(data) : ''
       }
-      win.__vw_logs.push(entry)
-      if (win.__vw_logs.length > 500) win.__vw_logs.shift()
+      window.__vw_logs.push(entry)
+      if (window.__vw_logs.length > 500) window.__vw_logs.shift()
     },
     info: (m, d = '') => {
       console.info(`%c[INFO]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.info, LOG_STYLE.base + LOG_STYLE.dim, d || '')
@@ -149,28 +172,28 @@
     if (isShutdown) return
     isShutdown = true
     cleanupManager.clearAll()
-    if (win.bypassObserver) {
-      win.bypassObserver.disconnect()
-      win.bypassObserver = null
+    if (window.bypassObserver) {
+      window.bypassObserver.disconnect()
+      window.bypassObserver = null
     }
-    if (win.primaryWebSocket) {
-      win.primaryWebSocket.disconnect()
-      win.primaryWebSocket = null
+    if (window.primaryWebSocket) {
+      window.primaryWebSocket.disconnect()
+      window.primaryWebSocket = null
     }
-    if (win.fallbackWebSocket) {
-      win.fallbackWebSocket.disconnect()
-      win.fallbackWebSocket = null
+    if (window.fallbackWebSocket) {
+      window.fallbackWebSocket.disconnect()
+      window.fallbackWebSocket = null
     }
-    if (win.activeWebSocket) {
-      win.activeWebSocket.disconnect()
-      win.activeWebSocket = null
+    if (window.activeWebSocket) {
+      window.activeWebSocket.disconnect()
+      window.activeWebSocket = null
     }
   }
 
   async function copyTextSilent(text) {
     try {
       if (!text) return false
-      if (navigator.clipboard && win.isSecureContext) {
+      if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(String(text))
         return true
       }
@@ -394,14 +417,14 @@
           goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828'
           goBtn.textContent = '🔄 Refreshing...'
         }
-        win.location.reload()
+        window.location.reload()
       }
     }, 1000)
 
     if (goBtn) {
       goBtn.onmousedown = () => { goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828'; }
       goBtn.onmouseup = () => { goBtn.style.boxShadow = '4px 4px 8px #141414, -4px -4px 8px #282828'; }
-      goBtn.onclick = () => { win.location.href = finalUrl }
+      goBtn.onclick = () => { window.location.href = finalUrl }
     }
   }
 
@@ -411,10 +434,18 @@
   let initialKey = null
   let initialKeySet = false
   let lastLuaClickTime = 0
+  const LUA_CLICK_COOLDOWN = isIOS ? 10000 : 0
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
     autoLuaTimers = []
+  }
+
+  function canLuaClick() {
+    if (isIOS) {
+      return (Date.now() - lastLuaClickTime) >= LUA_CLICK_COOLDOWN
+    }
+    return true
   }
 
   function triggerNativeLuarmor(btnId) {
@@ -446,62 +477,46 @@
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
         if (btn && !btn.disabled) {
-           if (isIOS) {
-               if ((Date.now() - lastLuaClickTime) >= 10000) {
-                   lastLuaClickTime = Date.now();
-                   triggerNativeLuarmor(btn.id);
-                   if (btn.id === 'newkeybtn') stopAutoLuarmor();
-               }
-           } else {
-               if (!btn.dataset.vwClicked) {
-                   btn.dataset.vwClicked = 'true';
-                   triggerNativeLuarmor(btn.id);
-                   if (btn.id === 'newkeybtn') stopAutoLuarmor();
+           if (canLuaClick()) {
+               lastLuaClickTime = Date.now();
+               triggerNativeLuarmor(btn.id);
+               if (btn.id === 'newkeybtn') {
+                   stopAutoLuarmor();
+                   return;
                }
            }
         }
       }
     }
-    autoLuaTimers.push(setTimeout(checkProgress, 1000))
+    if (isIOS) {
+      autoLuaTimers.push(setTimeout(checkProgress, 1000))
+    } else {
+      autoLuaTimers.push(setTimeout(checkProgress, 500))
+    }
   }
 
   function attemptNext() {
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (isIOS) {
-          if ((Date.now() - lastLuaClickTime) >= 10000) {
-              Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn (iOS)')
-              lastLuaClickTime = Date.now();
-              triggerNativeLuarmor('nextbtn')
-              autoLuaNavAttempted = true
-              autoLuaTimers.push(setTimeout(() => {
-                if (autoLuaActive && win.location.href === win.location.href) {
-                  Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
-                  autoLuaNavAttempted = false
-                  attemptNext()
-                }
-              }, 3000))
-          } else {
-              autoLuaTimers.push(setTimeout(attemptNext, 1000))
+      if (canLuaClick()) {
+          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+          lastLuaClickTime = Date.now();
+          triggerNativeLuarmor('nextbtn')
+          if (!isIOS) {
+            stopAutoLuarmor()
+            return
           }
+          autoLuaNavAttempted = true
+          autoLuaTimers.push(setTimeout(() => {
+            if (autoLuaActive && window.location.href === window.location.href) {
+              Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
+              autoLuaNavAttempted = false
+              attemptNext()
+            }
+          }, 3000))
       } else {
-          if (!btn.dataset.vwClicked) {
-              Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn (Non-iOS)')
-              btn.dataset.vwClicked = 'true';
-              triggerNativeLuarmor('nextbtn')
-              autoLuaNavAttempted = true
-              autoLuaTimers.push(setTimeout(() => {
-                if (autoLuaActive && win.location.href === win.location.href) {
-                  Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
-                  autoLuaNavAttempted = false
-                  btn.dataset.vwClicked = '';
-                  attemptNext()
-                }
-              }, 3000))
-          } else {
-              autoLuaTimers.push(setTimeout(attemptNext, 1000))
-          }
+          autoLuaTimers.push(setTimeout(attemptNext, 1000))
       }
     } else {
       autoLuaTimers.push(setTimeout(attemptNext, 600))
@@ -526,7 +541,9 @@
         initialKeySet = true
       }
     }
-    autoLuaTimers.push(setTimeout(monitorKey, 1000))
+    if (isIOS) {
+      autoLuaTimers.push(setTimeout(monitorKey, 1000))
+    }
   }
 
   function startAutoLuarmor() {
@@ -549,8 +566,14 @@
       }
     }
     checkProgress()
-    attemptNext()
-    monitorKey()
+    if (isIOS) {
+      attemptNext()
+      monitorKey()
+    } else {
+      autoLuaTimers.push(setTimeout(() => {
+        if (autoLuaActive) attemptNext()
+      }, 2000))
+    }
   }
 
   function stopAutoLuarmor() {
@@ -778,7 +801,7 @@
   }
 
   function showToast(message, isError = false, emoji = null) {
-    if (win.top !== win.self) return
+    if (window.top !== window.self) return
 
     const container = ensureToastContainer()
     const toast = document.createElement('div')
@@ -804,12 +827,8 @@
   }
 
   function isAutoRedirectEnabled() {
-    if (typeof GM_getValue !== 'undefined') {
-      const gmVal = GM_getValue(VW_KEYS.autoRedirect);
-      if (gmVal !== undefined) return gmVal === true || gmVal === 'true';
-    }
-    const saved = localStorage.getItem(VW_KEYS.autoRedirect)
-    return saved !== null ? saved === 'true' : true
+    const saved = getStoredValue(VW_KEYS.autoRedirect, true)
+    return saved === true
   }
 
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
@@ -968,7 +987,10 @@
     }
   }
 
-  const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
+  let BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
+  if (!isMobile) {
+    BL_TASKS = [1, 2, 3]
+  }
 
   async function completeTaskViaSkippedLol(taskUrl) {
     const endpoint = 'https://skipped.lol/api/evade/ll'
@@ -1024,12 +1046,12 @@
     })
 
     if (isFallback) {
-      win.fallbackWebSocket = ws
+      window.fallbackWebSocket = ws
     } else {
-      win.primaryWebSocket = ws
+      window.primaryWebSocket = ws
     }
     
-    win.activeWebSocket = ws
+    window.activeWebSocket = ws
 
     ws.connect()
 
@@ -1040,7 +1062,7 @@
     } catch (_) {}
 
     const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`
-    fetch(tdUrl, { credentials: 'include', headers: { 'User-Agent': CUSTOM_UA } }).catch(() => {})
+    fetch(tdUrl, { credentials: 'include' }).catch(() => {})
     Logger.info('Fetched td URL', tdUrl)
 
     return ws
@@ -1059,14 +1081,11 @@
     return tasks[0]
   }
 
-  let fallbackTriggered = false
   function processTcResponse(data, originalFetch) {
     Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
     const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
     const runFallback = () => {
-      if (fallbackTriggered) return
-      fallbackTriggered = true
       Logger.warn('Running fallback task selection')
       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
       const fallbackTask = selectFallbackTask(data)
@@ -1088,14 +1107,15 @@
       completeTaskViaSkippedLol(taskUrl).then(() => {
         Logger.info('Skipped.lol success, starting WebSocket for task 17')
         const primaryWs = startWebSocketForTask(task17, false)
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           if (primaryWs && !primaryWs.resolved) {
             Logger.warn('Method 1 WS timed out, shutting down and switching to Method 2')
             primaryWs.disconnect()
-            win.primaryWebSocket = null
+            window.primaryWebSocket = null
             runFallback()
           }
-        }, 8000)
+        }, 12000)
+        cleanupManager.timeouts.add(timeoutId)
       }).catch(err => {
         Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
         runFallback()
@@ -1107,46 +1127,45 @@
   }
 
   function initLootlinkFetchOverride() {
-    const originalFetch = win.fetch
-    win.fetch = function (url, config) {
+    const originalFetch = window.fetch
+    window.fetch = function (url, config) {
       try {
         const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
         if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
           return originalFetch(url, config)
         }
         if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
-          if (win.__vw_tc_processed) return originalFetch(url, config)
+          if (window.__vw_tc_processed) return originalFetch(url, config)
           if (config && config.method && config.method.toUpperCase() === 'POST') {
             let newBody = null
             let originalBody = config.body
             if (originalBody && typeof originalBody === 'string') {
               try {
                 const parsed = JSON.parse(originalBody)
-                if (!parsed.bl) parsed.bl = BL_TASKS
-                if (isDesktop) parsed.max_tasks = 3
-                newBody = JSON.stringify(parsed)
+                if (!parsed.bl) {
+                  parsed.bl = BL_TASKS
+                  newBody = JSON.stringify(parsed)
+                }
               } catch (e) {}
             } else if (originalBody && typeof originalBody === 'object') {
-              const newBodyObj = { ...originalBody }
-              if (!newBodyObj.bl) newBodyObj.bl = BL_TASKS
-              if (isDesktop) newBodyObj.max_tasks = 3
-              newBody = JSON.stringify(newBodyObj)
+              if (!originalBody.bl) {
+                const newBodyObj = { ...originalBody, bl: BL_TASKS }
+                newBody = JSON.stringify(newBodyObj)
+              }
             } else {
-              const newBodyObj = { bl: BL_TASKS }
-              if (isDesktop) newBodyObj.max_tasks = 3
-              newBody = JSON.stringify(newBodyObj)
+              newBody = JSON.stringify({ bl: BL_TASKS })
             }
             if (newBody) {
               const newConfig = {
                 ...config,
-                headers: { ...config.headers, 'Content-Type': 'application/json', 'User-Agent': CUSTOM_UA },
+                headers: { ...config.headers, 'Content-Type': 'application/json' },
                 body: newBody
               }
               return originalFetch(url, newConfig).then(response => {
                 if (!response.ok) return response
                 return response.clone().json().then(data => {
                   processTcResponse(data, originalFetch)
-                  win.__vw_tc_processed = true
+                  window.__vw_tc_processed = true
                   return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
                 }).catch(() => response)
               }).catch(err => originalFetch(url, config))
@@ -1156,7 +1175,7 @@
             if (!response.ok) return response
             return response.clone().json().then(data => {
               processTcResponse(data, originalFetch)
-              win.__vw_tc_processed = true
+              window.__vw_tc_processed = true
               return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
             }).catch(() => response)
           }).catch(err => originalFetch(url, config))
@@ -1180,28 +1199,27 @@
   }
 
   async function sendTcManually() {
-    if (win.__vw_tc_processed) return
-    const originalFetch = win.fetch
+    if (window.__vw_tc_processed) return
+    const originalFetch = window.fetch
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
     const payload = { bl: BL_TASKS }
-    if (isDesktop) payload.max_tasks = 3
-    Logger.info('Sending manual POST /tc request with payload', JSON.stringify(payload))
+    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
     try {
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': CUSTOM_UA },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': ANDROID_UA },
         body: JSON.stringify(payload)
       }, 2, 1000)
       const data = await res.json()
       processTcResponse(data, originalFetch)
-      win.__vw_tc_processed = true
+      window.__vw_tc_processed = true
       Logger.info('Manual /tc processed successfully')
       showToast('Lootlink bypass successful', false, '✅')
     } catch (err) {
-      if (!win.__vw_tc_processed) {
+      if (!window.__vw_tc_processed) {
         Logger.warn('Manual /tc request failed after retries', err.message)
         showToast('Lootlink bypass failed, retrying...', true, '⚠️')
       } else {
@@ -1212,7 +1230,7 @@
 
   function startManualCheck() {
     const interval = setInterval(() => {
-      if (win.__vw_tc_processed) {
+      if (window.__vw_tc_processed) {
         clearInterval(interval)
         return
       }
@@ -1256,7 +1274,7 @@
         }
       }
     })
-    win.bypassObserver = observer
+    window.bypassObserver = observer
     observer.observe(targetContainer, { childList: true, subtree: true })
     const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
     const existing = Array.from(document.querySelectorAll('*')).find(el => {
@@ -1273,7 +1291,7 @@
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
     
     try {
-      Object.defineProperty(navigator, 'userAgent', { get: () => CUSTOM_UA })
+      Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
     } catch(e) { }
 
     const cachedResult = getCachedResult(location.href)
@@ -1294,7 +1312,7 @@
     initLootlinkFetchOverride()
     startManualCheck()
     cleanupManager.setTimeout(() => {
-      if (!win.__vw_tc_processed) {
+      if (!window.__vw_tc_processed) {
         Logger.warn('Bypass seems stuck, checking for unlock element again')
         const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
         const existing = Array.from(document.querySelectorAll('*')).find(el => {
@@ -1305,7 +1323,7 @@
         else updateStatus('Bypass delayed', 'Trying alternative method...')
       }
     }, CONFIG.FALLBACK_CHECK_DELAY)
-    win.addEventListener('beforeunload', () => cleanupManager.clearAll())
+    window.addEventListener('beforeunload', () => cleanupManager.clearAll())
   }
 
   const RESULT_CACHE_KEY = 'vw_lootlink_results'
