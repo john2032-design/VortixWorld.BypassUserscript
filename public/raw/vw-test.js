@@ -1,4 +1,4 @@
-(function () {
+;(function () {
   'use strict'
 
   if (window.top !== window.self) return
@@ -8,7 +8,35 @@
 
   const keys = {
     autoRedirect: 'vw_auto_redirect',
-    userAgent: 'vw_user_agent'
+    userAgent: 'vw_user_agent_profiles',
+    uaMode: 'vw_ua_mode'
+  }
+
+  const UA_OPTIONS = {
+    ios: [
+      { label: 'iPhone Safari 17.5', value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1' },
+      { label: 'iPhone Safari 16.6', value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1' },
+      { label: 'iPad Safari 17.5', value: 'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1' },
+      { label: 'iPhone Safari 15.8', value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.8 Mobile/15E148 Safari/604.1' }
+    ],
+    android: [
+      { label: 'Pixel 8 Pro Chrome 124', value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36' },
+      { label: 'Galaxy S23 Chrome 123', value: 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.99 Mobile Safari/537.36' },
+      { label: 'Pixel 6 Chrome 122', value: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.128 Mobile Safari/537.36' },
+      { label: 'Redmi Note 10 Chrome 121', value: 'Mozilla/5.0 (Linux; Android 11; Redmi Note 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.184 Mobile Safari/537.36' }
+    ],
+    desktop: [
+      { label: 'Windows Chrome 124', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Safari/537.36' },
+      { label: 'Windows Chrome 123', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.99 Safari/537.36' },
+      { label: 'macOS Safari 17.5', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15' },
+      { label: 'Linux Chrome 124', value: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Safari/537.36' }
+    ]
+  }
+
+  const DEFAULT_UA = {
+    ios: UA_OPTIONS.ios[0].value,
+    android: UA_OPTIONS.android[0].value,
+    desktop: UA_OPTIONS.desktop[0].value
   }
 
   const SETTINGS_CSS = `
@@ -96,9 +124,9 @@
     }
 
     .vw-panel {
-      width: min(520px, calc(100vw - 28px)) !important;
+      width: min(620px, calc(100vw - 28px)) !important;
       max-width: 100% !important;
-      max-height: min(720px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
+      max-height: min(760px, calc(100vh - 28px), calc(100dvh - 28px)) !important;
       border-radius: 28px !important;
       border: none !important;
       background: #1e1e1e !important;
@@ -200,7 +228,7 @@
 
     .vw-row {
       display: grid !important;
-      grid-template-columns: minmax(0, 1fr) 96px !important;
+      grid-template-columns: minmax(0, 1fr) auto !important;
       align-items: center !important;
       gap: 12px !important;
       padding: 16px !important;
@@ -211,13 +239,9 @@
       min-width: 0 !important;
     }
 
-    .vw-row-select {
+    .vw-row-stack {
       grid-template-columns: 1fr !important;
-      gap: 12px !important;
-    }
-
-    .vw-row-toggle {
-      grid-template-columns: minmax(0, 1fr) auto !important;
+      gap: 10px !important;
     }
 
     .vw-label {
@@ -245,17 +269,15 @@
 
     .vw-select {
       width: 100% !important;
-      padding: 12px 14px !important;
-      border-radius: 40px !important;
       border: none !important;
-      background: #1e1e1e !important;
-      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
-      color: #e0e0e0 !important;
-      font-family: inherit !important;
-      font-size: 13px !important;
-      font-weight: 500 !important;
-      cursor: pointer !important;
       outline: none !important;
+      background: #1e1e1e !important;
+      color: #e0e0e0 !important;
+      border-radius: 16px !important;
+      padding: 12px 14px !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+      font: inherit !important;
+      font-size: 13px !important;
     }
 
     .vw-select option {
@@ -446,6 +468,11 @@
       color: #e0e0e0 !important;
     }
 
+    .vw-select-row {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+
     @media (max-width: 560px) {
       .vw-panel {
         width: calc(100vw - 20px) !important;
@@ -498,21 +525,6 @@
     }
   `
 
-  const UA_OPTIONS = [
-    { group: 'iOS', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1' },
-    { group: 'iOS', ua: 'Mozilla/5.0 (iPad; CPU OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1' },
-    { group: 'iOS', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1' },
-    { group: 'iOS', ua: 'Mozilla/5.0 (iPod touch; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1' },
-    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 13; SM-S908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36' },
-    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36' },
-    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36' },
-    { group: 'Android', ua: 'Mozilla/5.0 (Linux; Android 10; SM-A515F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Mobile Safari/537.36' },
-    { group: 'Desktop', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36' },
-    { group: 'Desktop', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0' },
-    { group: 'Desktop', ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15' },
-    { group: 'Desktop', ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36' }
-  ]
-
   function hasGM() {
     return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
@@ -560,6 +572,39 @@
     })
   }
 
+  function getUAMatchValue() {
+    try {
+      const raw = localStorage.getItem(keys.userAgent)
+      if (!raw) return DEFAULT_UA
+      const parsed = JSON.parse(raw)
+      return {
+        ios: typeof parsed.ios === 'string' ? parsed.ios : DEFAULT_UA.ios,
+        android: typeof parsed.android === 'string' ? parsed.android : DEFAULT_UA.android,
+        desktop: typeof parsed.desktop === 'string' ? parsed.desktop : DEFAULT_UA.desktop
+      }
+    } catch (_) {
+      return DEFAULT_UA
+    }
+  }
+
+  function setUAMatchValue(next) {
+    const current = getUAMatchValue()
+    const merged = {
+      ios: next.ios || current.ios || DEFAULT_UA.ios,
+      android: next.android || current.android || DEFAULT_UA.android,
+      desktop: next.desktop || current.desktop || DEFAULT_UA.desktop
+    }
+    setStoredValue(keys.userAgent, merged)
+    window.dispatchEvent(new StorageEvent('storage', { key: keys.userAgent, newValue: JSON.stringify(merged) }))
+  }
+
+  function createOptionList(selectedValue, items) {
+    return items.map(item => {
+      const selected = item.value === selectedValue ? 'selected' : ''
+      return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`
+    }).join('')
+  }
+
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID)
     if (existing) existing.remove()
@@ -581,6 +626,8 @@
     gearBtn.setAttribute('aria-label', 'Open settings')
     shadow.appendChild(gearBtn)
 
+    const ua = getUAMatchValue()
+
     const backdrop = document.createElement('div')
     backdrop.className = 'vw-backdrop'
     backdrop.innerHTML = `
@@ -593,16 +640,6 @@
           <button class="vw-close-btn" type="button" aria-label="Close settings">✕</button>
         </div>
         <div class="vw-body">
-          <div class="vw-row vw-row-select">
-            <div class="vw-label">
-              <div class="vw-label-title">User Agent</div>
-              <div class="vw-label-desc">Select device User Agent for bypass</div>
-            </div>
-            <select id="vwUserAgentSelect" class="vw-select">
-              ${UA_OPTIONS.map(opt => `<option value="${escapeHtml(opt.ua)}">${escapeHtml(opt.group)} - ${escapeHtml(opt.ua.substring(0, 60))}...</option>`).join('')}
-            </select>
-          </div>
-
           <div class="vw-row vw-row-toggle">
             <div class="vw-label">
               <div class="vw-label-title">Auto Redirect</div>
@@ -612,6 +649,47 @@
               <input type="checkbox" id="vwAutoToggle">
               <span class="vw-toggle-slider"></span>
             </label>
+          </div>
+
+          <div class="vw-row vw-select-row">
+            <div class="vw-label">
+              <div class="vw-label-title">User-Agent Mode</div>
+              <div class="vw-label-desc">Choose whether to use device-based or fixed profiles</div>
+            </div>
+            <select id="vwUAMode" class="vw-select">
+              <option value="auto">Auto by device</option>
+              <option value="custom">Custom by device</option>
+            </select>
+          </div>
+
+          <div class="vw-row vw-select-row">
+            <div class="vw-label">
+              <div class="vw-label-title">iOS User-Agent</div>
+              <div class="vw-label-desc">Used when the current device is detected as iOS</div>
+            </div>
+            <select id="vwIOSUA" class="vw-select">
+              ${createOptionList(ua.ios, UA_OPTIONS.ios)}
+            </select>
+          </div>
+
+          <div class="vw-row vw-select-row">
+            <div class="vw-label">
+              <div class="vw-label-title">Android User-Agent</div>
+              <div class="vw-label-desc">Used when the current device is detected as Android</div>
+            </div>
+            <select id="vwAndroidUA" class="vw-select">
+              ${createOptionList(ua.android, UA_OPTIONS.android)}
+            </select>
+          </div>
+
+          <div class="vw-row vw-select-row">
+            <div class="vw-label">
+              <div class="vw-label-title">Desktop User-Agent</div>
+              <div class="vw-label-desc">Used when the current device is detected as desktop</div>
+            </div>
+            <select id="vwDesktopUA" class="vw-select">
+              ${createOptionList(ua.desktop, UA_OPTIONS.desktop)}
+            </select>
           </div>
 
           <div class="vw-actions">
@@ -655,7 +733,10 @@
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
     const autoToggle = shadow.querySelector('#vwAutoToggle')
-    const uaSelect = shadow.querySelector('#vwUserAgentSelect')
+    const uaMode = shadow.querySelector('#vwUAMode')
+    const iosUA = shadow.querySelector('#vwIOSUA')
+    const androidUA = shadow.querySelector('#vwAndroidUA')
+    const desktopUA = shadow.querySelector('#vwDesktopUA')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
@@ -818,32 +899,25 @@
 
     function loadSettings() {
       const auto = getStoredValue(keys.autoRedirect, true)
+      const mode = getStoredValue(keys.uaMode, 'auto')
       autoToggle.checked = auto === true
-
-      const savedUA = getStoredValue(keys.userAgent, '')
-      if (savedUA) {
-        const optionExists = Array.from(uaSelect.options).some(opt => opt.value === savedUA)
-        if (optionExists) {
-          uaSelect.value = savedUA
-        } else {
-          uaSelect.value = UA_OPTIONS[4].ua
-        }
-      } else {
-        uaSelect.value = UA_OPTIONS[4].ua
-      }
+      uaMode.value = mode === 'custom' ? 'custom' : 'auto'
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-      const newUA = uaSelect.value
+      const nextMode = uaMode.value === 'custom' ? 'custom' : 'auto'
+      const nextUA = {
+        ios: iosUA.value,
+        android: androidUA.value,
+        desktop: desktopUA.value
+      }
 
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue(keys.userAgent, newUA)
+      setStoredValue(keys.uaMode, nextMode)
+      setUAMatchValue(nextUA)
 
-      showToast(hasGM() ? '✓ Settings saved globally! Page will reload to apply UA' : '✓ Settings saved! Page will reload to apply UA')
-      setTimeout(() => {
-        location.reload()
-      }, 1500)
+      showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
     }
 
     gearBtn.addEventListener('click', (e) => {
