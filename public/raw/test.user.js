@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.5
+// @version      2.6
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -401,32 +401,13 @@
   }
 
   let autoLuaActive = false
-  let autoLuaNavAttempted = false
   let autoLuaTimers = []
-  let luaClickedIds = new Set()
-  let lastLuaClickTime = 0
+  let hasClickedGetKey = false
+  let hasClickedNext = false
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
     autoLuaTimers = []
-  }
-
-  function attemptLuaClick(btn) {
-    if (!btn || !btn.id) return false
-    if (isIOS) {
-        if (Date.now() - lastLuaClickTime >= 10000) {
-            lastLuaClickTime = Date.now();
-            triggerNativeLuarmor(btn.id);
-            return true;
-        }
-    } else {
-        if (!luaClickedIds.has(btn.id)) {
-            luaClickedIds.add(btn.id);
-            triggerNativeLuarmor(btn.id);
-            return true;
-        }
-    }
-    return false;
   }
 
   function triggerNativeLuarmor(btnId) {
@@ -457,12 +438,12 @@
       if (match && match[1] === match[2]) {
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
-        if (btn && !btn.disabled) {
-           if (attemptLuaClick(btn)) {
-               if (btn.id === 'newkeybtn') {
-                   stopAutoLuarmor();
-                   return;
-               }
+        if (btn && !btn.disabled && !hasClickedGetKey) {
+           hasClickedGetKey = true
+           triggerNativeLuarmor(btn.id)
+           if (btn.id === 'newkeybtn') {
+               stopAutoLuarmor()
+               return
            }
         }
       }
@@ -471,23 +452,12 @@
   }
 
   function attemptNext() {
-    if (!autoLuaActive || autoLuaNavAttempted) return
+    if (!autoLuaActive || hasClickedNext) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-      if (attemptLuaClick(btn)) {
-          Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
-          autoLuaNavAttempted = true
-          autoLuaTimers.push(setTimeout(() => {
-            if (autoLuaActive && window.location.href === window.location.href) {
-              Logger.info('AutoLuarmor', 'Redirect delayed, retrying...')
-              autoLuaNavAttempted = false
-              if (!isIOS) luaClickedIds.delete('nextbtn');
-              attemptNext()
-            }
-          }, 3000))
-      } else {
-          autoLuaTimers.push(setTimeout(attemptNext, 1000))
-      }
+        hasClickedNext = true
+        Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+        triggerNativeLuarmor('nextbtn')
     } else {
       autoLuaTimers.push(setTimeout(attemptNext, 600))
     }
@@ -497,7 +467,8 @@
     if (autoLuaActive) return
     autoLuaActive = true
     localStorage.setItem('vw_auto_luarmor_active', 'true')
-    autoLuaNavAttempted = false
+    hasClickedNext = false
+    hasClickedGetKey = false
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -601,6 +572,36 @@
   let countdownTimerId = null
   let currentRemainingSeconds = 60
 
+  function promptFallbackUI(fallbackCallback) {
+    const overlay = document.getElementById('vortixWorldOverlay')
+    if (!overlay) return
+    const mainContent = overlay.querySelector('.vw-main-content')
+    if (!mainContent) return
+    const iconImg = mainContent.querySelector('.vw-icon-img')
+    if (iconImg) iconImg.style.display = 'none'
+    const spinner = mainContent.querySelector('#vwSpinner')
+    if (spinner) spinner.style.display = 'none'
+    mainContent.innerHTML = `
+      <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
+      <div id="vwStatus" class="vw-status" style="color:#ef4444; font-size:1.4rem;">Method 1 Failed</div>
+      <div id="vwSubStatus" class="vw-substatus" style="white-space: normal; line-height:1.4;">Reload To Try Again Or Click Button Below To Use Method 2</div>
+      <div class="vw-button-group" style="margin-top: 20px;">
+        <button id="vwReloadBtnUi" class="vw-btn vw-btn-copy">🔄 Reload</button>
+        <button id="vwMethod2Btn" class="vw-btn vw-btn-proceed">⚙️ Method 2</button>
+      </div>
+    `
+    document.getElementById('vwReloadBtnUi').onclick = () => location.reload()
+    document.getElementById('vwMethod2Btn').onclick = () => {
+      mainContent.innerHTML = `
+        <img src="${LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
+        <div class="vw-spinner" id="vwSpinner"></div>
+        <div id="vwStatus" class="vw-status">Using Method 2...</div>
+        <div id="vwSubStatus" class="vw-substatus">Starting fallback</div>
+      `
+      fallbackCallback()
+    }
+  }
+
   function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     if (uiInjected && document.getElementById('vortixWorldOverlay')) return
     const existing = document.getElementById('vortixWorldOverlay')
@@ -693,7 +694,7 @@
     if (s) s.innerText = sub
     const spinner = document.getElementById('vwSpinner')
     if (spinner) {
-      if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none'
+      if (main.includes('Complete') || main.includes('Redirecting')) spinner.style.display = 'none'
       else spinner.style.display = 'block'
     }
   }
@@ -766,8 +767,10 @@
   }
 
   function isAutoRedirectEnabled() {
-    if (typeof GM_getValue === 'function') {
-      try { return GM_getValue(VW_KEYS.autoRedirect, true); } catch(_) {}
+    if (typeof GM_getValue !== 'undefined') {
+        try {
+            return GM_getValue(VW_KEYS.autoRedirect, true);
+        } catch (_) {}
     }
     const saved = localStorage.getItem(VW_KEYS.autoRedirect)
     return saved !== null ? saved === 'true' : true
@@ -1023,54 +1026,43 @@
   function processTcResponse(data, originalFetch) {
     Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
     const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
-    const fallbackTask = selectFallbackTask(data)
 
-    let fallbackTimer = fallbackTask ? fallbackTask.auto_complete_seconds : 60
-    let method1Failed = false
-
-    const activateFallbackUI = () => {
-       if (method1Failed) return
-       method1Failed = true
-       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
-       if (fallbackTask && fallbackTask.auto_complete_seconds) {
-           startCountdown(fallbackTimer > 0 ? fallbackTimer : fallbackTask.auto_complete_seconds)
-       } else {
-           updateStatus('❌ Bypass failed', 'No suitable fallback task')
-       }
-    }
-
-    if (fallbackTask && fallbackTask.urid) {
-      Logger.info('Initiating fallback task WS in background to prevent timeout');
-      startWebSocketForTask(fallbackTask, true);
-      const bgInterval = setInterval(() => {
-        if (fallbackTimer > 0) fallbackTimer--;
-        if (fallbackTimer <= 0) clearInterval(bgInterval);
-      }, 1000);
+    const runFallback = () => {
+      Logger.warn('Running fallback task selection')
+      updateStatus('Method 2', 'Finding suitable task')
+      const fallbackTask = selectFallbackTask(data)
+      if (fallbackTask && fallbackTask.urid) {
+        Logger.info('Using fallback task for local WebSocket', fallbackTask)
+        if (fallbackTask.auto_complete_seconds) {
+            startCountdown(fallbackTask.auto_complete_seconds)
+        }
+        startWebSocketForTask(fallbackTask, true)
+      } else {
+        Logger.error('No suitable task found in /tc response')
+        updateStatus('❌ Bypass failed', 'No suitable task')
+      }
     }
 
     if (task17 && task17.ad_url) {
       Logger.info('Found task 17, using skipped.lol')
-      updateStatus('Bypassing...', 'Trying Method 1 (skipped.lol)')
       const taskUrl = task17.ad_url
       completeTaskViaSkippedLol(taskUrl).then(() => {
-        if (method1Failed) return
-        Logger.info('Skipped.lol success, starting Method 1 WebSocket')
+        Logger.info('Skipped.lol success, starting WebSocket for task 17')
         const primaryWs = startWebSocketForTask(task17, false)
         setTimeout(() => {
           if (primaryWs && !primaryWs.resolved) {
-            Logger.warn('Method 1 WS timed out, switching UI to Method 2')
+            Logger.warn('Method 1 WS timed out, asking for fallback UI')
             primaryWs.disconnect()
             window.primaryWebSocket = null
-            activateFallbackUI()
+            promptFallbackUI(runFallback)
           }
         }, 8000)
       }).catch(err => {
-        Logger.error('Skipped.lol request failed, falling back', err)
-        activateFallbackUI()
+        Logger.error('Skipped.lol request failed, prompting fallback UI', err)
+        promptFallbackUI(runFallback)
       })
     } else {
-      Logger.warn('Task 17 not found, exclusively using Method 2')
-      activateFallbackUI()
+      runFallback()
     }
     return true
   }
@@ -1088,20 +1080,23 @@
           if (config && config.method && config.method.toUpperCase() === 'POST') {
             let newBody = null
             let originalBody = config.body
-            let newBodyObj = typeof originalBody === 'object' ? { ...originalBody } : {}
-            
             if (originalBody && typeof originalBody === 'string') {
               try {
-                newBodyObj = JSON.parse(originalBody)
+                const parsed = JSON.parse(originalBody)
+                if (!parsed.bl || !parsed.max_tasks) {
+                  parsed.bl = BL_TASKS
+                  parsed.max_tasks = 3
+                  newBody = JSON.stringify(parsed)
+                }
               } catch (e) {}
+            } else if (originalBody && typeof originalBody === 'object') {
+              if (!originalBody.bl || !originalBody.max_tasks) {
+                const newBodyObj = { ...originalBody, bl: BL_TASKS, max_tasks: 3 }
+                newBody = JSON.stringify(newBodyObj)
+              }
+            } else {
+              newBody = JSON.stringify({ bl: BL_TASKS, max_tasks: 3 })
             }
-            
-            newBodyObj.bl = BL_TASKS
-            if (!isMobile) {
-                newBodyObj.max_tasks = 3
-            }
-            newBody = JSON.stringify(newBodyObj)
-
             if (newBody) {
               const newConfig = {
                 ...config,
@@ -1151,10 +1146,8 @@
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
-    const payload = { bl: BL_TASKS }
-    if (!isMobile) payload.max_tasks = 3
-    
-    Logger.info('Sending manual POST /tc request with custom payload', JSON.stringify(payload))
+    const payload = { bl: BL_TASKS, max_tasks: 3 }
+    Logger.info('Sending manual POST /tc request with bl array and max_tasks 3', JSON.stringify(payload))
     try {
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
