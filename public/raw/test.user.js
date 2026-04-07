@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.5
+// @version      2.6
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
-// @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
-// @grant        GM_getValue
-// @grant        GM_setValue
+// @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
+// @grant        none
 // @license      MIT
 // @run-at       document-start
 // ==/UserScript==
@@ -402,8 +401,8 @@
 
   let autoLuaActive = false
   let autoLuaNavAttempted = false
-  let autoLuaProgressClicked = false
   let autoLuaTimers = []
+  let clickedButtons = new Set()
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
@@ -438,13 +437,15 @@
       if (match && match[1] === match[2]) {
         const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim()
         const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn')
-        if (btn && !btn.disabled && !autoLuaProgressClicked) {
-             autoLuaProgressClicked = true
-             triggerNativeLuarmor(btn.id)
-             if (btn.id === 'newkeybtn') {
-                 stopAutoLuarmor()
-             }
-             return
+        if (btn && !btn.disabled) {
+           if (!clickedButtons.has(btn.id)) {
+               clickedButtons.add(btn.id)
+               triggerNativeLuarmor(btn.id)
+               if (btn.id === 'newkeybtn') {
+                   stopAutoLuarmor()
+                   return
+               }
+           }
         }
       }
     }
@@ -455,12 +456,15 @@
     if (!autoLuaActive || autoLuaNavAttempted) return
     const btn = document.getElementById('nextbtn')
     if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
-        Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
-        triggerNativeLuarmor('nextbtn')
-        autoLuaNavAttempted = true
-    } else {
-      autoLuaTimers.push(setTimeout(attemptNext, 600))
+        if (!clickedButtons.has('nextbtn')) {
+            clickedButtons.add('nextbtn')
+            Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
+            triggerNativeLuarmor('nextbtn')
+            autoLuaNavAttempted = true
+            return
+        }
     }
+    autoLuaTimers.push(setTimeout(attemptNext, 600))
   }
 
   function startAutoLuarmor() {
@@ -468,7 +472,7 @@
     autoLuaActive = true
     localStorage.setItem('vw_auto_luarmor_active', 'true')
     autoLuaNavAttempted = false
-    autoLuaProgressClicked = false
+    clickedButtons.clear()
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -737,14 +741,6 @@
   }
 
   function isAutoRedirectEnabled() {
-    if (typeof GM_getValue !== 'undefined') {
-      try {
-        const gmVal = GM_getValue(VW_KEYS.autoRedirect)
-        if (gmVal !== undefined && gmVal !== null) {
-          return gmVal === true || String(gmVal) === 'true'
-        }
-      } catch (e) {}
-    }
     const saved = localStorage.getItem(VW_KEYS.autoRedirect)
     return saved !== null ? saved === 'true' : true
   }
@@ -905,7 +901,7 @@
     }
   }
 
-  const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17)
+  const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17)
 
   async function completeTaskViaSkippedLol(taskUrl) {
     const endpoint = 'https://skipped.lol/api/evade/ll'
@@ -957,7 +953,7 @@
       initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
       maxDelay: CONFIG.MAX_RECONNECT_DELAY,
       heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-      maxRetries: 3
+      maxRetries: 5
     })
 
     if (isFallback) {
