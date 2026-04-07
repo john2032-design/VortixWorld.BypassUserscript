@@ -1,21 +1,18 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.6
+// @version      2.5
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
 // @icon         https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg
-// @require      https://vortixworlduserscript.vercel.app/raw/vw-settings.js
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_deleteValue
-// @grant        GM_listValues
-// @grant        unsafeWindow
+// @require      https://vortixworlduserscript.vercel.app/raw/vw-test.js
+// @grant        none
+// @license      MIT
 // @run-at       document-start
 // ==/UserScript==
 
-(function () {
+;(function () {
   'use strict'
 
   const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '')
@@ -37,9 +34,111 @@
     'linkvertise.com', 'admaven.com', 'work.ink', 'shortearn.eu',
     'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
     'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
-    'direct-links.org', 'link-center.net', 'link-hub.net',
+    'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
     'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
   ]
+
+  const UA_PROFILES = {
+    ios: [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.8 Mobile/15E148 Safari/604.1'
+    ],
+    android: [
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36',
+      'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.99 Mobile Safari/537.36',
+      'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.128 Mobile Safari/537.36',
+      'Mozilla/5.0 (Linux; Android 11; Redmi Note 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.184 Mobile Safari/537.36'
+    ],
+    desktop: [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.99 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Safari/537.36'
+    ]
+  }
+
+  const DEFAULT_UA_SELECTION = {
+    ios: UA_PROFILES.ios[0],
+    android: UA_PROFILES.android[0],
+    desktop: UA_PROFILES.desktop[0]
+  }
+
+  const UA_STATE = {
+    ios: DEFAULT_UA_SELECTION.ios,
+    android: DEFAULT_UA_SELECTION.android,
+    desktop: DEFAULT_UA_SELECTION.desktop
+  }
+
+  const UA_KEY = 'vw_user_agent_profiles'
+
+  function loadUASettings() {
+    try {
+      const raw = localStorage.getItem(UA_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') {
+        if (typeof parsed.ios === 'string') UA_STATE.ios = parsed.ios
+        if (typeof parsed.android === 'string') UA_STATE.android = parsed.android
+        if (typeof parsed.desktop === 'string') UA_STATE.desktop = parsed.desktop
+      }
+    } catch (_) {}
+  }
+
+  loadUASettings()
+
+  function saveUASettings(next) {
+    try {
+      const merged = {
+        ios: next?.ios || UA_STATE.ios,
+        android: next?.android || UA_STATE.android,
+        desktop: next?.desktop || UA_STATE.desktop
+      }
+      UA_STATE.ios = merged.ios
+      UA_STATE.android = merged.android
+      UA_STATE.desktop = merged.desktop
+      localStorage.setItem(UA_KEY, JSON.stringify(merged))
+    } catch (_) {}
+  }
+
+  window.addEventListener('storage', e => {
+    if (e.key === UA_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue)
+        if (parsed && typeof parsed === 'object') {
+          if (typeof parsed.ios === 'string') UA_STATE.ios = parsed.ios
+          if (typeof parsed.android === 'string') UA_STATE.android = parsed.android
+          if (typeof parsed.desktop === 'string') UA_STATE.desktop = parsed.desktop
+        }
+      } catch (_) {}
+    }
+  })
+
+  const UA_MODE = (() => {
+    try {
+      return localStorage.getItem('vw_ua_mode') || 'auto'
+    } catch (_) {
+      return 'auto'
+    }
+  })()
+
+  function getSelectedUAForDevice(device) {
+    if (device === 'ios') return UA_STATE.ios
+    if (device === 'android') return UA_STATE.android
+    return UA_STATE.desktop
+  }
+
+  function getActiveUA() {
+    if (UA_MODE === 'custom') {
+      if (isIOS) return getSelectedUAForDevice('ios')
+      if (isAndroid) return getSelectedUAForDevice('android')
+      return getSelectedUAForDevice('desktop')
+    }
+    if (isIOS) return UA_STATE.ios
+    if (isAndroid) return UA_STATE.android
+    return UA_STATE.desktop
+  }
 
   const UA = navigator.userAgent
   const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -72,9 +171,10 @@
     FALLBACK_CHECK_DELAY: 15000
   })
 
-  const VW_KEYS = {
+  const VW_KEYS = window.VW_CONFIG?.keys || {
     autoRedirect: 'vw_auto_redirect',
-    userAgent: 'vw_user_agent'
+    userAgent: 'vw_user_agent_profiles',
+    uaMode: 'vw_ua_mode'
   }
 
   window.__vw_logs = window.__vw_logs || []
@@ -197,67 +297,6 @@
       return String(url).includes('ads.luarmor.net')
     }
   }
-
-  function getStoredValue(key, defaultValue) {
-    if (typeof GM_getValue === 'function') {
-      try {
-        return GM_getValue(key, defaultValue)
-      } catch (_) {}
-    }
-    try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
-      if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
-        return Number.isFinite(n) ? n : defaultValue
-      }
-      return lsValue
-    } catch (_) {
-      return defaultValue
-    }
-  }
-
-  function setStoredValue(key, value) {
-    if (typeof GM_setValue === 'function') {
-      try {
-        GM_setValue(key, value)
-      } catch (_) {}
-    }
-    try {
-      localStorage.setItem(key, String(value))
-    } catch (_) {}
-  }
-
-  function getSelectedUA() {
-    let ua = getStoredValue(VW_KEYS.userAgent, '')
-    if (ua && ua.trim().length > 0) return ua
-    return 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
-  }
-
-  function overrideUserAgent(uaString) {
-    if (!uaString) return
-    try {
-      Object.defineProperty(navigator, 'userAgent', {
-        get: () => uaString,
-        configurable: true
-      })
-      Object.defineProperty(navigator, 'platform', {
-        get: () => {
-          if (uaString.includes('Android')) return 'Linux armv8l'
-          if (uaString.includes('iPhone') || uaString.includes('iPad')) return 'iPhone'
-          return 'Win32'
-        },
-        configurable: true
-      })
-      Logger.info(`UserAgent overridden to: ${uaString}`)
-    } catch (e) {
-      Logger.error('Failed to override userAgent', e)
-    }
-  }
-
-  const SELECTED_UA = getSelectedUA()
-  overrideUserAgent(SELECTED_UA)
 
   const SHARED_UI_CSS = `
     :root {
@@ -470,7 +509,6 @@
   let initialKeySet = false
   let lastLuaClickTime = 0
   const LUA_CLICK_COOLDOWN = 6000
-  let iosIntervalId = null
 
   function clearAutoLuaTimeouts() {
     autoLuaTimers.forEach(clearTimeout)
@@ -569,17 +607,6 @@
     autoLuaTimers.push(setTimeout(monitorKey, 1000))
   }
 
-  function iosClickInterval() {
-    if (!autoLuaActive) return
-    const btn = document.getElementById('nextbtn') || document.querySelector('.continue-button') || document.querySelector('button[type="submit"]')
-    if (btn && btn.offsetParent !== null && !btn.disabled) {
-      if (canLuaClick()) {
-        lastLuaClickTime = Date.now()
-        triggerNativeLuarmor(btn.id || (btn.className.split(' ')[0]))
-      }
-    }
-  }
-
   function startAutoLuarmor() {
     if (autoLuaActive) return
     autoLuaActive = true
@@ -599,14 +626,9 @@
         statusSpan.textContent = "● Running"
       }
     }
-    if (isIOS) {
-      if (iosIntervalId) clearInterval(iosIntervalId)
-      iosIntervalId = setInterval(iosClickInterval, 10000)
-    } else {
-      checkProgress()
-      attemptNext()
-      monitorKey()
-    }
+    checkProgress()
+    attemptNext()
+    monitorKey()
   }
 
   function stopAutoLuarmor() {
@@ -614,10 +636,6 @@
     autoLuaActive = false
     localStorage.setItem('vw_auto_luarmor_active', 'false')
     clearAutoLuaTimeouts()
-    if (iosIntervalId) {
-      clearInterval(iosIntervalId)
-      iosIntervalId = null
-    }
     const ui = document.getElementById('autoLuaUI')
     if (ui) {
       const startStopBtn = ui.querySelector("#startStopBtn")
@@ -864,8 +882,8 @@
   }
 
   function isAutoRedirectEnabled() {
-    const saved = getStoredValue(VW_KEYS.autoRedirect, true)
-    return saved === true
+    const saved = localStorage.getItem(VW_KEYS.autoRedirect)
+    return saved !== null ? saved === 'true' : true
   }
 
   function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
@@ -1037,7 +1055,7 @@
       const timeoutId = setTimeout(() => controller.abort(), 8000)
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal
       })
@@ -1148,7 +1166,7 @@
             window.primaryWebSocket = null
             runFallback()
           }
-        }, 10000)
+        }, 8000)
       }).catch(err => {
         Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
         runFallback()
@@ -1177,22 +1195,21 @@
                 const parsed = JSON.parse(originalBody)
                 if (!parsed.bl) {
                   parsed.bl = BL_TASKS
+                  newBody = JSON.stringify(parsed)
                 }
-                if (!parsed.max_tasks) {
-                  parsed.max_tasks = 3
-                }
-                newBody = JSON.stringify(parsed)
               } catch (e) {}
             } else if (originalBody && typeof originalBody === 'object') {
-              const newBodyObj = { ...originalBody, bl: BL_TASKS, max_tasks: 3 }
-              newBody = JSON.stringify(newBodyObj)
+              if (!originalBody.bl) {
+                const newBodyObj = { ...originalBody, bl: BL_TASKS }
+                newBody = JSON.stringify(newBodyObj)
+              }
             } else {
-              newBody = JSON.stringify({ bl: BL_TASKS, max_tasks: 3 })
+              newBody = JSON.stringify({ bl: BL_TASKS })
             }
             if (newBody) {
               const newConfig = {
                 ...config,
-                headers: { ...config.headers, 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
+                headers: { ...config.headers, 'Content-Type': 'application/json' },
                 body: newBody
               }
               return originalFetch(url, newConfig).then(response => {
@@ -1238,13 +1255,13 @@
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
     const tcUrl = `https://${syncDomain}/tc`
-    const payload = { bl: BL_TASKS, max_tasks: 3 }
-    Logger.info('Sending manual POST /tc request with bl array and max_tasks', JSON.stringify(payload))
+    const payload = { bl: BL_TASKS }
+    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
     try {
       const res = await fetchWithRetry(tcUrl, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': getActiveUA() },
         body: JSON.stringify(payload)
       }, 2, 1000)
       const data = await res.json()
@@ -1321,9 +1338,39 @@
     }
   }
 
+  function applyNavigatorUA(selectedUA) {
+    const ua = String(selectedUA || '')
+    try {
+      Object.defineProperty(navigator, 'userAgent', { get: () => ua, configurable: true })
+    } catch (_) {}
+    try {
+      Object.defineProperty(navigator, 'appVersion', { get: () => ua, configurable: true })
+    } catch (_) {}
+    try {
+      Object.defineProperty(navigator, 'platform', { get: () => {
+        if (/iPhone|iPad|iPod/.test(ua)) return 'iPhone'
+        if (/Android/.test(ua)) return 'Linux armv8l'
+        return 'Win32'
+      }, configurable: true })
+    } catch (_) {}
+    try {
+      Object.defineProperty(navigator, 'vendor', { get: () => /AppleWebKit/.test(ua) ? 'Apple Computer, Inc.' : 'Google Inc.', configurable: true })
+    } catch (_) {}
+    try {
+      Object.defineProperty(window, 'innerWidth', { get: () => {
+        if (/iPad/.test(ua)) return 1024
+        if (/iPhone/.test(ua)) return 390
+        if (/Android/.test(ua)) return 412
+        return 1366
+      }, configurable: true })
+    } catch (_) {}
+  }
+
   function runLocalLootlinkBypass() {
     Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
     
+    applyNavigatorUA(getActiveUA())
+
     const cachedResult = getCachedResult(location.href)
     if (cachedResult) {
       if (!isLuarmorUrl(cachedResult)) {
@@ -1389,7 +1436,7 @@
       const alias = location.pathname.slice(1)
       if (!alias) throw new Error('No alias found in URL')
       Logger.info('TPI.LI alias', alias)
-      const response = await fetch(location.href, { headers: { 'User-Agent': getSelectedUA() } })
+      const response = await fetch(location.href, { headers: { 'User-Agent': 'Mozilla/5.0' } })
       const html = await response.text()
       Logger.info('Fetched TPI.LI HTML', `${html.length} bytes`)
       let tokenMatch = html.match(/name="token"\s+value="([^"]+)"/)
@@ -1418,7 +1465,7 @@
   }
 
   async function initApi() {
-    const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': getSelectedUA() } })
+    const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
     const json = await res.json()
     return json.accessToken
   }
@@ -1426,7 +1473,7 @@
   async function bypassUrl(url, accessToken) {
     const res = await fetch(API_BASE + '/api/bypass/direct', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken, 'User-Agent': getSelectedUA() },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
       body: JSON.stringify({ url })
     })
     return res.json()
@@ -1565,18 +1612,6 @@
   }
 
   const state = { processStartTime: Date.now() }
-
-  function storageSyncHandler(e) {
-    if (e.key === VW_KEYS.userAgent) {
-      Logger.info('UserAgent changed in another tab, reloading to apply')
-      location.reload()
-    }
-    if (e.key === VW_KEYS.autoRedirect) {
-      Logger.info('AutoRedirect setting changed in another tab, syncing')
-    }
-  }
-
-  window.addEventListener('storage', storageSyncHandler)
 
   function main() {
     if (HOST.includes('luarmor.net')) {
