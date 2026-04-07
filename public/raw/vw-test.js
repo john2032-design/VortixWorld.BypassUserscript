@@ -1,14 +1,14 @@
 ;(function () {
   'use strict'
 
-  const win = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window
-  if (win.top !== win.self) return
+  if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
 
   const keys = {
-    autoRedirect: 'vw_auto_redirect'
+    autoRedirect: 'vw_auto_redirect',
+    userAgent: 'vw_user_agent'
   }
 
   const SETTINGS_CSS = `
@@ -421,6 +421,32 @@
       color: #e0e0e0 !important;
     }
 
+    .vw-select {
+      background: #1e1e1e;
+      border: none;
+      box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828;
+      color: #e0e0e0;
+      padding: 12px 16px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .vw-select optgroup {
+      background: #1e1e1e;
+      color: #a0a0a0;
+      font-weight: 600;
+    }
+
+    .vw-select option {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      padding: 8px;
+    }
+
     @media (max-width: 560px) {
       .vw-panel {
         width: calc(100vw - 20px) !important;
@@ -565,45 +591,10 @@
           </div>
 
           <div class="vw-actions">
-            <button class="vw-btn" id="vwUABtn" type="button">UserAgent</button>
             <button class="vw-btn" id="vwConsoleBtn" type="button">Console</button>
+            <button class="vw-btn" id="vwUserAgentBtn" type="button">UserAgent</button>
             <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
             <button class="vw-btn vw-btn-primary" id="vwApplyBtn" type="button">Apply &amp; Save</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="vw-panel vw-hidden" id="vwUAPanel" role="dialog" aria-modal="true" aria-label="VW UserAgent">
-        <div class="vw-header">
-          <div class="vw-title">
-            <img src="${ICON_URL}" alt="VW Icon">
-            <span>UserAgent</span>
-          </div>
-          <button class="vw-close-btn" type="button" aria-label="Close UA">✕</button>
-        </div>
-        <div class="vw-body">
-          <div class="vw-row" style="display:flex; flex-direction:column; align-items:stretch;">
-            <label for="vwUASelect" class="vw-label-title" style="margin-bottom:8px;">Select UserAgent:</label>
-            <select id="vwUASelect" style="width:100%; padding:10px; border-radius:12px; background:#141414; color:#e0e0e0; border:1px solid #2a2a2a; outline:none; font-family:inherit;">
-              <optgroup label="PC">
-                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36">Windows Chrome</option>
-                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15">Mac Safari</option>
-                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0">Windows Firefox</option>
-              </optgroup>
-              <optgroup label="Android">
-                <option value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36">Samsung S10 Chrome</option>
-                <option value="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36">Pixel 7 Chrome</option>
-                <option value="Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36">Samsung S23 Chrome</option>
-              </optgroup>
-              <optgroup label="iOS">
-                <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1">iPhone Safari</option>
-                <option value="Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1">iPad Safari</option>
-                <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1">iPhone (Old) Safari</option>
-              </optgroup>
-            </select>
-          </div>
-          <div class="vw-actions">
-            <button class="vw-btn vw-btn-primary" id="vwBackToSettingsUABtn" type="button">Back</button>
           </div>
         </div>
       </div>
@@ -632,12 +623,58 @@
           </div>
         </div>
       </div>
+
+      <div class="vw-panel vw-hidden" id="vwUserAgentPanel" role="dialog" aria-modal="true" aria-label="UserAgent Selection">
+        <div class="vw-header">
+          <div class="vw-title">
+            <img src="${ICON_URL}" alt="VW Icon">
+            <span>UserAgent</span>
+          </div>
+          <button class="vw-close-btn" type="button" aria-label="Close userAgent panel">✕</button>
+        </div>
+        <div class="vw-body">
+          <div class="vw-row" style="grid-template-columns: 1fr;">
+            <div class="vw-label">
+              <div class="vw-label-title">Select UserAgent</div>
+              <div class="vw-label-desc">Choose a device userAgent to use for bypass</div>
+            </div>
+            <select id="vwUserAgentSelect" class="vw-select">
+              <optgroup label="Android">
+                <option value="Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36">Android 14 (Samsung S23+)</option>
+                <option value="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36">Android 13 (Pixel 7)</option>
+                <option value="Mozilla/5.0 (Linux; Android 12; SM-A525F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.111 Mobile Safari/537.36">Android 12 (Galaxy A52)</option>
+                <option value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36">Android 10 (Galaxy S10)</option>
+              </optgroup>
+              <optgroup label="iOS">
+                <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1">iOS 17.2 (iPhone 15)</option>
+                <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1">iOS 16.6 (iPhone 14)</option>
+                <option value="Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1">iPadOS 17.2 (iPad Pro)</option>
+                <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 15_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1">iOS 15.8 (iPhone 13)</option>
+              </optgroup>
+              <optgroup label="Windows Desktop">
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">Windows 10/11 - Chrome 120</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0">Windows 10/11 - Firefox 121</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.199 Safari/537.36 Edg/119.0.2151.97">Windows 10/11 - Edge 119</option>
+              </optgroup>
+              <optgroup label="macOS Desktop">
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">macOS - Chrome 120</option>
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15">macOS - Safari 17.2</option>
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:121.0) Gecko/20100101 Firefox/121.0">macOS - Firefox 121</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="vw-actions">
+            <button class="vw-btn vw-btn-primary" id="vwSaveUABtn" type="button">Save UserAgent</button>
+            <button class="vw-btn" id="vwBackToSettingsFromUABtn" type="button">Back to Settings</button>
+          </div>
+        </div>
+      </div>
     `
     shadow.appendChild(backdrop)
 
     const settingsPanel = shadow.querySelector('#vwSettingsPanel')
-    const uaPanel = shadow.querySelector('#vwUAPanel')
     const consolePanel = shadow.querySelector('#vwConsolePanel')
+    const userAgentPanel = shadow.querySelector('#vwUserAgentPanel')
     const closeBtns = shadow.querySelectorAll('.vw-close-btn')
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
@@ -645,12 +682,13 @@
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
-    const uaBtn = shadow.querySelector('#vwUABtn')
-    const uaSelect = shadow.querySelector('#vwUASelect')
+    const userAgentBtn = shadow.querySelector('#vwUserAgentBtn')
     const copyConsoleBtn = shadow.querySelector('#vwCopyConsoleBtn')
     const clearConsoleBtn = shadow.querySelector('#vwClearConsoleBtn')
     const backToSettingsBtn = shadow.querySelector('#vwBackToSettingsBtn')
-    const backToSettingsUABtn = shadow.querySelector('#vwBackToSettingsUABtn')
+    const backToSettingsFromUABtn = shadow.querySelector('#vwBackToSettingsFromUABtn')
+    const saveUABtn = shadow.querySelector('#vwSaveUABtn')
+    const uaSelect = shadow.querySelector('#vwUserAgentSelect')
     const tabs = shadow.querySelectorAll('.vw-tab')
     const consoleContainer = shadow.querySelector('#vwConsoleLogs')
 
@@ -686,7 +724,7 @@
     }
 
     function getFilteredLogs() {
-      const logs = win.__vw_logs || []
+      const logs = window.__vw_logs || []
       if (currentFilter === 'all') return logs
       if (currentFilter === 'websocket') {
         return logs.filter(log => log.level === 'websocket')
@@ -762,7 +800,7 @@
     function openPanel(panel) {
       setVisible(settingsPanel, panel === 'settings')
       setVisible(consolePanel, panel === 'console')
-      setVisible(uaPanel, panel === 'ua')
+      setVisible(userAgentPanel, panel === 'useragent')
       backdropDiv.classList.add('open')
       setScrollLock(true)
 
@@ -777,13 +815,25 @@
         }
         renderConsoleLogs()
         startAutoRefresh()
+      } else if (panel === 'useragent') {
+        const currentUA = getStoredValue(keys.userAgent, '')
+        if (currentUA && uaSelect) {
+          for (let i = 0; i < uaSelect.options.length; i++) {
+            if (uaSelect.options[i].value === currentUA) {
+              uaSelect.selectedIndex = i
+              break
+            }
+          }
+        }
+        stopAutoRefresh()
       } else {
         stopAutoRefresh()
       }
 
-      const focusTarget = panel === 'console'
-        ? shadow.querySelector('#vwCopyConsoleBtn')
-        : shadow.querySelector('#vwAutoToggle')
+      let focusTarget = null
+      if (panel === 'console') focusTarget = shadow.querySelector('#vwCopyConsoleBtn')
+      else if (panel === 'useragent') focusTarget = uaSelect
+      else focusTarget = shadow.querySelector('#vwAutoToggle')
 
       if (focusTarget && typeof focusTarget.focus === 'function') {
         setTimeout(() => {
@@ -802,32 +852,30 @@
       backdropDiv.classList.remove('open')
       setVisible(settingsPanel, false)
       setVisible(consolePanel, false)
-      setVisible(uaPanel, false)
+      setVisible(userAgentPanel, false)
       setScrollLock(false)
       stopAutoRefresh()
     }
 
     function loadSettings() {
       const auto = getStoredValue(keys.autoRedirect, true)
-      autoToggle.checked = auto === true || auto === 'true'
-
-      const ua = getStoredValue('vw_user_agent', 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36')
-      const optionExists = Array.from(uaSelect.options).some(opt => opt.value === ua)
-      if (optionExists) {
-        uaSelect.value = ua
-      } else {
-        uaSelect.selectedIndex = 0
-      }
+      autoToggle.checked = auto === true
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-      const newUA = uaSelect.value
-
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue('vw_user_agent', newUA)
-
       showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
+    }
+
+    function saveUserAgent() {
+      const selectedUA = uaSelect.value
+      if (selectedUA) {
+        setStoredValue(keys.userAgent, selectedUA)
+        showToast('UserAgent saved! Reload page to apply.', false)
+      } else {
+        showToast('No UserAgent selected', true)
+      }
     }
 
     gearBtn.addEventListener('click', (e) => {
@@ -872,16 +920,10 @@
       openPanel('console')
     })
 
-    uaBtn.addEventListener('click', (e) => {
+    userAgentBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
-      openPanel('ua')
-    })
-
-    backToSettingsUABtn.addEventListener('click', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      openPanel('settings')
+      openPanel('useragent')
     })
 
     copyConsoleBtn.addEventListener('click', (e) => {
@@ -893,7 +935,7 @@
     clearConsoleBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
-      win.__vw_logs = []
+      window.__vw_logs = []
       renderConsoleLogs()
       showToast('Console cleared')
     })
@@ -902,6 +944,19 @@
       e.preventDefault()
       e.stopPropagation()
       openPanel('settings')
+    })
+
+    backToSettingsFromUABtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      openPanel('settings')
+    })
+
+    saveUABtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      saveUserAgent()
+      closePanel()
     })
 
     tabs.forEach(tab => {
@@ -916,7 +971,7 @@
 
     setVisible(settingsPanel, true)
     setVisible(consolePanel, false)
-    setVisible(uaPanel, false)
+    setVisible(userAgentPanel, false)
     loadSettings()
     document.documentElement.appendChild(host)
   }
