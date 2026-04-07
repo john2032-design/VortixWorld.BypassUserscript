@@ -509,7 +509,6 @@
         return GM_getValue(key, defaultValue)
       } catch (_) {}
     }
-
     try {
       const lsValue = localStorage.getItem(key)
       if (lsValue === null) return defaultValue
@@ -530,7 +529,6 @@
         GM_setValue(key, value)
       } catch (_) {}
     }
-
     try {
       localStorage.setItem(key, String(value))
     } catch (_) {}
@@ -636,14 +634,14 @@
           <div class="vw-row" style="grid-template-columns: 1fr;">
             <div class="vw-label">
               <div class="vw-label-title">Select UserAgent</div>
-              <div class="vw-label-desc">Choose a device userAgent to use for bypass</div>
+              <div class="vw-label-desc">Client‑side only – overrides navigator.userAgent</div>
             </div>
             <select id="vwUserAgentSelect" class="vw-select">
               <optgroup label="Android">
                 <option value="Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36">Android 14 (Samsung S23+)</option>
                 <option value="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36">Android 13 (Pixel 7)</option>
                 <option value="Mozilla/5.0 (Linux; Android 12; SM-A525F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.111 Mobile Safari/537.36">Android 12 (Galaxy A52)</option>
-                <option value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36">Android 10 (Galaxy S10)</option>
+                <option value="Mozilla/5.0 (Linux; Android 11; M2007J20CG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.153 Mobile Safari/537.36">Android 11 (Xiaomi Poco F1)</option>
               </optgroup>
               <optgroup label="iOS">
                 <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1">iOS 17.2 (iPhone 15)</option>
@@ -652,14 +650,15 @@
                 <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 15_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1">iOS 15.8 (iPhone 13)</option>
               </optgroup>
               <optgroup label="Windows Desktop">
-                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">Windows 10/11 - Chrome 120</option>
-                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0">Windows 10/11 - Firefox 121</option>
-                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.199 Safari/537.36 Edg/119.0.2151.97">Windows 10/11 - Edge 119</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">Windows 10/11 – Chrome 120</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0">Windows 10/11 – Firefox 121</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.199 Safari/537.36 Edg/119.0.2151.97">Windows 10/11 – Edge 119</option>
+                <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.88 Safari/537.36 OPR/104.0.4944.36">Windows 10/11 – Opera 104</option>
               </optgroup>
               <optgroup label="macOS Desktop">
-                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">macOS - Chrome 120</option>
-                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15">macOS - Safari 17.2</option>
-                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:121.0) Gecko/20100101 Firefox/121.0">macOS - Firefox 121</option>
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36">macOS – Chrome 120</option>
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15">macOS – Safari 17.2</option>
+                <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:121.0) Gecko/20100101 Firefox/121.0">macOS – Firefox 121</option>
               </optgroup>
             </select>
           </div>
