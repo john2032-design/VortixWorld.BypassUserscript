@@ -2,8 +2,6 @@ async function runLocalTpiLiBypass() {
   const startTime = Date.now();
   Logger.info('VortixWorld local tpi.li bypass enabled');
   if (typeof injectUI === 'function') injectUI(ICON_URL);
-  else {
-  }
   updateStatus('Fetching tpi.li link...', 'Extracting token, please wait');
   try {
     const alias = location.pathname.slice(1);
@@ -28,12 +26,7 @@ async function runLocalTpiLiBypass() {
     handleBypassSuccess(finalUrl, duration, 'tpili');
   } catch (err) {
     Logger.error('tpi.li bypass failed', err.message);
-    updateStatus('❌ Bypass failed', err.message);
-    showToast(`Bypass failed: ${err.message}`, true, '⚠️');
-    const manualDiv = document.createElement('div');
-    manualDiv.innerHTML = `<p style="color:#f97316; margin-top:20px;">Failed to auto-bypass. <a href="${location.href}" style="color:#4f46e5;">Click here to continue manually</a></p>`;
-    const overlay = document.getElementById('vortixWorldOverlay');
-    if (overlay && overlay.querySelector('.vw-main-content')) overlay.querySelector('.vw-main-content').appendChild(manualDiv);
+    handleBypassError(err.message);
   }
 }
 
