@@ -1,4 +1,3 @@
-// vw-toast.js - Toast notifications
 const TOAST_CONTAINER_CSS = `
   #vwToastContainer {
     position: fixed !important; top: calc(72px + 12px) !important; right: calc(14px + env(safe-area-inset-right)) !important;
