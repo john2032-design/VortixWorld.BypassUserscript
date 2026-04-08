@@ -62,7 +62,8 @@
       width: 28px !important;
       height: 28px !important;
       object-fit: contain !important;
-      filter: brightness(0) invert(1) !important;
+      border-radius: 0 !important;
+      display: block !important;
     }
 
     .vw-gear-btn:hover {
@@ -545,8 +546,11 @@
     const gearBtn = document.createElement('button')
     gearBtn.type = 'button'
     gearBtn.className = 'vw-gear-btn'
-    gearBtn.innerHTML = `<img src="${GEAR_ICON_URL}" alt="Settings">`
     gearBtn.setAttribute('aria-label', 'Open settings')
+    const gearImg = document.createElement('img')
+    gearImg.src = GEAR_ICON_URL
+    gearImg.alt = 'Settings'
+    gearBtn.appendChild(gearImg)
     shadow.appendChild(gearBtn)
 
     const backdrop = document.createElement('div')
