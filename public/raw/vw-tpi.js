@@ -1,13 +1,8 @@
-// vw-tpi.js - tpi.li bypass logic
-
 async function runLocalTpiLiBypass() {
   const startTime = Date.now();
   Logger.info('VortixWorld local tpi.li bypass enabled');
-  // injectUI is defined in lootlink module but uses shared UI; we can call it if available, or implement simple overlay.
-  // For simplicity, we'll rely on the shared injectUI from lootlink (it's in global).
   if (typeof injectUI === 'function') injectUI(ICON_URL);
   else {
-    // fallback minimal injection
   }
   updateStatus('Fetching tpi.li link...', 'Extracting token, please wait');
   try {
