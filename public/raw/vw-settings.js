@@ -5,6 +5,7 @@
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
+  const GEAR_ICON_URL = 'https://i.ibb.co/kspwZbbH/IMG-0261.webp'
 
   const keys = {
     autoRedirect: 'vw_auto_redirect'
@@ -54,6 +55,14 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
       -webkit-tap-highlight-color: transparent !important;
       touch-action: manipulation !important;
+      padding: 0 !important;
+    }
+
+    .vw-gear-btn img {
+      width: 28px !important;
+      height: 28px !important;
+      object-fit: contain !important;
+      filter: brightness(0) invert(1) !important;
     }
 
     .vw-gear-btn:hover {
@@ -536,7 +545,7 @@
     const gearBtn = document.createElement('button')
     gearBtn.type = 'button'
     gearBtn.className = 'vw-gear-btn'
-    gearBtn.textContent = '⚙️'
+    gearBtn.innerHTML = `<img src="${GEAR_ICON_URL}" alt="Settings">`
     gearBtn.setAttribute('aria-label', 'Open settings')
     shadow.appendChild(gearBtn)
 
