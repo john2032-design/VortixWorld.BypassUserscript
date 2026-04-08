@@ -1,5 +1,3 @@
-// vw-api.js - API bypass logic
-
 function appendToBestContainer(node) {
   const mount = document.body || document.documentElement;
   if (mount && node && node.parentNode !== mount) mount.appendChild(node);
