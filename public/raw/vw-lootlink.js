@@ -1,4 +1,4 @@
-const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
+const BL_TASKS = [18, 2, 8, 6, 33, 7, 21, 49, 48]
 
 let uiInjected = false
 let bypassStart = performance.now()
