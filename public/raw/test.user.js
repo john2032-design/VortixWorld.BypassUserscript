@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.7
+// @version      2.12
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -1037,7 +1037,7 @@
   }
 
   function processTcResponse(data, originalFetch) {
-    Logger.info('Processing /tc response', JSON.stringify(data, null, 2))
+    Logger.info('Processing lootlink-backend.onrender.com/tc response', JSON.stringify(data, null, 2))
     const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
     const runFallback = () => {
@@ -1099,108 +1099,39 @@
         }
         if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
           if (window.__vw_tc_processed) return originalFetch(url, config)
-          if (config && config.method && config.method.toUpperCase() === 'POST') {
-            let newBody = null
-            let originalBody = config.body
-            if (originalBody && typeof originalBody === 'string') {
-              try {
-                const parsed = JSON.parse(originalBody)
-                if (!parsed.bl) {
-                  parsed.bl = BL_TASKS
-                  newBody = JSON.stringify(parsed)
-                }
-              } catch (e) {}
-            } else if (originalBody && typeof originalBody === 'object') {
-              if (!originalBody.bl) {
-                const newBodyObj = { ...originalBody, bl: BL_TASKS }
-                newBody = JSON.stringify(newBodyObj)
+          
+          let bodyObj = {}
+          if (config && config.body) {
+            try {
+              if (typeof config.body === 'string') {
+                bodyObj = JSON.parse(config.body)
+              } else if (typeof config.body === 'object') {
+                bodyObj = config.body
               }
-            } else {
-              newBody = JSON.stringify({ bl: BL_TASKS })
-            }
-            if (newBody) {
-              return fetch(TC_PROXY_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: newBody
-              }).then(response => {
-                if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
-                return response.clone().json().then(data => {
-                  processTcResponse(data, originalFetch)
-                  window.__vw_tc_processed = true
-                  return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
-                })
-              }).catch(err => {
-                Logger.error('Proxy fetch failed', err.message)
-                return originalFetch(url, config)
-              })
-            }
+            } catch (e) {}
           }
-          return originalFetch(url, config).then(response => {
-            if (!response.ok) return response
+          
+          bodyObj.bl = BL_TASKS
+
+          return fetch(TC_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyObj)
+          }).then(response => {
+            if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
             return response.clone().json().then(data => {
               processTcResponse(data, originalFetch)
               window.__vw_tc_processed = true
-              return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
-            }).catch(() => response)
-          }).catch(err => originalFetch(url, config))
+              return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
+            })
+          }).catch(err => {
+            Logger.error('Proxy fetch failed', err.message)
+            return originalFetch(url, config)
+          })
         }
       } catch (_) {}
       return originalFetch(url, config)
     }
-  }
-
-  async function fetchWithRetry(url, options, retries = 2, delay = 1000) {
-    for (let i = 0; i <= retries; i++) {
-      try {
-        const res = await fetch(url, options)
-        if (res.ok) return res
-        if (i === retries) throw new Error(`HTTP ${res.status}`)
-      } catch (err) {
-        if (i === retries) throw err
-      }
-      await new Promise(r => setTimeout(r, delay * Math.pow(2, i)))
-    }
-  }
-
-  async function sendTcManually() {
-    if (window.__vw_tc_processed) return
-    const syncDomain = INCENTIVE_SYNCER_DOMAIN
-    if (!syncDomain) return
-    const payload = { bl: BL_TASKS }
-    Logger.info('Sending manual POST to proxy with bl array', JSON.stringify(payload))
-    try {
-      const res = await fetchWithRetry(TC_PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 2, 1000)
-      const data = await res.json()
-      processTcResponse(data, window.fetch)
-      window.__vw_tc_processed = true
-      Logger.info('Manual /tc via proxy processed successfully')
-      showToast('Lootlink bypass successful', false, '✅')
-    } catch (err) {
-      if (!window.__vw_tc_processed) {
-        Logger.warn('Manual /tc via proxy failed after retries', err.message)
-        showToast('Lootlink bypass failed, retrying...', true, '⚠️')
-      } else {
-        Logger.info('Manual request failed but bypass already succeeded – ignoring error')
-      }
-    }
-  }
-
-  function startManualCheck() {
-    const interval = setInterval(() => {
-      if (window.__vw_tc_processed) {
-        clearInterval(interval)
-        return
-      }
-      if (INCENTIVE_SYNCER_DOMAIN && INCENTIVE_SERVER_DOMAIN && typeof KEY !== 'undefined' && typeof TID !== 'undefined') {
-        clearInterval(interval)
-        sendTcManually()
-      }
-    }, 100)
   }
 
   function modifyParentElement(targetElement) {
@@ -1272,7 +1203,6 @@
     updateStatus('Loading...', 'Preparing bypass')
     setupOptimizedObserver()
     initLootlinkFetchOverride()
-    startManualCheck()
     cleanupManager.setTimeout(() => {
       if (!window.__vw_tc_processed) {
         Logger.warn('Bypass seems stuck, checking for unlock element again')
@@ -1352,6 +1282,7 @@
   async function initApi() {
     const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
     const json = await res.json()
+    Logger.info('API authentication successful', json.accessToken ? 'Token received' : 'No token')
     return json.accessToken
   }
 
@@ -1361,7 +1292,9 @@
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
       body: JSON.stringify({ url })
     })
-    return res.json()
+    const json = await res.json()
+    Logger.info('API bypass response', json.status)
+    return json
   }
 
   function appendToBestContainer(node) {
@@ -1471,6 +1404,7 @@
   }
 
   async function runApiBypass() {
+    Logger.info('Starting API bypass for', location.href)
     try {
       createApiTopBar()
       const accessToken = await initApi()
