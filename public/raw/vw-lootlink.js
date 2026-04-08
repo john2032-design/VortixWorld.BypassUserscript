@@ -151,7 +151,7 @@ class RobustWebSocket {
   constructor(url, options = {}) {
     this.url = url;
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY;
-    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000;
+    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 0.1;
     this.ws = null;
     this.reconnectTimeout = null;
     this.heartbeatTimer = null;
