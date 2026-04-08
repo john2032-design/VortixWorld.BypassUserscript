@@ -49,7 +49,7 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   uiInjected = true;
 }
 
-function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
+function showCompleteUI(finalUrl, timeLabel) {
   const overlay = document.getElementById('vortixWorldOverlay');
   if (!overlay) return;
   const mainContent = overlay.querySelector('.vw-main-content');
@@ -58,36 +58,25 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
   if (iconImg) iconImg.style.display = 'none';
   const spinner = mainContent.querySelector('#vwSpinner');
   if (spinner) spinner.style.display = 'none';
-  
-  const statusIcon = isSuccess ? SUCCESS_GIF : ERROR_JPG;
-  const statusText = isSuccess ? '✔️ Bypass Complete!' : '❌ Bypass Failed';
-  const subText = isSuccess ? `Completed in ${timeLabel}s` : errorMsg;
-  
   mainContent.innerHTML = `
-    <img src="${statusIcon}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
-    <div id="vwStatus" class="vw-status">${statusText}</div>
-    <div id="vwSubStatus" class="vw-substatus">${subText}</div>
-    ${isSuccess ? `<div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>` : ''}
+    <img src="${iconImg ? iconImg.src : LOOTLINK_UI_ICON}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
+    <div id="vwStatus" class="vw-status">✔️ Bypass Complete!</div>
+    <div id="vwSubStatus" class="vw-substatus">Completed in ${timeLabel}s</div>
+    <div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>
     <div class="vw-button-group">
-      ${isSuccess ? `<button id="vwCopyBtn" class="vw-btn vw-btn-copy">📋 Copy URL</button>` : ''}
-      <button id="vwProceedBtn" class="vw-btn vw-btn-proceed">${isSuccess ? '➡️ Proceed' : 'OK'}</button>
+      <button id="vwCopyBtn" class="vw-btn vw-btn-copy">📋 Copy URL</button>
+      <button id="vwProceedBtn" class="vw-btn vw-btn-proceed">➡️ Proceed</button>
     </div>
   `;
-  
-  if (isSuccess) {
-    const copyBtn = document.getElementById('vwCopyBtn');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', () => {
-        copyTextSilent(finalUrl).then(() => { showToast('URL copied to clipboard', false, '📋'); });
-      });
-    }
-  }
+  const copyBtn = document.getElementById('vwCopyBtn');
   const proceedBtn = document.getElementById('vwProceedBtn');
-  if (proceedBtn) {
-    proceedBtn.addEventListener('click', () => { 
-      if (isSuccess) location.href = finalUrl;
-      else overlay.remove();
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      copyTextSilent(finalUrl).then(() => { showToast('URL copied to clipboard', false, '📋'); });
     });
+  }
+  if (proceedBtn) {
+    proceedBtn.addEventListener('click', () => { location.href = finalUrl; });
   }
 }
 
@@ -99,7 +88,7 @@ function updateStatus(main, sub) {
   if (s) s.innerText = sub;
   const spinner = document.getElementById('vwSpinner');
   if (spinner) {
-    if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none';
+    if (main.includes('Complete') || main.includes('Redirecting')) spinner.style.display = 'none';
     else spinner.style.display = 'block';
   }
 }
@@ -140,34 +129,29 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
   const auto = isAutoRedirectEnabled();
   if (forceCompleteUI) {
     injectUI();
-    showCompleteUI(url, timeLabel, true);
+    showCompleteUI(url, timeLabel);
     if (auto) setTimeout(() => { location.href = url; }, 3000);
     shutdown();
     return;
   }
   if (auto) {
     updateStatus('Redirecting...', `Target URL acquired (${timeLabel}s)`);
-    showToast(`Bypassed in ${timeLabel}s`, false, SUCCESS_GIF);
+    if (bypassType === 'tpili') showToast(`Bypassed in ${timeLabel}s`, false, '✅');
+    else if (bypassType === 'lootlink') showToast('Bypass successful', false, '✅');
+    else showToast(`Bypassed in ${timeLabel}s`, false, '✅');
     setTimeout(() => { location.href = url; }, 1000);
   } else {
     injectUI();
-    showCompleteUI(url, timeLabel, true);
+    showCompleteUI(url, timeLabel);
   }
   shutdown();
-}
-
-function handleBypassError(errorMsg) {
-  updateStatus('❌ Bypass failed', errorMsg);
-  showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG);
-  injectUI();
-  showCompleteUI('', '', false, errorMsg);
 }
 
 class RobustWebSocket {
   constructor(url, options = {}) {
     this.url = url;
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY;
-    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 10;
+    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000;
     this.ws = null;
     this.reconnectTimeout = null;
     this.heartbeatTimer = null;
@@ -398,7 +382,7 @@ function processTcResponse(data, originalFetch) {
       startWebSocketForTask(fallbackTask, true);
     } else {
       Logger.error('No suitable task found in /tc response');
-      handleBypassError('No suitable task found');
+      updateStatus('❌ Bypass failed', 'No suitable task');
     }
   };
 
@@ -407,7 +391,15 @@ function processTcResponse(data, originalFetch) {
     const taskUrl = task17.ad_url;
     completeTaskViaSkippedLol(taskUrl).then(() => {
       Logger.info('Skipped.lol success, starting WebSocket for task 17');
-      startWebSocketForTask(task17, false);
+      const primaryWs = startWebSocketForTask(task17, false);
+      setTimeout(() => {
+        if (primaryWs && !primaryWs.resolved) {
+          Logger.warn('Method 1 WS timed out, shutting down and switching to Method 2');
+          primaryWs.disconnect();
+          window.primaryWebSocket = null;
+          runFallback();
+        }
+      }, 8000);
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err);
       runFallback();
