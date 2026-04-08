@@ -1,5 +1,3 @@
-// vw-luarmor.js - Auto Luarmor logic
-
 let autoLuaActive = false;
 let autoLuaNavAttempted = false;
 let autoLuaTimers = [];
