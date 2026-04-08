@@ -22,7 +22,7 @@ const ALLOWED_SHORT_HOSTS = [
   'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
   'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
-  'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net', 'pandadevelopment.net', 'new.pandadevelopment.net', 'trigonevo.com', 'rekonise.org', 'sub2unlock.com', 'sub2unlock.me', 'sub2unlock.io', 'sub4unlock.com', 'sub4unlock.me', 'sub4unlock.pro', 'sub4unlock.io', 'bstlar.com', 'link-unlock.com', 'linkunlocker.com', 'lockr.so', 'lockr.net'
+  'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
 ];
 
 const UA = navigator.userAgent;
