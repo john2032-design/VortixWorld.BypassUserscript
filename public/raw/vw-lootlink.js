@@ -407,7 +407,15 @@ function processTcResponse(data, originalFetch) {
     const taskUrl = task17.ad_url;
     completeTaskViaSkippedLol(taskUrl).then(() => {
       Logger.info('Skipped.lol success, starting WebSocket for task 17');
-      startWebSocketForTask(task17, false);
+      const primaryWs = startWebSocketForTask(task17, false);
+      setTimeout(() => {
+        if (primaryWs && !primaryWs.resolved) {
+          Logger.warn('Method 1 WS timed out, shutting down and switching to Method 2');
+          primaryWs.disconnect();
+          window.primaryWebSocket = null;
+          runFallback();
+        }
+      }, 8000);
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err);
       runFallback();
