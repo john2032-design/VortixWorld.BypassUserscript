@@ -61,9 +61,9 @@ function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
   closeBtn.textContent = '✕';
   closeBtn.addEventListener('click', () => card.remove());
   const icon = document.createElement('img');
-  icon.src = ICON_URL;
+  icon.src = isError ? ERROR_JPG : SUCCESS_GIF;
   icon.className = 'vw-api-icon';
-  icon.alt = 'VW Icon';
+  icon.alt = 'Status';
   const statusDiv = document.createElement('div');
   statusDiv.className = 'vw-api-status';
   statusDiv.textContent = isError ? '❌ Bypass Failed' : '✔️ Bypass Complete!';
