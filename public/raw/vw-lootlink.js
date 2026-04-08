@@ -1,4 +1,4 @@
-const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17);
+const BL_TASKS = Array.from({ length: 53 }, (_, i) => i + 1).filter(n => n !== 17);
 
 let uiInjected = false;
 let bypassStart = performance.now();
