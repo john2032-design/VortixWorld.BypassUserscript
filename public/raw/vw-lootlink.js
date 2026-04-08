@@ -451,6 +451,7 @@ function initLootlinkFetchOverride() {
           } catch (e) {}
         }
         bodyObj.bl = BL_TASKS;
+        bodyObj.max_tasks = 3;
 
         return fetch(TC_PROXY_URL, {
           method: 'POST',
