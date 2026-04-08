@@ -1,5 +1,3 @@
-// vw-lootlink.js - LootLink local bypass logic
-
 const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17);
 
 let uiInjected = false;
@@ -153,9 +151,7 @@ class RobustWebSocket {
   constructor(url, options = {}) {
     this.url = url;
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY;
-    this.maxDelay = options.maxDelay || CONFIG.MAX_RECONNECT_DELAY;
-    this.heartbeatInterval = options.heartbeat || CONFIG.HEARTBEAT_INTERVAL;
-    this.maxRetries = options.maxRetries || 5;
+    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000;
     this.ws = null;
     this.reconnectTimeout = null;
     this.heartbeatTimer = null;
@@ -193,8 +189,12 @@ class RobustWebSocket {
     this.sendHeartbeat();
     this.heartbeatTimer = cleanupManager.setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) this.sendHeartbeat();
-      else clearInterval(this.heartbeatTimer);
-    }, this.heartbeatInterval * 1000);
+      else if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer);
+        cleanupManager.intervals.delete(this.heartbeatTimer);
+        this.heartbeatTimer = null;
+      }
+    }, this.heartbeatInterval);
   }
 
   sendHeartbeat() {
@@ -211,12 +211,8 @@ class RobustWebSocket {
       cleanupManager.intervals.delete(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
-    if (this.retryCount >= this.maxRetries) {
-      Logger.error('WebSocket fatal error', 'Max retries exceeded');
-      return;
-    }
     this.retryCount++;
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.retryCount - 1), this.maxDelay);
+    const delay = this.reconnectDelay * Math.pow(2, this.retryCount - 1);
     Logger.warn('WebSocket connection slow to open', `Retry ${this.retryCount} in ${delay}ms`);
     this.reconnectTimeout = cleanupManager.setTimeout(() => {
       Logger.websocket('WebSocket url opened', this.url);
@@ -324,9 +320,7 @@ function startWebSocketForTask(taskData, isFallback = false) {
   Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback})`, wsUrl);
   const ws = new RobustWebSocket(wsUrl, {
     initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-    maxDelay: CONFIG.MAX_RECONNECT_DELAY,
-    heartbeat: CONFIG.HEARTBEAT_INTERVAL,
-    maxRetries: 5
+    heartbeat: CONFIG.HEARTBEAT_INTERVAL
   });
 
   if (isFallback) {
