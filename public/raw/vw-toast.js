@@ -14,6 +14,7 @@ const TOAST_CONTAINER_CSS = `
   }
   .vw-toast-content { display: flex !important; align-items: center !important; gap: 8px !important; white-space: normal !important; }
   .vw-toast-emoji { display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 24px !important; height: 24px !important; background: transparent !important; font-size: 16px !important; flex: 0 0 auto !important; }
+  .vw-toast-img { width: 24px !important; height: 24px !important; border-radius: 4px !important; object-fit: cover !important; flex: 0 0 auto !important; }
   .vw-toast-text { color: #e0e0e0 !important; font-weight: 700 !important; line-height: 1.25 !important; }
   .vw-toast-progress { height: 3px !important; background: #141414 !important; width: 100% !important; animation: vw-toast-progress 5s linear forwards !important; margin-top: 8px !important; border-radius: 999px !important; box-shadow: inset 1px 1px 2px #0a0a0a; }
   @keyframes vw-toast-progress { from { width: 100%; } to { width: 0%; } }
@@ -38,17 +39,25 @@ function ensureToastContainer() {
   return container;
 }
 
-function showToast(message, isError = false, emoji = null) {
+function showToast(message, isError = false, emojiOrImg = null) {
   if (window.top !== window.self) return;
 
   const container = ensureToastContainer();
   const toast = document.createElement('div');
   toast.className = 'vw-toast';
   if (isError) toast.style.borderLeftColor = '#b91c1c';
-  const emojiChar = emoji || (isError ? '⚠️' : '✓');
+  
+  let iconHtml = '';
+  if (emojiOrImg && emojiOrImg.startsWith('http')) {
+    iconHtml = `<img src="${emojiOrImg}" class="vw-toast-img" alt="">`;
+  } else {
+    const emojiChar = emojiOrImg || (isError ? '⚠️' : '✓');
+    iconHtml = `<span class="vw-toast-emoji">${emojiChar}</span>`;
+  }
+  
   toast.innerHTML = `
     <div class="vw-toast-content">
-      <span class="vw-toast-emoji">${emojiChar}</span>
+      ${iconHtml}
       <span class="vw-toast-text">${message}</span>
     </div>
     <div class="vw-toast-progress"></div>
