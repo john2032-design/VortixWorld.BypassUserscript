@@ -6,7 +6,7 @@ const SUCCESS_GIF = 'https://i.ibb.co/jP7P4Dbw/IMG-0022.gif';
 const ERROR_JPG = 'https://i.ibb.co/0yFFh8yW/IMG-0184-Edited.jpg';
 const SITE_HOST = 'vortix-world-bypass.vercel.app';
 const TPI_HOST = 'tpi.li';
-const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36';
 const API_BASE = 'https://vortixworld-end.vercel.app';
 const TC_PROXY_URL = 'https://lootlink-backend.onrender.com/tc';
 
@@ -49,8 +49,8 @@ const isAllowedHost = () => hostMatchesAny(ALLOWED_SHORT_HOSTS);
 const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST);
 
 const CONFIG = Object.freeze({
-  HEARTBEAT_INTERVAL: 100,
-  INITIAL_RECONNECT_DELAY: 100,
+  HEARTBEAT_INTERVAL: 0.1,
+  INITIAL_RECONNECT_DELAY: 1000,
   COUNTDOWN_INTERVAL: 1000,
   FALLBACK_CHECK_DELAY: 15000
 });
