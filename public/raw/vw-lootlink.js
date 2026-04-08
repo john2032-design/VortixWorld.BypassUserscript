@@ -1,4 +1,4 @@
-const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17)
+const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
 
 let uiInjected = false
 let bypassStart = performance.now()
@@ -362,15 +362,9 @@ function startWebSocketForTask(taskData, isFallback = false) {
 function selectFallbackTask(tasks) {
   if (!Array.isArray(tasks) || tasks.length === 0) return null
   const eligible = tasks.filter(t => t.task_id !== 17)
-  const preferred = eligible.find(t => t.auto_complete_seconds === 30)
-  if (preferred) return preferred
-  const second = eligible.find(t => t.auto_complete_seconds === 40)
-  if (second) return second
-  const third = eligible.find(t => t.auto_complete_seconds === 50)
-  if (third) return third
-  const fourth = eligible.find(t => t.auto_complete_seconds === 60)
-  if (fourth) return fourth
-  return eligible[0] || null
+  if (eligible.length === 0) return null
+  eligible.sort((a, b) => (a.auto_complete_seconds || 999) - (b.auto_complete_seconds || 999))
+  return eligible[0]
 }
 
 function processTcResponse(data, originalFetch) {
