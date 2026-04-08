@@ -1,4 +1,4 @@
-const BL_TASKS = Array.from({ length: 54 }, (_, i) => i + 1).filter(n => n !== 17);
+const BL_TASKS = Array.from({ length: 50 }, (_, i) => i + 1).filter(n => n !== 17);
 
 let uiInjected = false;
 let bypassStart = performance.now();
@@ -167,7 +167,7 @@ class RobustWebSocket {
   constructor(url, options = {}) {
     this.url = url;
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY;
-    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 100;
+    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000;
     this.ws = null;
     this.reconnectTimeout = null;
     this.heartbeatTimer = null;
@@ -406,8 +406,19 @@ function processTcResponse(data, originalFetch) {
     Logger.info('Found task 17, using skipped.lol');
     const taskUrl = task17.ad_url;
     completeTaskViaSkippedLol(taskUrl).then(() => {
-      Logger.info('Skipped.lol success, starting WebSocket for task 17');
-      startWebSocketForTask(task17, false);
+      Logger.info('Skipped.lol success, waiting 0.7s before WebSocket');
+      setTimeout(() => {
+        Logger.info('Starting WebSocket for task 17 after delay');
+        const primaryWs = startWebSocketForTask(task17, false);
+        setTimeout(() => {
+          if (primaryWs && !primaryWs.resolved) {
+            Logger.warn('Method 1 WS timed out after 8s, switching to fallback');
+            primaryWs.disconnect();
+            window.primaryWebSocket = null;
+            runFallback();
+          }
+        }, 8000);
+      }, 700);
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err);
       runFallback();
