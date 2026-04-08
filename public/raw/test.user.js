@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.6
+// @version      2.7
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -21,8 +21,9 @@
   const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png'
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TPI_HOST = 'tpi.li'
-  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36'
   const API_BASE = 'https://vortixworld-end.vercel.app'
+  const TC_PROXY_URL = 'https://lootlink-backend.onrender.com/tc'
 
   const LOOT_HOSTS = [
     'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
@@ -111,6 +112,46 @@
       console.info(`%c[WEBSOCKET]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.websocket, LOG_STYLE.base + LOG_STYLE.dim, d || '')
       Logger._push('websocket', m, d)
     }
+  }
+
+  const LOG_SERVER_URL = 'https://vortixlogs.onrender.com'
+
+  function sendLogToServer(level, message, data, pageUrl) {
+    if (!LOG_SERVER_URL) return
+    fetch(`${LOG_SERVER_URL}/api/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: level,
+        message: message,
+        data: data || '',
+        pageUrl: pageUrl || location.href,
+        timestamp: new Date().toISOString()
+      }),
+      keepalive: true
+    }).catch(e => console.debug('[VW] remote log failed', e))
+  }
+
+  const originalInfo = Logger.info
+  const originalWarn = Logger.warn
+  const originalError = Logger.error
+  const originalWebsocket = Logger.websocket
+
+  Logger.info = function(msg, data) {
+    originalInfo.call(this, msg, data)
+    sendLogToServer('info', msg, data, location.href)
+  }
+  Logger.warn = function(msg, data) {
+    originalWarn.call(this, msg, data)
+    sendLogToServer('warn', msg, data, location.href)
+  }
+  Logger.error = function(msg, data) {
+    originalError.call(this, msg, data)
+    sendLogToServer('error', msg, data, location.href)
+  }
+  Logger.websocket = function(msg, data) {
+    originalWebsocket.call(this, msg, data)
+    sendLogToServer('websocket', msg, data, location.href)
   }
 
   const cleanupManager = {
@@ -789,6 +830,7 @@
       this.heartbeatCount = 0
       this.lastLoggedCount = 0
       this.resolved = false
+      this.manualDisconnect = false
     }
 
     connect() {
@@ -831,7 +873,7 @@
     }
 
     handleReconnect() {
-      if (isShutdown) return
+      if (isShutdown || this.manualDisconnect) return
       if (this.heartbeatTimer) {
         clearInterval(this.heartbeatTimer)
         cleanupManager.intervals.delete(this.heartbeatTimer)
@@ -887,6 +929,7 @@
     onError(error) { Logger.error('WebSocket fatal error', error) }
 
     disconnect() {
+      this.manualDisconnect = true
       if (this.heartbeatTimer) {
         clearInterval(this.heartbeatTimer)
         cleanupManager.intervals.delete(this.heartbeatTimer)
@@ -981,15 +1024,16 @@
 
   function selectFallbackTask(tasks) {
     if (!Array.isArray(tasks) || tasks.length === 0) return null
-    const preferred = tasks.find(t => t.auto_complete_seconds === 30)
+    const eligible = tasks.filter(t => t.task_id !== 17)
+    const preferred = eligible.find(t => t.auto_complete_seconds === 30)
     if (preferred) return preferred
-    const second = tasks.find(t => t.auto_complete_seconds === 40)
+    const second = eligible.find(t => t.auto_complete_seconds === 40)
     if (second) return second
-    const third = tasks.find(t => t.auto_complete_seconds === 50)
+    const third = eligible.find(t => t.auto_complete_seconds === 50)
     if (third) return third
-    const fourth = tasks.find(t => t.auto_complete_seconds === 60)
+    const fourth = eligible.find(t => t.auto_complete_seconds === 60)
     if (fourth) return fourth
-    return tasks[0]
+    return eligible[0] || null
   }
 
   function processTcResponse(data, originalFetch) {
@@ -999,6 +1043,15 @@
     const runFallback = () => {
       Logger.warn('Running fallback task selection')
       updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
+      
+      if (window.primaryWebSocket) {
+        window.primaryWebSocket.disconnect()
+        window.primaryWebSocket = null
+      }
+      if (window.activeWebSocket === window.primaryWebSocket) {
+        window.activeWebSocket = null
+      }
+      
       const fallbackTask = selectFallbackTask(data)
       if (fallbackTask && fallbackTask.urid) {
         Logger.info('Using fallback task for local WebSocket', fallbackTask)
@@ -1066,19 +1119,21 @@
               newBody = JSON.stringify({ bl: BL_TASKS })
             }
             if (newBody) {
-              const newConfig = {
-                ...config,
-                headers: { ...config.headers, 'Content-Type': 'application/json' },
+              return fetch(TC_PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: newBody
-              }
-              return originalFetch(url, newConfig).then(response => {
-                if (!response.ok) return response
+              }).then(response => {
+                if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
                 return response.clone().json().then(data => {
                   processTcResponse(data, originalFetch)
                   window.__vw_tc_processed = true
-                  return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: response.headers })
-                }).catch(() => response)
-              }).catch(err => originalFetch(url, config))
+                  return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
+                })
+              }).catch(err => {
+                Logger.error('Proxy fetch failed', err.message)
+                return originalFetch(url, config)
+              })
             }
           }
           return originalFetch(url, config).then(response => {
@@ -1110,27 +1165,24 @@
 
   async function sendTcManually() {
     if (window.__vw_tc_processed) return
-    const originalFetch = window.fetch
     const syncDomain = INCENTIVE_SYNCER_DOMAIN
     if (!syncDomain) return
-    const tcUrl = `https://${syncDomain}/tc`
     const payload = { bl: BL_TASKS }
-    Logger.info('Sending manual POST /tc request with bl array', JSON.stringify(payload))
+    Logger.info('Sending manual POST to proxy with bl array', JSON.stringify(payload))
     try {
-      const res = await fetchWithRetry(tcUrl, {
+      const res = await fetchWithRetry(TC_PROXY_URL, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': ANDROID_UA },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }, 2, 1000)
       const data = await res.json()
-      processTcResponse(data, originalFetch)
+      processTcResponse(data, window.fetch)
       window.__vw_tc_processed = true
-      Logger.info('Manual /tc processed successfully')
+      Logger.info('Manual /tc via proxy processed successfully')
       showToast('Lootlink bypass successful', false, '✅')
     } catch (err) {
       if (!window.__vw_tc_processed) {
-        Logger.warn('Manual /tc request failed after retries', err.message)
+        Logger.warn('Manual /tc via proxy failed after retries', err.message)
         showToast('Lootlink bypass failed, retrying...', true, '⚠️')
       } else {
         Logger.info('Manual request failed but bypass already succeeded – ignoring error')
@@ -1198,7 +1250,7 @@
   }
 
   function runLocalLootlinkBypass() {
-    Logger.info('VortixWorld local lootlinks bypass enabled (skipped.lol + WebSocket)')
+    Logger.info('VortixWorld local lootlinks bypass enabled (proxy + skipped.lol + WebSocket)')
     
     try {
       Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
@@ -1459,4 +1511,4 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', main)
   else main()
-})()
+})();
