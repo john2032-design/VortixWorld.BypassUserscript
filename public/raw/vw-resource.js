@@ -1,5 +1,3 @@
-// vw-resource.js - Shared constants, configuration, and utilities
-
 const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
 const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg';
 const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png';
@@ -50,7 +48,6 @@ const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST);
 
 const CONFIG = Object.freeze({
   HEARTBEAT_INTERVAL: 10,
-  MAX_RECONNECT_DELAY: 30000,
   INITIAL_RECONNECT_DELAY: 1000,
   COUNTDOWN_INTERVAL: 1000,
   FALLBACK_CHECK_DELAY: 15000
@@ -300,7 +297,6 @@ function decodeURIxor(encodedString, prefixLength = 5) {
   return decodedChars.join('');
 }
 
-// Expose to global
 window.HOST = HOST;
 window.ICON_URL = ICON_URL;
 window.LOOTLINK_UI_ICON = LOOTLINK_UI_ICON;
@@ -325,3 +321,4 @@ window.isLuarmorUrl = isLuarmorUrl;
 window.escapeHtml = escapeHtml;
 window.isAutoRedirectEnabled = isAutoRedirectEnabled;
 window.decodeURIxor = decodeURIxor;
+window.isShutdown = isShutdown;
