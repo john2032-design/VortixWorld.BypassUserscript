@@ -49,7 +49,7 @@ const isAllowedHost = () => hostMatchesAny(ALLOWED_SHORT_HOSTS);
 const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST);
 
 const CONFIG = Object.freeze({
-  HEARTBEAT_INTERVAL: 10,
+  HEARTBEAT_INTERVAL: 0.1,
   INITIAL_RECONNECT_DELAY: 10,
   COUNTDOWN_INTERVAL: 1000,
   FALLBACK_CHECK_DELAY: 15000
