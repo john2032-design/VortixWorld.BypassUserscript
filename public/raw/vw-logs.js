@@ -1,4 +1,3 @@
-// vw-logs.js - Logger and remote logging
 window.__vw_logs = window.__vw_logs || [];
 
 const LOG_STYLE = {
@@ -57,7 +56,6 @@ function sendLogToServer(level, message, data, pageUrl) {
   }).catch(e => console.debug('[VW] remote log failed', e));
 }
 
-// Override Logger methods to also send to server
 const originalInfo = Logger.info;
 const originalWarn = Logger.warn;
 const originalError = Logger.error;
