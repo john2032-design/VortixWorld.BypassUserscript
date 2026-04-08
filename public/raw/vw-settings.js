@@ -771,11 +771,17 @@
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-
       setStoredValue(keys.autoRedirect, newAuto)
-
       showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
     }
+
+    function syncFromStorage(e) {
+      if (e.key === keys.autoRedirect) {
+        loadSettings()
+      }
+    }
+
+    window.addEventListener('storage', syncFromStorage)
 
     gearBtn.addEventListener('click', (e) => {
       e.preventDefault()
