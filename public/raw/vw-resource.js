@@ -2,6 +2,8 @@ const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
 const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg';
 const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png';
 const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png';
+const SUCCESS_GIF = 'https://i.ibb.co/jP7P4Dbw/IMG-0022.gif';
+const ERROR_JPG = 'https://i.ibb.co/0yFFh8yW/IMG-0184-Edited.jpg';
 const SITE_HOST = 'vortix-world-bypass.vercel.app';
 const TPI_HOST = 'tpi.li';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36';
@@ -172,7 +174,7 @@ const API_UI_CSS = `
     transition: all 0.2s !important;
   }
   .vw-api-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
-  .vw-api-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; }
+  .vw-api-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
   .vw-api-status { font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important; }
   .vw-api-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
   .vw-api-url { background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; border-radius: 12px !important; padding: 12px !important; word-break: break-all !important; font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important; margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important; }
@@ -301,6 +303,8 @@ window.HOST = HOST;
 window.ICON_URL = ICON_URL;
 window.LOOTLINK_UI_ICON = LOOTLINK_UI_ICON;
 window.LUARMOR_UI_ICON = LUARMOR_UI_ICON;
+window.SUCCESS_GIF = SUCCESS_GIF;
+window.ERROR_JPG = ERROR_JPG;
 window.TPI_HOST = TPI_HOST;
 window.ANDROID_UA = ANDROID_UA;
 window.API_BASE = API_BASE;
