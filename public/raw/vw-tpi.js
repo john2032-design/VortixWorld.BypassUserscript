@@ -30,4 +30,4 @@ async function runLocalTpiLiBypass() {
   }
 }
 
-window.runLocalTpiLiBypass = runorLocalTpiLiBypass;
+window.runLocalTpiLiBypass = runLocalTpiLiBypass;
