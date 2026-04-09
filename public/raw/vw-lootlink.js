@@ -32,8 +32,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Checking key...</div>
-        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
+        <div id="vwStatus" class="vw-status">Initializing...</div>
+        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
       </div>
     </div>
   `
@@ -613,40 +613,24 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
-  setupOptimizedObserver()
-  initLootlinkFetchOverride()
+  keyIsValid = true
+  keyCheckComplete = true
 
-  validateStoredKey().then(isValid => {
-    keyIsValid = isValid
-    keyCheckComplete = true
+  injectUI()
+  updateStatus('Key valid', 'Preparing bypass')
 
-    if (!keyIsValid) {
-      Logger.error('API key invalid/expired, bypass aborted')
-      showToast('API key invalid/expired', true, ERROR_JPG)
-      cleanupManager.clearAll()
-      if (window.bypassObserver) {
-        window.bypassObserver.disconnect()
-        window.bypassObserver = null
-      }
-      return
+  cleanupManager.setTimeout(() => {
+    if (!window.__vw_tc_processed && keyIsValid) {
+      Logger.warn('Bypass seems stuck, checking for unlock element again')
+      const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+      const existing = Array.from(document.querySelectorAll('*')).find(el => {
+        const text = el.textContent
+        return text && unlockText.some(t => text.includes(t))
+      })
+      if (existing) modifyParentElement(existing)
+      else updateStatus('Bypass delayed', 'Trying alternative method...')
     }
-
-    injectUI()
-    updateStatus('Key valid', 'Preparing bypass')
-
-    cleanupManager.setTimeout(() => {
-      if (!window.__vw_tc_processed && keyIsValid) {
-        Logger.warn('Bypass seems stuck, checking for unlock element again')
-        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-        const existing = Array.from(document.querySelectorAll('*')).find(el => {
-          const text = el.textContent
-          return text && unlockText.some(t => text.includes(t))
-        })
-        if (existing) modifyParentElement(existing)
-        else updateStatus('Bypass delayed', 'Trying alternative method...')
-      }
-    }, CONFIG.FALLBACK_CHECK_DELAY)
-  })
+  }, CONFIG.FALLBACK_CHECK_DELAY)
 
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
 }
