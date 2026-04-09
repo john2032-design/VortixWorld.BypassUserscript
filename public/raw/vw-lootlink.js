@@ -95,6 +95,7 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
 }
 
 function updateStatus(main, sub) {
+  if (!keyIsValid) return
   if (!document.getElementById('vortixWorldOverlay')) injectUI()
   const m = document.getElementById('vwStatus')
   const s = document.getElementById('vwSubStatus')
@@ -132,6 +133,7 @@ function startCountdown(initialSeconds) {
 }
 
 function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
+  if (!keyIsValid) return
   const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
   if (isLuarmorUrl(url)) {
     const overlay = document.getElementById('vortixWorldOverlay')
@@ -359,6 +361,7 @@ class RobustWebSocket {
 }
 
 async function completeTaskViaSkippedLol(taskUrl) {
+  if (!keyIsValid) return false
   const endpoint = 'https://skipped.lol/api/evade/ll'
   let urlToSend = taskUrl
   if (urlToSend && urlToSend.startsWith('//')) urlToSend = 'https:' + urlToSend
@@ -540,7 +543,11 @@ function initLootlinkFetchOverride() {
         }).then(response => {
           if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
           return response.clone().json().then(data => {
-            processTcResponse(data, originalFetch)
+            if (keyIsValid) {
+              processTcResponse(data, originalFetch)
+            } else {
+              Logger.warn('Key invalid, bypass aborted – discarding /tc response')
+            }
             return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
           })
         }).catch(err => {
