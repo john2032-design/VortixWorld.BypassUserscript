@@ -619,15 +619,23 @@ function runLocalLootlinkBypass() {
   injectUI()
   updateStatus('Key valid', 'Preparing bypass')
 
+  const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+  const existing = Array.from(document.querySelectorAll('*')).find(el => {
+    const text = el.textContent
+    return text && unlockText.some(t => text.includes(t))
+  })
+  if (existing) {
+    modifyParentElement(existing)
+  }
+
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed && keyIsValid) {
       Logger.warn('Bypass seems stuck, checking for unlock element again')
-      const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-      const existing = Array.from(document.querySelectorAll('*')).find(el => {
+      const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent
         return text && unlockText.some(t => text.includes(t))
       })
-      if (existing) modifyParentElement(existing)
+      if (existingAgain) modifyParentElement(existingAgain)
       else updateStatus('Bypass delayed', 'Trying alternative method...')
     }
   }, CONFIG.FALLBACK_CHECK_DELAY)
