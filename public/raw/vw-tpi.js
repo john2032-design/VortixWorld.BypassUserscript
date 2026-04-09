@@ -4,9 +4,7 @@ async function runLocalTpiLiBypass() {
   
   if (typeof injectUI === 'function') {
     injectUI(ICON_URL);
-    if (typeof updateStatus === 'function') {
-      updateStatus('Checking key...', 'Validating API key');
-    }
+    updateStatus('Checking key...', 'Validating API key');
   }
   
   const isValid = await validateStoredKey();
@@ -43,18 +41,10 @@ async function runLocalTpiLiBypass() {
     Logger.info('Decoded final URL', finalUrl);
     if (!finalUrl || !finalUrl.startsWith('http')) throw new Error('Invalid final URL');
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    if (typeof handleBypassSuccess === 'function') {
-      handleBypassSuccess(finalUrl, duration, 'tpili');
-    } else {
-      window.location.href = finalUrl;
-    }
+    handleBypassSuccess(finalUrl, duration, 'tpili');
   } catch (err) {
     Logger.error('tpi.li bypass failed', err.message);
-    if (typeof handleBypassError === 'function') {
-      handleBypassError(err.message);
-    } else {
-      showToast(`Bypass failed: ${err.message}`, true, ERROR_JPG);
-    }
+    handleBypassError(err.message);
   }
 }
 
