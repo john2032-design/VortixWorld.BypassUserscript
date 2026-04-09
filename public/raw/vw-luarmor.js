@@ -56,36 +56,15 @@ function parseProgress(progressText) {
   return { current: parseInt(match[1], 10), total: parseInt(match[2], 10) }
 }
 
-function findActiveKey() {
-  const rows = Array.from(document.querySelectorAll('tr'))
-  for (const row of rows) {
-    const expiredBadge = row.querySelector('span.badge.bg-gradient-warning')
-    if (expiredBadge) continue
-    const keyEl = row.querySelector('h6.mb-0.text-sm')
-    if (!keyEl) continue
-    const keyText = (keyEl.textContent || '').trim()
-    if (keyText.length > 20) return { keyText, row }
-  }
-  return null
-}
-
 async function generateAndCopyKey() {
   if (keyGenLocked) return
   keyGenLocked = true
-  await new Promise(r => setTimeout(r, 2500))
-  const btn = document.querySelector('#newkeybtn')
-  if (!btn) {
-    keyGenLocked = false
-    return
-  }
-  await humanClick(btn, { drawTrail: false })
   await new Promise(r => setTimeout(r, 5000))
-  const active = findActiveKey()
-  if (active) {
-    const copyBtn = active.row.querySelector('button[id^="copybtn_"]')
-    if (copyBtn) copyBtn.click()
-    else if (typeof GM_setClipboard === 'function') GM_setClipboard(active.keyText)
+  const btn = document.querySelector('#newkeybtn')
+  if (btn) {
+    await humanClick(btn, { drawTrail: false })
   }
+  location.reload()
   keyGenLocked = false
 }
 
