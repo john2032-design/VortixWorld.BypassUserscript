@@ -84,33 +84,93 @@ Logger.websocket = function(msg, data) {
   sendLogToServer('websocket', msg, data, location.href);
 };
 
-async function validateStoredKey() {
-  let storedKey = null;
-  if (typeof GM_getValue === 'function') {
-    storedKey = GM_getValue('vw_user_key', '');
-  }
-  if (!storedKey) {
-    storedKey = localStorage.getItem('vw_user_key');
-  }
-  if (!storedKey) {
-    window.__vw_key_valid = false;
-    return false;
-  }
+let cachedKeyState = {
+  valid: false,
+  expiresAt: 0,
+  checkedAt: 0
+};
+let pendingValidationPromise = null;
+
+function getStoredKey() {
+  return localStorage.getItem('vw_user_key') || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '');
+}
+
+async function validateKeyWithAPI(key) {
   try {
     const res = await fetch(`${KEY_API_URL}/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: storedKey })
+      body: JSON.stringify({ key })
     });
     const data = await res.json();
-    window.__vw_key_valid = data.valid;
-    return data.valid;
+    return {
+      valid: data.valid === true,
+      expiresAt: data.expires_at || 0
+    };
   } catch (e) {
-    window.__vw_key_valid = false;
-    return false;
+    return { valid: false, expiresAt: 0, error: e.message };
   }
 }
+
+async function validateStoredKey(forceRefresh = false) {
+  const storedKey = getStoredKey();
+  if (!storedKey) {
+    cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
+    window.__vw_keyValid = false;
+    return false;
+  }
+
+  const now = Date.now();
+  if (!forceRefresh && cachedKeyState.checkedAt > 0) {
+    const cacheAge = (now - cachedKeyState.checkedAt) / 1000;
+    const remainingTTL = Math.max(0, cachedKeyState.expiresAt - Math.floor(now / 1000));
+    if (cacheAge < remainingTTL && cacheAge < 300) {
+      window.__vw_keyValid = cachedKeyState.valid;
+      return cachedKeyState.valid;
+    }
+  }
+
+  if (pendingValidationPromise) {
+    const result = await pendingValidationPromise;
+    window.__vw_keyValid = result;
+    return result;
+  }
+
+  pendingValidationPromise = (async () => {
+    try {
+      const result = await validateKeyWithAPI(storedKey);
+      cachedKeyState = {
+        valid: result.valid,
+        expiresAt: result.expiresAt,
+        checkedAt: Date.now()
+      };
+      return result.valid;
+    } catch (e) {
+      cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
+      return false;
+    } finally {
+      pendingValidationPromise = null;
+    }
+  })();
+
+  const valid = await pendingValidationPromise;
+  window.__vw_keyValid = valid;
+  return valid;
+}
+
+function clearKeyCache() {
+  cachedKeyState = { valid: false, expiresAt: 0, checkedAt: 0 };
+  window.__vw_keyValid = false;
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'vw_user_key') {
+    clearKeyCache();
+    validateStoredKey(true);
+  }
+});
 
 window.Logger = Logger;
 window.sendLogToServer = sendLogToServer;
 window.validateStoredKey = validateStoredKey;
+window.clearKeyCache = clearKeyCache;
