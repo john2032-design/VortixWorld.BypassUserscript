@@ -181,6 +181,7 @@ class RobustWebSocket {
     this.isConnecting = false
     this.errorLogged = false
     this.openLogged = false
+    this.keyExpiryCheckInterval = null
   }
 
   connect() {
@@ -214,7 +215,10 @@ class RobustWebSocket {
   onOpen() {
     this.isConnecting = false
     this.errorLogged = false
-    if (window.isShutdown || !keyIsValid) return
+    if (window.isShutdown || !keyIsValid) {
+      this.disconnect()
+      return
+    }
     if (!this.openLogged) {
       Logger.websocket('WebSocket connection opened', this.url)
       this.openLogged = true
@@ -226,11 +230,13 @@ class RobustWebSocket {
       this.reconnectTimeout = null
     }
     this.startHeartbeat()
+    this.startKeyExpiryMonitor()
   }
 
   onClose(event) {
     this.isConnecting = false
     this.openLogged = false
+    this.stopKeyExpiryMonitor()
     if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     this.stopHeartbeat()
     this.scheduleReconnect()
@@ -295,6 +301,26 @@ class RobustWebSocket {
     }
   }
 
+  startKeyExpiryMonitor() {
+    this.stopKeyExpiryMonitor()
+    this.keyExpiryCheckInterval = setInterval(async () => {
+      const stillValid = await validateStoredKey()
+      if (!stillValid) {
+        Logger.warn('Key expired during WebSocket connection, disconnecting')
+        this.disconnect()
+        updateStatus('❌ Key expired', 'Please renew your API key')
+        showToast('API key expired', true, ERROR_JPG)
+      }
+    }, 60000)
+  }
+
+  stopKeyExpiryMonitor() {
+    if (this.keyExpiryCheckInterval) {
+      clearInterval(this.keyExpiryCheckInterval)
+      this.keyExpiryCheckInterval = null
+    }
+  }
+
   scheduleReconnect() {
     if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -317,6 +343,7 @@ class RobustWebSocket {
   disconnect() {
     this.manualDisconnect = true
     this.stopHeartbeat()
+    this.stopKeyExpiryMonitor()
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       cleanupManager.timeouts.delete(this.reconnectTimeout)
