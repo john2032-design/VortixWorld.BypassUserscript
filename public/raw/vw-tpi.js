@@ -2,17 +2,24 @@ async function runLocalTpiLiBypass() {
   const startTime = Date.now();
   Logger.info('VortixWorld local tpi.li bypass enabled');
   
-  if (typeof injectUI === 'function') injectUI(ICON_URL);
-  updateStatus('Checking key...', 'Validating API key');
+  if (typeof injectUI === 'function') {
+    injectUI(ICON_URL);
+    updateStatus('Checking key...', 'Validating API key');
+  }
   
   const isValid = await validateStoredKey();
+  
   if (!isValid) {
-    updateStatus('❌ Key invalid/expired', 'Please update API key in settings');
+    if (typeof updateStatus === 'function') {
+      updateStatus('❌ Key invalid/expired', 'Please update API key in settings');
+    }
     showToast('API key invalid/expired', true, ERROR_JPG);
     return;
   }
   
-  updateStatus('Key valid', 'Fetching tpi.li link...');
+  if (typeof updateStatus === 'function') {
+    updateStatus('Key valid', 'Fetching tpi.li link...');
+  }
   
   try {
     const alias = location.pathname.slice(1);
