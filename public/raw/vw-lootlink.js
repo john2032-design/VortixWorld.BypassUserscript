@@ -32,8 +32,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Initializing...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+        <div id="vwStatus" class="vw-status">Checking key...</div>
+        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
       </div>
     </div>
   `
@@ -94,7 +94,6 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
 }
 
 function updateStatus(main, sub) {
-  if (!keyIsValid) return
   if (!document.getElementById('vortixWorldOverlay')) injectUI()
   const m = document.getElementById('vwStatus')
   const s = document.getElementById('vwSubStatus')
@@ -132,7 +131,6 @@ function startCountdown(initialSeconds) {
 }
 
 function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
-  if (!keyIsValid) return
   const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
   if (isLuarmorUrl(url)) {
     const overlay = document.getElementById('vortixWorldOverlay')
@@ -161,7 +159,6 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
 }
 
 function handleBypassError(errorMsg) {
-  if (!keyIsValid) return
   updateStatus('❌ Bypass failed', errorMsg)
   showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG)
   injectUI()
@@ -524,7 +521,7 @@ function initLootlinkFetchOverride() {
         let bodyObj = {}
         if (config && config.body) {
           try {
-            if (typeof config.body === 'string') {
+            if (typeof config.body === '99') {
               bodyObj = JSON.parse(config.body)
             } else if (typeof config.body === 'object') {
               bodyObj = config.body
@@ -557,10 +554,6 @@ function initLootlinkFetchOverride() {
 }
 
 function modifyParentElement(targetElement) {
-  if (!keyIsValid) {
-    Logger.warn('Key invalid, ignoring unlock element')
-    return
-  }
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
@@ -613,32 +606,50 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
-  keyIsValid = true
-  keyCheckComplete = true
-
   injectUI()
-  updateStatus('Key valid', 'Preparing bypass')
+  updateStatus('Checking key...', 'Validating API key')
+  
+  setupOptimizedObserver()
+  initLootlinkFetchOverride()
 
-  const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-  const existing = Array.from(document.querySelectorAll('*')).find(el => {
-    const text = el.textContent
-    return text && unlockText.some(t => text.includes(t))
-  })
-  if (existing) {
-    modifyParentElement(existing)
-  }
+  validateStoredKey().then(isValid => {
+    keyIsValid = isValid
+    keyCheckComplete = true
 
-  cleanupManager.setTimeout(() => {
-    if (!window.__vw_tc_processed && keyIsValid) {
-      Logger.warn('Bypass seems stuck, checking for unlock element again')
-      const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
-        const text = el.textContent
-        return text && unlockText.some(t => text.includes(t))
-      })
-      if (existingAgain) modifyParentElement(existingAgain)
-      else updateStatus('Bypass delayed', 'Trying alternative method...')
+    if (!keyIsValid) {
+      updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
+      showToast('API key invalid/expired', true, ERROR_JPG)
+      cleanupManager.clearAll()
+      if (window.bypassObserver) {
+        window.bypassObserver.disconnect()
+        window.bypassObserver = null
+      }
+      const overlay = document.getElementById('vortixWorldOverlay')
+      if (overlay) overlay.remove()
+      return
     }
-  }, CONFIG.FALLBACK_CHECK_DELAY)
+
+    updateStatus('Key valid', 'Preparing bypass')
+    
+    const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+    const existing = Array.from(document.querySelectorAll('*')).find(el => {
+      const text = el.textContent
+      return text && unlockText.some(t => text.includes(t))
+    })
+    if (existing) modifyParentElement(existing)
+
+    cleanupManager.setTimeout(() => {
+      if (!window.__vw_tc_processed && keyIsValid) {
+        Logger.warn('Bypass seems stuck, checking for unlock element again')
+        const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
+          const text = el.textContent
+          return text && unlockText.some(t => text.includes(t))
+        })
+        if (existingAgain) modifyParentElement(existingAgain)
+        else updateStatus('Bypass delayed', 'Trying alternative method...')
+      }
+    }, CONFIG.FALLBACK_CHECK_DELAY)
+  })
 
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
 }
