@@ -178,6 +178,7 @@ class RobustWebSocket {
     this.manualDisconnect = false
     this.isConnecting = false
     this.errorLogged = false
+    this.openLogged = false
   }
 
   connect() {
@@ -212,7 +213,10 @@ class RobustWebSocket {
     this.isConnecting = false
     this.errorLogged = false
     if (window.isShutdown) return
-    Logger.websocket('WebSocket connected', this.url)
+    if (!this.openLogged) {
+      Logger.websocket('WebSocket connection opened', this.url)
+      this.openLogged = true
+    }
     this.reconnectAttempts = 0
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
@@ -224,17 +228,15 @@ class RobustWebSocket {
 
   onClose(event) {
     this.isConnecting = false
+    this.openLogged = false
     if (window.isShutdown || this.manualDisconnect) return
-    if (!this.errorLogged) {
-      Logger.websocket('WebSocket closed', `code: ${event.code}`)
-    }
     this.stopHeartbeat()
     this.scheduleReconnect()
   }
 
   onError(error) {
     if (!this.errorLogged) {
-      Logger.error('WebSocket error', error.message || 'Unknown')
+      Logger.error('WebSocket fatal error', error.message || 'Unknown')
       this.errorLogged = true
     }
   }
@@ -243,7 +245,7 @@ class RobustWebSocket {
     if (window.isShutdown) return
     if (event.data && event.data.includes('r:')) {
       let publisherLink = event.data.replace('r:', '').trim()
-      Logger.info('Received publisher link', publisherLink)
+      Logger.info('Received publisher link from WebSocket', publisherLink)
       if (publisherLink) {
         let finalUrl = publisherLink
         const isBase64 = /^[A-Za-z0-9+/=]+$/.test(publisherLink)
@@ -252,18 +254,22 @@ class RobustWebSocket {
             finalUrl = decodeURIComponent(decodeURIxor(publisherLink))
             Logger.info('Decoded final URL', finalUrl)
           } catch (e) {
-            Logger.error('Base64 decode failed', e.message)
+            Logger.error('Base64 decode failed, using raw', e)
             finalUrl = publisherLink
           }
+        } else {
+          Logger.info('Not base64, using raw as final URL', finalUrl)
         }
+
         if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
           this.disconnect()
           const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
           if (!isLuarmorUrl(finalUrl)) saveResultToCache(location.href, finalUrl)
+          else Logger.info('Skipping cache because final URL is luarmor', finalUrl)
           this.resolved = true
           handleBypassSuccess(finalUrl, duration, 'lootlink')
         } else {
-          Logger.error('Invalid final URL', finalUrl)
+          Logger.error('Invalid final URL received', finalUrl)
         }
       }
     }
@@ -298,9 +304,10 @@ class RobustWebSocket {
     }
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts)
     this.reconnectAttempts++
-    Logger.warn(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+    Logger.warn(`WebSocket connection slow to open`, `Retry ${this.reconnectAttempts} in ${delay}ms`)
     this.reconnectTimeout = cleanupManager.setTimeout(() => {
       this.errorLogged = false
+      this.openLogged = false
       this.connect()
     }, delay)
   }
@@ -326,7 +333,7 @@ async function completeTaskViaSkippedLol(taskUrl) {
   if (urlToSend && urlToSend.startsWith('//')) urlToSend = 'https:' + urlToSend
   const payload = { ID: 17, URL: urlToSend }
   try {
-    Logger.info('Sending request to skipped.lol', payload)
+    Logger.info('Sending request to skipped.lol', JSON.stringify(payload))
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 8000)
     const response = await fetch(endpoint, {
@@ -342,30 +349,30 @@ async function completeTaskViaSkippedLol(taskUrl) {
     let parsed = null
     try {
       parsed = JSON.parse(rawText)
-      Logger.info('Parsed response', parsed)
+      Logger.info('Parsed JSON response', JSON.stringify(parsed, null, 2))
     } catch (e) {
-      Logger.warn('Response not JSON', e.message)
+      Logger.warn('Response not JSON, ignoring', e.message)
     }
     if (parsed && parsed.status === 'ok') {
-      Logger.info('Skipped.lol task completed')
+      Logger.info('Skipped.lol confirmed task completion')
       return true
     } else {
       throw new Error('Unexpected response from skipped.lol')
     }
   } catch (err) {
-    Logger.error('Skipped.lol request failed', err.message)
+    Logger.error('Error calling skipped.lol', err)
     throw err
   }
 }
 
 function startWebSocketForTask(taskData, isFallback = false) {
   if (!taskData || !taskData.urid) {
-    Logger.error('Missing task data for WebSocket')
+    Logger.error('Missing task data for WebSocket', taskData)
     return null
   }
   const { urid, task_id } = taskData
   const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-  Logger.info(`Starting WebSocket (fallback: ${isFallback})`, wsUrl)
+  Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback})`, wsUrl)
   const ws = new RobustWebSocket(wsUrl, {
     initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
     heartbeat: CONFIG.HEARTBEAT_INTERVAL
@@ -384,12 +391,12 @@ function startWebSocketForTask(taskData, isFallback = false) {
   try {
     const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
     navigator.sendBeacon(beaconUrl)
-    Logger.info('Beacon sent', beaconUrl)
+    Logger.info('Sent beacon', beaconUrl)
   } catch (_) {}
 
   const tdUrl = `https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`
   fetch(tdUrl, { credentials: 'include' }).catch(() => {})
-  Logger.info('TD URL fetched', tdUrl)
+  Logger.info('Fetched td URL', tdUrl)
   return ws
 }
 
@@ -402,7 +409,10 @@ function selectFallbackTask(tasks) {
 }
 
 function processTcResponse(data, originalFetch) {
-  Logger.info('Processing /tc response', data)
+  if (window.__vw_tc_processed) return true
+  window.__vw_tc_processed = true
+
+  Logger.info('Processing lootlink-backend.onrender.com/tc response', JSON.stringify(data, null, 2))
   const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
   const runFallback = () => {
@@ -421,13 +431,13 @@ function processTcResponse(data, originalFetch) {
     
     const fallbackTask = selectFallbackTask(data)
     if (fallbackTask && fallbackTask.urid) {
-      Logger.info('Using fallback task', fallbackTask)
+      Logger.info('Using fallback task for local WebSocket', fallbackTask)
       if (fallbackTask.auto_complete_seconds) {
           startCountdown(fallbackTask.auto_complete_seconds)
       }
       startWebSocketForTask(fallbackTask, true)
     } else {
-      Logger.error('No suitable task found')
+      Logger.error('No suitable task found in /tc response')
       handleBypassError('No suitable task found')
     }
   }
@@ -436,12 +446,13 @@ function processTcResponse(data, originalFetch) {
     Logger.info('Found task 17, using skipped.lol')
     const taskUrl = task17.ad_url
     completeTaskViaSkippedLol(taskUrl).then(() => {
-      Logger.info('Skipped.lol success, waiting 0.7s')
+      Logger.info('Skipped.lol success, waiting 0.7s before WebSocket')
       setTimeout(() => {
+        Logger.info('Starting WebSocket for task 17 after delay')
         const primaryWs = startWebSocketForTask(task17, false)
         setTimeout(() => {
           if (primaryWs && !primaryWs.resolved) {
-            Logger.warn('Task 17 WebSocket timed out, falling back')
+            Logger.warn('Method 1 WS timed out after 8s, switching to fallback')
             primaryWs.disconnect()
             window.primaryWebSocket = null
             runFallback()
@@ -449,7 +460,7 @@ function processTcResponse(data, originalFetch) {
         }, 8000)
       }, 700)
     }).catch(err => {
-      Logger.error('Skipped.lol failed, falling back', err.message)
+      Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
       runFallback()
     })
   } else {
@@ -479,7 +490,6 @@ function initLootlinkFetchOverride() {
             }
           } catch (e) {}
         }
-        Logger.info('Proxying /tc to', TC_PROXY_URL)
 
         return fetch(TC_PROXY_URL, {
           method: 'POST',
@@ -489,7 +499,6 @@ function initLootlinkFetchOverride() {
           if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
           return response.clone().json().then(data => {
             processTcResponse(data, originalFetch)
-            window.__vw_tc_processed = true
             return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
           })
         }).catch(err => {
@@ -559,7 +568,7 @@ function saveResultToCache(originalUrl, resultUrl) {
     }
     cache[originalUrl] = resultUrl
     localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
-    Logger.info('Cached result', { originalUrl, resultUrl })
+    Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
   } catch (e) { Logger.warn('Failed to cache result', e) }
 }
 
@@ -573,7 +582,7 @@ function getCachedResult(originalUrl) {
 }
 
 function runLocalLootlinkBypass() {
-  Logger.info('Lootlink bypass starting')
+  Logger.info('VortixWorld local lootlinks bypass enabled (proxy + skipped.lol + WebSocket)')
   
   try {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
@@ -582,11 +591,11 @@ function runLocalLootlinkBypass() {
   const cachedResult = getCachedResult(location.href)
   if (cachedResult) {
     if (!isLuarmorUrl(cachedResult)) {
-      Logger.info('Using cached result', cachedResult)
+      Logger.info('Using cached result', `from cache: ${cachedResult}`)
       handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink', true)
       return
     } else {
-      Logger.info('Cached result is luarmor, showing expire UI')
+      Logger.info('Cached result is luarmor, showing hash expire UI', cachedResult)
       showHashExpireUI(cachedResult)
       return
     }
@@ -597,7 +606,7 @@ function runLocalLootlinkBypass() {
   initLootlinkFetchOverride()
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
-      Logger.warn('Bypass stuck, retrying unlock element detection')
+      Logger.warn('Bypass seems stuck, checking for unlock element again')
       const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
       const existing = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent
