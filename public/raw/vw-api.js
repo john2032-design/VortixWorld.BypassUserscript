@@ -3,8 +3,12 @@ function appendToBestContainer(node) {
   if (mount && node && node.parentNode !== mount) mount.appendChild(node);
 }
 
-function createApiTopBar() {
-  if (document.getElementById('vwApiTopBar')) return;
+function createApiTopBar(text = 'Bypassing...') {
+  if (document.getElementById('vwApiTopBar')) {
+    const bar = document.getElementById('vwApiTopBar');
+    bar.querySelector('.vw-api-loading-text').textContent = text;
+    return bar;
+  }
   const styleId = 'vwApiStyles';
   if (!document.getElementById(styleId)) {
     const styleSheet = document.createElement('style');
@@ -24,7 +28,7 @@ function createApiTopBar() {
   bar.innerHTML = `
     <div class="vw-api-topbar-inner">
       <span class="vw-api-loading-ring" aria-hidden="true"></span>
-      <span class="vw-api-loading-text">Bypassing...</span>
+      <span class="vw-api-loading-text">${text}</span>
     </div>
   `;
   appendToBestContainer(bar);
@@ -35,6 +39,13 @@ function createApiTopBar() {
     document.addEventListener('DOMContentLoaded', onReady, { once: true });
   }
   return bar;
+}
+
+function updateApiTopBarText(text) {
+  const bar = document.getElementById('vwApiTopBar');
+  if (bar) {
+    bar.querySelector('.vw-api-loading-text').textContent = text;
+  }
 }
 
 function removeApiTopBar() {
@@ -124,8 +135,16 @@ async function bypassUrl(url, accessToken) {
 
 async function runApiBypass() {
   Logger.info('Starting API bypass for', location.href);
+  createApiTopBar('Checking key...');
+  const isValid = await validateStoredKey();
+  if (!isValid) {
+    updateApiTopBarText('❌ Key invalid/expired');
+    showToast('API key invalid/expired. Update in settings.', true);
+    setTimeout(removeApiTopBar, 3000);
+    return;
+  }
+  updateApiTopBarText('Key valid. Bypassing...');
   try {
-    createApiTopBar();
     const accessToken = await initApi();
     const result = await bypassUrl(location.href, accessToken);
     if (result.status === 'success') {
