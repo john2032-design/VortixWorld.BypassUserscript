@@ -1020,7 +1020,7 @@
         updateKeyUI(result)
         window.__vw_keyValid = true
         showToast('Key saved successfully!')
-        clearKeyCache()
+        if (typeof clearKeyCache === 'function') clearKeyCache()
       } else {
         updateKeyUI(result)
         showToast('Cannot save invalid key', true)
