@@ -92,6 +92,9 @@ let cachedKeyState = {
 let pendingValidationPromise = null;
 
 function getStoredKey() {
+  if (typeof window.VW_API_KEY === 'string' && window.VW_API_KEY.trim()) {
+    return window.VW_API_KEY.trim();
+  }
   if (typeof GM_getValue === 'function') {
     try {
       const gmKey = GM_getValue('vw_user_key', '');
