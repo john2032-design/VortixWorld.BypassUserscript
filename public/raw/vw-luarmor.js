@@ -73,11 +73,13 @@ function attemptNext() {
 
 async function startAutoLuarmor() {
   if (autoLuaActive) return;
+  showToast('Checking API key...', false);
   const isValid = await validateStoredKey();
   if (!isValid) {
     showToast('API key invalid/expired. Auto Luarmor disabled.', true);
     return;
   }
+  showToast('Key valid. Starting Auto Luarmor in 5s...', false);
   autoLuaActive = true;
   localStorage.setItem('vw_auto_luarmor_active', 'true');
   autoLuaNavAttempted = false;
