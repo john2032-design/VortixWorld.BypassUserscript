@@ -4,8 +4,8 @@ let uiInjected = false
 let bypassStart = performance.now()
 let countdownTimerId = null
 let currentRemainingSeconds = 60
-let keyValidationComplete = false
 let keyIsValid = false
+let keyCheckComplete = false
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -32,8 +32,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Checking key...</div>
-        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
+        <div id="vwStatus" class="vw-status">Initializing...</div>
+        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
       </div>
     </div>
   `
@@ -594,6 +594,25 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
+  injectUI()
+  updateStatus('Checking key...', 'Validating API key')
+
+  validateStoredKey().then(isValid => {
+    keyIsValid = isValid
+    keyCheckComplete = true
+
+    if (!keyIsValid) {
+      updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
+      showToast('API key invalid/expired', true, ERROR_JPG)
+      const overlay = document.getElementById('vortixWorldOverlay')
+      if (overlay) overlay.remove()
+      shutdown()
+      return
+    }
+
+    updateStatus('Key valid', 'Preparing bypass')
+  })
+
   const cachedResult = getCachedResult(location.href)
   if (cachedResult) {
     if (!isLuarmorUrl(cachedResult)) {
@@ -606,29 +625,9 @@ function runLocalLootlinkBypass() {
       return
     }
   }
-  injectUI()
-  updateStatus('Checking key...', 'Validating API key')
+
   setupOptimizedObserver()
   initLootlinkFetchOverride()
-
-  const waitForKey = () => {
-    if (typeof window.__lootlink_keyValid !== 'undefined') {
-      keyValidationComplete = true
-      keyIsValid = window.__lootlink_keyValid
-      if (keyIsValid) {
-        updateStatus('Key valid', 'Proceeding with bypass')
-      } else {
-        updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
-        showToast('API key invalid/expired. Update in settings.', true)
-        const overlay = document.getElementById('vortixWorldOverlay')
-        if (overlay) overlay.remove()
-        shutdown()
-      }
-    } else {
-      setTimeout(waitForKey, 100)
-    }
-  }
-  waitForKey()
 
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
