@@ -32,8 +32,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Initializing...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+        <div id="vwStatus" class="vw-status">Checking key...</div>
+        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
       </div>
     </div>
   `
@@ -607,7 +607,7 @@ function runLocalLootlinkBypass() {
     }
   }
   injectUI()
-  updateStatus('Loading...', 'Preparing bypass')
+  updateStatus('Checking key...', 'Validating API key')
   setupOptimizedObserver()
   initLootlinkFetchOverride()
 
@@ -619,6 +619,7 @@ function runLocalLootlinkBypass() {
         updateStatus('Key valid', 'Proceeding with bypass')
       } else {
         updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
+        showToast('API key invalid/expired. Update in settings.', true)
         const overlay = document.getElementById('vortixWorldOverlay')
         if (overlay) overlay.remove()
         shutdown()
