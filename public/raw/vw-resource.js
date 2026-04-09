@@ -14,7 +14,7 @@ const LOOT_HOSTS = [
   'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
   'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com',
   'linksloot.net', 'lootlinks.com', 'best-links.org', 'loot-labs.com',
-  'lootlabs.com', 'fast-links.org', 'rapid-links.com', 'rapid-links.net'
+  'lootlabs.com'
 ];
 
 const ALLOWED_SHORT_HOSTS = [
@@ -22,7 +22,8 @@ const ALLOWED_SHORT_HOSTS = [
   'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
   'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
-  'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net'
+  'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net',
+  'fast-links.org', 'rapid-links.com', 'rapid-links.net'
 ];
 
 const UA = navigator.userAgent;
