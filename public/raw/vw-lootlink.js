@@ -622,19 +622,6 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
-  const cachedResult = getCachedResult(location.href)
-  if (cachedResult) {
-    if (!isLuarmorUrl(cachedResult)) {
-      Logger.info('Using cached result', `from cache: ${cachedResult}`)
-      handleBypassSuccess(cachedResult, '0.00 (cached)', 'lootlink', true)
-      return
-    } else {
-      Logger.info('Cached result is luarmor, showing hash expire UI', cachedResult)
-      showHashExpireUI(cachedResult)
-      return
-    }
-  }
-
   setupOptimizedObserver()
   initLootlinkFetchOverride()
 
