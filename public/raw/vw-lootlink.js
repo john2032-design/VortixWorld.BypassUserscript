@@ -276,9 +276,6 @@ class RobustWebSocket {
         if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
           this.disconnect()
           const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
-          if (!isLuarmorUrl(finalUrl)) saveResultToCache(location.href, finalUrl)
-          else Logger.info('Skipping cache because final URL is luarmor', finalUrl)
-          this.resolved = true
           handleBypassSuccess(finalUrl, duration, 'lootlink')
         } else {
           Logger.error('Invalid final URL received', finalUrl)
@@ -608,30 +605,6 @@ function setupOptimizedObserver() {
     modifyParentElement(existing)
     observer.disconnect()
   }
-}
-
-const RESULT_CACHE_KEY = 'vw_lootlink_results'
-
-function saveResultToCache(originalUrl, resultUrl) {
-  try {
-    let cache = {}
-    const existing = localStorage.getItem(RESULT_CACHE_KEY)
-    if (existing) {
-      try { cache = JSON.parse(existing) } catch (_) {}
-    }
-    cache[originalUrl] = resultUrl
-    localStorage.setItem(RESULT_CACHE_KEY, JSON.stringify(cache))
-    Logger.info('Cached result', `${originalUrl} -> ${resultUrl}`)
-  } catch (e) { Logger.warn('Failed to cache result', e) }
-}
-
-function getCachedResult(originalUrl) {
-  try {
-    const existing = localStorage.getItem(RESULT_CACHE_KEY)
-    if (!existing) return null
-    const cache = JSON.parse(existing)
-    return cache[originalUrl] || null
-  } catch (_) { return null }
 }
 
 function runLocalLootlinkBypass() {
