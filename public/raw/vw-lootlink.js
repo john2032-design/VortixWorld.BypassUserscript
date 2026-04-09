@@ -4,6 +4,8 @@ let uiInjected = false
 let bypassStart = performance.now()
 let countdownTimerId = null
 let currentRemainingSeconds = 60
+let keyValidationComplete = false
+let keyIsValid = false
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -182,7 +184,7 @@ class RobustWebSocket {
   }
 
   connect() {
-    if (window.isShutdown || this.manualDisconnect) return
+    if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     if (this.isConnecting) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       if (!this.errorLogged) {
@@ -212,7 +214,7 @@ class RobustWebSocket {
   onOpen() {
     this.isConnecting = false
     this.errorLogged = false
-    if (window.isShutdown) return
+    if (window.isShutdown || !keyIsValid) return
     if (!this.openLogged) {
       Logger.websocket('WebSocket connection opened', this.url)
       this.openLogged = true
@@ -229,7 +231,7 @@ class RobustWebSocket {
   onClose(event) {
     this.isConnecting = false
     this.openLogged = false
-    if (window.isShutdown || this.manualDisconnect) return
+    if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     this.stopHeartbeat()
     this.scheduleReconnect()
   }
@@ -242,7 +244,7 @@ class RobustWebSocket {
   }
 
   onMessage(event) {
-    if (window.isShutdown) return
+    if (window.isShutdown || !keyIsValid) return
     if (event.data && event.data.includes('r:')) {
       let publisherLink = event.data.replace('r:', '').trim()
       Logger.info('Received publisher link from WebSocket', publisherLink)
@@ -294,7 +296,7 @@ class RobustWebSocket {
   }
 
   scheduleReconnect() {
-    if (window.isShutdown || this.manualDisconnect) return
+    if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       if (!this.errorLogged) {
         Logger.error('Max reconnect attempts reached, giving up', this.url)
@@ -368,6 +370,10 @@ async function completeTaskViaSkippedLol(taskUrl) {
 function startWebSocketForTask(taskData, isFallback = false) {
   if (!taskData || !taskData.urid) {
     Logger.error('Missing task data for WebSocket', taskData)
+    return null
+  }
+  if (!keyIsValid) {
+    Logger.warn('Key invalid, WebSocket not started')
     return null
   }
   const { urid, task_id } = taskData
@@ -604,6 +610,25 @@ function runLocalLootlinkBypass() {
   updateStatus('Loading...', 'Preparing bypass')
   setupOptimizedObserver()
   initLootlinkFetchOverride()
+
+  const waitForKey = () => {
+    if (typeof window.__lootlink_keyValid !== 'undefined') {
+      keyValidationComplete = true
+      keyIsValid = window.__lootlink_keyValid
+      if (keyIsValid) {
+        updateStatus('Key valid', 'Proceeding with bypass')
+      } else {
+        updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
+        const overlay = document.getElementById('vortixWorldOverlay')
+        if (overlay) overlay.remove()
+        shutdown()
+      }
+    } else {
+      setTimeout(waitForKey, 100)
+    }
+  }
+  waitForKey()
+
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
       Logger.warn('Bypass seems stuck, checking for unlock element again')
