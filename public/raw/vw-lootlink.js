@@ -508,55 +508,6 @@ function processTcResponse(data, originalFetch) {
   return true
 }
 
-function initLootlinkFetchOverride() {
-  const originalFetch = window.fetch
-  window.fetch = function (url, config) {
-    try {
-      const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
-      if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
-        return originalFetch(url, config)
-      }
-      if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
-        if (window.__vw_tc_processed) return originalFetch(url, config)
-        
-        let bodyObj = {}
-        if (config && config.body) {
-          try {
-            if (typeof config.body === 'string') {
-              bodyObj = JSON.parse(config.body)
-            } else if (typeof config.body === 'object') {
-              bodyObj = config.body
-            }
-          } catch (e) {}
-        }
-
-        return fetch(TC_PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyObj)
-        }).then(response => {
-          if (!response.ok) throw new Error(`Proxy returned ${response.status}`)
-          return response.clone().json().then(data => {
-            if (keyIsValid) {
-              processTcResponse(data, originalFetch)
-            } else if (!keyCheckComplete) {
-              pendingTcData = { data, originalFetch }
-              Logger.info('Key check pending, storing /tc response for later')
-            } else {
-              Logger.warn('Key invalid, bypass aborted – discarding /tc response')
-            }
-            return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
-          })
-        }).catch(err => {
-          Logger.error('Proxy fetch failed', err.message)
-          return originalFetch(url, config)
-        })
-      }
-    } catch (_) {}
-    return originalFetch(url, config)
-  }
-}
-
 function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
   if (!parentElement) return
@@ -568,41 +519,6 @@ function modifyParentElement(targetElement) {
   updateStatus('Loading...', 'Waiting for task data')
 }
 
-function setupOptimizedObserver() {
-  const targetContainer = document.body || document.documentElement
-  const observer = new MutationObserver((mutationsList, observerRef) => {
-    if (window.isShutdown) {
-      observerRef.disconnect()
-      return
-    }
-    const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-    for (const mutation of mutationsList) {
-      if (mutation.type !== 'childList') continue
-      const addedElements = Array.from(mutation.addedNodes).filter(n => n.nodeType === 1)
-      const found = addedElements.flatMap(el => [el, ...Array.from(el.querySelectorAll('*'))]).find(el => {
-        const text = el.textContent
-        return text && unlockText.some(t => text.includes(t))
-      })
-      if (found) {
-        modifyParentElement(found)
-        observerRef.disconnect()
-        return
-      }
-    }
-  })
-  window.bypassObserver = observer
-  observer.observe(targetContainer, { childList: true, subtree: true })
-  const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-  const existing = Array.from(document.querySelectorAll('*')).find(el => {
-    const text = el.textContent
-    return text && unlockText.some(t => text.includes(t))
-  })
-  if (existing) {
-    modifyParentElement(existing)
-    observer.disconnect()
-  }
-}
-
 function runLocalLootlinkBypass() {
   Logger.info('VortixWorld local lootlinks bypass enabled (proxy + skipped.lol + WebSocket)')
   
@@ -610,8 +526,11 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
-  setupOptimizedObserver()
-  initLootlinkFetchOverride()
+  // If unlock element was already detected by the pre‑installed observer, process it now
+  if (window.__vw_unlockDetected && window.__vw_unlockElement) {
+    modifyParentElement(window.__vw_unlockElement)
+    window.__vw_unlockDetected = false
+  }
 
   function startKeyCheck() {
     injectUI()
@@ -624,10 +543,10 @@ function runLocalLootlinkBypass() {
         if (isValid) {
           updateStatus('Key valid', 'Preparing bypass')
           
-          if (pendingTcData) {
-            Logger.info('Processing stored /tc response')
-            processTcResponse(pendingTcData.data, pendingTcData.originalFetch)
-            pendingTcData = null
+          if (window.__vw_tc_response && !window.__vw_tc_processed) {
+            Logger.info('Processing captured /tc response')
+            processTcResponse(window.__vw_tc_response, window.fetch)
+            window.__vw_tc_processed = true
           }
           
           const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
@@ -652,9 +571,9 @@ function runLocalLootlinkBypass() {
           updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
           showToast('API key invalid/expired', true, ERROR_JPG)
           cleanupManager.clearAll()
-          if (window.bypassObserver) {
-            window.bypassObserver.disconnect()
-            window.bypassObserver = null
+          if (window.__vw_lootlink_observer) {
+            window.__vw_lootlink_observer.disconnect()
+            window.__vw_lootlink_observer = null
           }
           const overlay = document.getElementById('vortixWorldOverlay')
           if (overlay) overlay.remove()
@@ -667,9 +586,9 @@ function runLocalLootlinkBypass() {
         updateStatus('❌ Key check failed', 'Please try again')
         showToast('Key validation error', true, ERROR_JPG)
         cleanupManager.clearAll()
-        if (window.bypassObserver) {
-          window.bypassObserver.disconnect()
-          window.bypassObserver = null
+        if (window.__vw_lootlink_observer) {
+          window.__vw_lootlink_observer.disconnect()
+          window.__vw_lootlink_observer = null
         }
         const overlay = document.getElementById('vortixWorldOverlay')
         if (overlay) overlay.remove()
