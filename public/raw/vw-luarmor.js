@@ -2,10 +2,15 @@ let autoLuaActive = false
 let autoLuaNavAttempted = false
 let autoLuaTimers = []
 let clickedButtons = new Set()
+let startDelayTimer = null
 
 function clearAutoLuaTimeouts() {
   autoLuaTimers.forEach(clearTimeout)
   autoLuaTimers = []
+  if (startDelayTimer) {
+    clearTimeout(startDelayTimer)
+    startDelayTimer = null
+  }
 }
 
 function triggerNativeLuarmor(btnId) {
@@ -82,11 +87,20 @@ function startAutoLuarmor() {
     }
     if (statusSpan) {
       statusSpan.style.color = "#4ade80";
-      statusSpan.textContent = "● Running";
+      statusSpan.textContent = "● Starting in 5s...";
     }
   }
-  checkProgress();
-  attemptNext();
+  clearAutoLuaTimeouts();
+  startDelayTimer = setTimeout(() => {
+    const ui = document.getElementById('autoLuaUI');
+    if (ui) {
+      const statusSpan = ui.querySelector("#autoStatus");
+      if (statusSpan) statusSpan.textContent = "● Running";
+    }
+    checkProgress();
+    attemptNext();
+    startDelayTimer = null;
+  }, 5000);
 }
 
 function stopAutoLuarmor() {
