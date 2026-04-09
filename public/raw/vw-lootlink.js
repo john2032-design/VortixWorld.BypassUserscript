@@ -521,7 +521,7 @@ function initLootlinkFetchOverride() {
         let bodyObj = {}
         if (config && config.body) {
           try {
-            if (typeof config.body === '99') {
+            if (typeof config.body === 'string') {
               bodyObj = JSON.parse(config.body)
             } else if (typeof config.body === 'object') {
               bodyObj = config.body
@@ -554,6 +554,10 @@ function initLootlinkFetchOverride() {
 }
 
 function modifyParentElement(targetElement) {
+  if (!keyIsValid) {
+    Logger.warn('Key invalid, ignoring unlock element')
+    return
+  }
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
