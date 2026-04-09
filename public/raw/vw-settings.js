@@ -6,9 +6,11 @@
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
   const GEAR_ICON_URL = 'https://i.ibb.co/kspwZbbH/IMG-0261.webp'
+  const KEY_API_URL = 'https://apikey-nine.vercel.app/api/key'
 
   const keys = {
-    autoRedirect: 'vw_auto_redirect'
+    autoRedirect: 'vw_auto_redirect',
+    userKey: 'vw_user_key'
   }
 
   const SETTINGS_CSS = `
@@ -430,6 +432,39 @@
       color: #e0e0e0 !important;
     }
 
+    .vw-key-input {
+      width: 100% !important;
+      padding: 12px 16px !important;
+      border-radius: 40px !important;
+      border: none !important;
+      background: #1e1e1e !important;
+      box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+      color: #e0e0e0 !important;
+      font-family: monospace !important;
+      font-size: 14px !important;
+      outline: none !important;
+      margin-bottom: 8px !important;
+    }
+
+    .vw-key-status {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      font-size: 13px !important;
+      margin-bottom: 12px !important;
+    }
+
+    .vw-key-status-indicator {
+      width: 10px !important;
+      height: 10px !important;
+      border-radius: 50% !important;
+      background: #ef4444 !important;
+    }
+
+    .vw-key-status-indicator.active {
+      background: #4ade80 !important;
+    }
+
     @media (max-width: 560px) {
       .vw-panel {
         width: calc(100vw - 20px) !important;
@@ -577,9 +612,32 @@
           </div>
 
           <div class="vw-actions">
+            <button class="vw-btn" id="vwKeyBtn" type="button">🔑 API Key</button>
             <button class="vw-btn" id="vwConsoleBtn" type="button">Console</button>
             <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
             <button class="vw-btn vw-btn-primary" id="vwApplyBtn" type="button">Apply &amp; Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="vw-panel vw-hidden" id="vwKeyPanel" role="dialog" aria-modal="true" aria-label="API Key">
+        <div class="vw-header">
+          <div class="vw-title">
+            <img src="${ICON_URL}" alt="VW Icon">
+            <span>API Key</span>
+          </div>
+          <button class="vw-close-btn" type="button" aria-label="Close key panel">✕</button>
+        </div>
+        <div class="vw-body">
+          <input type="text" id="vwKeyInput" class="vw-key-input" placeholder="Enter your key" spellcheck="false" autocomplete="off">
+          <div class="vw-key-status">
+            <span class="vw-key-status-indicator" id="vwKeyIndicator"></span>
+            <span id="vwKeyStatusText">No key entered</span>
+          </div>
+          <div id="vwKeyExpiresText" style="font-size: 12px; color: #a0a0a0; margin-bottom: 16px;"></div>
+          <div class="vw-actions">
+            <button class="vw-btn" id="vwValidateKeyBtn" type="button">Validate</button>
+            <button class="vw-btn vw-btn-primary" id="vwSaveKeyBtn" type="button">Save Key</button>
           </div>
         </div>
       </div>
@@ -612,6 +670,7 @@
     shadow.appendChild(backdrop)
 
     const settingsPanel = shadow.querySelector('#vwSettingsPanel')
+    const keyPanel = shadow.querySelector('#vwKeyPanel')
     const consolePanel = shadow.querySelector('#vwConsolePanel')
     const closeBtns = shadow.querySelectorAll('.vw-close-btn')
     const backdropDiv = shadow.querySelector('.vw-backdrop')
@@ -620,11 +679,19 @@
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
+    const keyBtn = shadow.querySelector('#vwKeyBtn')
     const copyConsoleBtn = shadow.querySelector('#vwCopyConsoleBtn')
     const clearConsoleBtn = shadow.querySelector('#vwClearConsoleBtn')
     const backToSettingsBtn = shadow.querySelector('#vwBackToSettingsBtn')
     const tabs = shadow.querySelectorAll('.vw-tab')
     const consoleContainer = shadow.querySelector('#vwConsoleLogs')
+
+    const keyInput = shadow.querySelector('#vwKeyInput')
+    const keyIndicator = shadow.querySelector('#vwKeyIndicator')
+    const keyStatusText = shadow.querySelector('#vwKeyStatusText')
+    const keyExpiresText = shadow.querySelector('#vwKeyExpiresText')
+    const validateKeyBtn = shadow.querySelector('#vwValidateKeyBtn')
+    const saveKeyBtn = shadow.querySelector('#vwSaveKeyBtn')
 
     let previousBodyOverflow = ''
     let previousHtmlOverflow = ''
@@ -731,11 +798,69 @@
       }, 2500)
     }
 
+    async function validateKey(key) {
+      if (!key) return { valid: false, reason: 'empty' }
+      try {
+        const res = await fetch(`${KEY_API_URL}/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key })
+        })
+        const data = await res.json()
+        return data
+      } catch (e) {
+        return { valid: false, reason: 'network_error' }
+      }
+    }
+
+    function updateKeyUI(validationResult) {
+      if (validationResult.valid) {
+        keyIndicator.className = 'vw-key-status-indicator active'
+        keyStatusText.textContent = 'Active'
+        const expiresDate = new Date(validationResult.expires_at * 1000).toLocaleString()
+        keyExpiresText.textContent = `Expires: ${expiresDate}`
+      } else {
+        keyIndicator.className = 'vw-key-status-indicator'
+        if (validationResult.reason === 'expired') {
+          keyStatusText.textContent = 'Expired'
+          const expiresDate = new Date(validationResult.expires_at * 1000).toLocaleString()
+          keyExpiresText.textContent = `Expired on: ${expiresDate}`
+        } else if (validationResult.reason === 'invalid_key') {
+          keyStatusText.textContent = 'Invalid key'
+          keyExpiresText.textContent = ''
+        } else if (validationResult.reason === 'inactive') {
+          keyStatusText.textContent = 'Inactive'
+          keyExpiresText.textContent = ''
+        } else {
+          keyStatusText.textContent = 'Invalid'
+          keyExpiresText.textContent = ''
+        }
+      }
+      window.__vw_key_valid = validationResult.valid
+    }
+
+    async function loadAndValidateStoredKey() {
+      const storedKey = getStoredValue(keys.userKey, '')
+      if (storedKey) {
+        keyInput.value = storedKey
+        const result = await validateKey(storedKey)
+        updateKeyUI(result)
+      } else {
+        keyInput.value = ''
+        updateKeyUI({ valid: false, reason: 'empty' })
+      }
+    }
+
     function openPanel(panel) {
       setVisible(settingsPanel, panel === 'settings')
+      setVisible(keyPanel, panel === 'key')
       setVisible(consolePanel, panel === 'console')
       backdropDiv.classList.add('open')
       setScrollLock(true)
+
+      if (panel === 'key') {
+        loadAndValidateStoredKey()
+      }
 
       if (panel === 'console') {
         userHasScrolled = false
@@ -751,27 +876,12 @@
       } else {
         stopAutoRefresh()
       }
-
-      const focusTarget = panel === 'console'
-        ? shadow.querySelector('#vwCopyConsoleBtn')
-        : shadow.querySelector('#vwAutoToggle')
-
-      if (focusTarget && typeof focusTarget.focus === 'function') {
-        setTimeout(() => {
-          try {
-            focusTarget.focus({ preventScroll: true })
-          } catch (_) {
-            try {
-              focusTarget.focus()
-            } catch (_) {}
-          }
-        }, 0)
-      }
     }
 
     function closePanel() {
       backdropDiv.classList.remove('open')
       setVisible(settingsPanel, false)
+      setVisible(keyPanel, false)
       setVisible(consolePanel, false)
       setScrollLock(false)
       stopAutoRefresh()
@@ -838,6 +948,12 @@
       openPanel('console')
     })
 
+    keyBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      openPanel('key')
+    })
+
     copyConsoleBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -858,6 +974,49 @@
       openPanel('settings')
     })
 
+    validateKeyBtn.addEventListener('click', async (e) => {
+      e.preventDefault()
+      const key = keyInput.value.trim()
+      if (!key) {
+        showToast('Please enter a key', true)
+        return
+      }
+      validateKeyBtn.textContent = 'Validating...'
+      validateKeyBtn.disabled = true
+      const result = await validateKey(key)
+      validateKeyBtn.textContent = 'Validate'
+      validateKeyBtn.disabled = false
+      updateKeyUI(result)
+      if (result.valid) {
+        showToast('Key is valid!')
+      } else {
+        showToast('Key is invalid or expired', true)
+      }
+    })
+
+    saveKeyBtn.addEventListener('click', async (e) => {
+      e.preventDefault()
+      const key = keyInput.value.trim()
+      if (!key) {
+        showToast('Please enter a key', true)
+        return
+      }
+      saveKeyBtn.textContent = 'Saving...'
+      saveKeyBtn.disabled = true
+      const result = await validateKey(key)
+      if (result.valid) {
+        setStoredValue(keys.userKey, key)
+        updateKeyUI(result)
+        window.__vw_key_valid = true
+        showToast('Key saved successfully!')
+      } else {
+        updateKeyUI(result)
+        showToast('Cannot save invalid key', true)
+      }
+      saveKeyBtn.textContent = 'Save Key'
+      saveKeyBtn.disabled = false
+    })
+
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const level = tab.getAttribute('data-level')
@@ -869,6 +1028,7 @@
     })
 
     setVisible(settingsPanel, true)
+    setVisible(keyPanel, false)
     setVisible(consolePanel, false)
     loadSettings()
     document.documentElement.appendChild(host)
