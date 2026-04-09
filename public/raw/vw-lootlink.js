@@ -428,29 +428,14 @@ function initLootlinkFetchOverride() {
   window.fetch = function (url, config) {
     try {
       const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
+      const isTcRequest = urlStr.includes('/tc') && (urlStr.includes('nerventualken.com') || urlStr.includes(typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : ''))
       
-      let incentiveSyncerDomain = typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : null
-      let incentiveServerDomain = typeof INCENTIVE_SERVER_DOMAIN !== 'undefined' ? INCENTIVE_SERVER_DOMAIN : null
-      
-      if (!incentiveSyncerDomain || !incentiveServerDomain) {
-        Logger.warn('Incentive domains not defined, using fallback domain extraction', urlStr)
-        const match = urlStr.match(/https?:\/\/([^\/]+)\/tc/)
-        if (match) {
-          const domain = match[1]
-          if (!incentiveSyncerDomain) {
-            incentiveSyncerDomain = domain
-            window.INCENTIVE_SYNCER_DOMAIN = domain
-          }
-        }
-      }
-      
-      if (urlStr.includes('/tc') && (urlStr.includes('nerventualken.com') || urlStr.includes(incentiveSyncerDomain))) {
+      if (isTcRequest && config && config.method && config.method.toUpperCase() === 'POST') {
         if (window.__vw_tc_processed) return originalFetch(url, config)
-        
-        Logger.info('Intercepted /tc request, forwarding to proxy', urlStr)
+        Logger.info('Intercepted /tc POST request', urlStr)
         
         let bodyObj = {}
-        if (config && config.body) {
+        if (config.body) {
           try {
             if (typeof config.body === 'string') {
               bodyObj = JSON.parse(config.body)
@@ -460,6 +445,27 @@ function initLootlinkFetchOverride() {
           } catch (e) {
             Logger.error('Failed to parse /tc body', e)
           }
+        }
+        
+        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' && urlStr.includes('nerventualken.com')) {
+          const domain = 'nerventualken.com'
+          window.INCENTIVE_SYNCER_DOMAIN = domain
+          Logger.warn('Set INCENTIVE_SYNCER_DOMAIN to', domain)
+        }
+        
+        if (typeof INCENTIVE_SERVER_DOMAIN === 'undefined' && bodyObj.rkey) {
+          window.INCENTIVE_SERVER_DOMAIN = 'onsultingco.com'
+          Logger.warn('Set INCENTIVE_SERVER_DOMAIN to onsultingco.com')
+        }
+        
+        if (typeof KEY === 'undefined' && bodyObj.rkey) {
+          window.KEY = bodyObj.rkey
+          Logger.warn('Set KEY from rkey', bodyObj.rkey)
+        }
+        
+        if (typeof TID === 'undefined' && bodyObj.tid) {
+          window.TID = bodyObj.tid
+          Logger.warn('Set TID', bodyObj.tid)
         }
 
         return fetch(TC_PROXY_URL, {
@@ -493,6 +499,7 @@ function modifyParentElement(targetElement) {
   parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
   injectUI()
   updateStatus('Loading...', 'Waiting for task data')
+  Logger.info('Parent element modified, UI injected')
 }
 
 function setupOptimizedObserver() {
@@ -520,6 +527,8 @@ function setupOptimizedObserver() {
   })
   window.bypassObserver = observer
   observer.observe(targetContainer, { childList: true, subtree: true })
+  Logger.info('MutationObserver started')
+  
   const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
   const existing = Array.from(document.querySelectorAll('*')).find(el => {
     const text = el.textContent
@@ -579,18 +588,25 @@ function runLocalLootlinkBypass() {
   updateStatus('Loading...', 'Preparing bypass')
   setupOptimizedObserver()
   initLootlinkFetchOverride()
+  
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
-      Logger.warn('Bypass seems stuck, checking for unlock element again')
+      Logger.warn('No /tc processed after 10 seconds, attempting manual trigger')
       const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
       const existing = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent
         return text && unlockText.some(t => text.includes(t))
       })
-      if (existing) modifyParentElement(existing)
-      else updateStatus('Bypass delayed', 'Trying alternative method...')
+      if (existing) {
+        Logger.info('Manual trigger: modifying parent element')
+        modifyParentElement(existing)
+      } else {
+        Logger.error('Manual trigger failed: unlock button not found')
+        updateStatus('Bypass stalled', 'Could not find unlock button')
+      }
     }
-  }, CONFIG.FALLBACK_CHECK_DELAY)
+  }, 10000)
+  
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
 }
 
