@@ -6,7 +6,6 @@ let countdownTimerId = null
 let currentRemainingSeconds = 60
 let keyIsValid = false
 let keyCheckComplete = false
-let bypassActive = false
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -33,8 +32,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Initializing...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for page to load</div>
+        <div id="vwStatus" class="vw-status">Checking key...</div>
+        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
       </div>
     </div>
   `
