@@ -428,11 +428,26 @@ function initLootlinkFetchOverride() {
   window.fetch = function (url, config) {
     try {
       const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
-      if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' || typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
-        return originalFetch(url, config)
+      
+      let incentiveSyncerDomain = typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : null
+      let incentiveServerDomain = typeof INCENTIVE_SERVER_DOMAIN !== 'undefined' ? INCENTIVE_SERVER_DOMAIN : null
+      
+      if (!incentiveSyncerDomain || !incentiveServerDomain) {
+        Logger.warn('Incentive domains not defined, using fallback domain extraction', urlStr)
+        const match = urlStr.match(/https?:\/\/([^\/]+)\/tc/)
+        if (match) {
+          const domain = match[1]
+          if (!incentiveSyncerDomain) {
+            incentiveSyncerDomain = domain
+            window.INCENTIVE_SYNCER_DOMAIN = domain
+          }
+        }
       }
-      if (urlStr.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
+      
+      if (urlStr.includes('/tc') && (urlStr.includes('nerventualken.com') || urlStr.includes(incentiveSyncerDomain))) {
         if (window.__vw_tc_processed) return originalFetch(url, config)
+        
+        Logger.info('Intercepted /tc request, forwarding to proxy', urlStr)
         
         let bodyObj = {}
         if (config && config.body) {
@@ -442,7 +457,9 @@ function initLootlinkFetchOverride() {
             } else if (typeof config.body === 'object') {
               bodyObj = config.body
             }
-          } catch (e) {}
+          } catch (e) {
+            Logger.error('Failed to parse /tc body', e)
+          }
         }
 
         return fetch(TC_PROXY_URL, {
@@ -464,6 +481,7 @@ function initLootlinkFetchOverride() {
     } catch (_) {}
     return originalFetch(url, config)
   }
+  Logger.info('Lootlink fetch override installed')
 }
 
 function modifyParentElement(targetElement) {
@@ -493,6 +511,7 @@ function setupOptimizedObserver() {
         return text && unlockText.some(t => text.includes(t))
       })
       if (found) {
+        Logger.info('Unlock button detected, modifying parent')
         modifyParentElement(found)
         observerRef.disconnect()
         return
@@ -507,6 +526,7 @@ function setupOptimizedObserver() {
     return text && unlockText.some(t => text.includes(t))
   })
   if (existing) {
+    Logger.info('Unlock button already present, modifying parent immediately')
     modifyParentElement(existing)
     observer.disconnect()
   }
