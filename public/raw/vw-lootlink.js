@@ -177,13 +177,17 @@ class RobustWebSocket {
     this.resolved = false
     this.manualDisconnect = false
     this.isConnecting = false
+    this.errorLogged = false
   }
 
   connect() {
     if (window.isShutdown || this.manualDisconnect) return
     if (this.isConnecting) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      Logger.error('WebSocket max reconnect attempts reached', this.url)
+      if (!this.errorLogged) {
+        Logger.error('WebSocket max reconnect attempts reached', this.url)
+        this.errorLogged = true
+      }
       return
     }
     this.isConnecting = true
@@ -193,16 +197,20 @@ class RobustWebSocket {
       this.ws.onopen = () => this.onOpen()
       this.ws.onmessage = e => this.onMessage(e)
       this.ws.onclose = (e) => this.onClose(e)
-      this.ws.onerror = e => this.onError(e)
+      this.ws.onerror = (e) => this.onError(e)
     } catch (e) {
-      Logger.error('WebSocket construction error', e.message)
       this.isConnecting = false
+      if (!this.errorLogged) {
+        Logger.error('WebSocket construction error', e.message)
+        this.errorLogged = true
+      }
       this.scheduleReconnect()
     }
   }
 
   onOpen() {
     this.isConnecting = false
+    this.errorLogged = false
     if (window.isShutdown) return
     Logger.websocket('WebSocket connected', this.url)
     this.reconnectAttempts = 0
@@ -217,13 +225,18 @@ class RobustWebSocket {
   onClose(event) {
     this.isConnecting = false
     if (window.isShutdown || this.manualDisconnect) return
-    Logger.websocket('WebSocket closed', `code: ${event.code}, reason: ${event.reason}`)
+    if (!this.errorLogged) {
+      Logger.websocket('WebSocket closed', `code: ${event.code}`)
+    }
     this.stopHeartbeat()
     this.scheduleReconnect()
   }
 
   onError(error) {
-    Logger.error('WebSocket error', error.message || 'Unknown error')
+    if (!this.errorLogged) {
+      Logger.error('WebSocket error', error.message || 'Unknown')
+      this.errorLogged = true
+    }
   }
 
   onMessage(event) {
@@ -239,7 +252,7 @@ class RobustWebSocket {
             finalUrl = decodeURIComponent(decodeURIxor(publisherLink))
             Logger.info('Decoded final URL', finalUrl)
           } catch (e) {
-            Logger.error('Base64 decode failed, using raw', e.message)
+            Logger.error('Base64 decode failed', e.message)
             finalUrl = publisherLink
           }
         }
@@ -250,7 +263,7 @@ class RobustWebSocket {
           this.resolved = true
           handleBypassSuccess(finalUrl, duration, 'lootlink')
         } else {
-          Logger.error('Invalid final URL received', finalUrl)
+          Logger.error('Invalid final URL', finalUrl)
         }
       }
     }
@@ -277,13 +290,17 @@ class RobustWebSocket {
   scheduleReconnect() {
     if (window.isShutdown || this.manualDisconnect) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      Logger.error('Max reconnect attempts reached, giving up', this.url)
+      if (!this.errorLogged) {
+        Logger.error('Max reconnect attempts reached, giving up', this.url)
+        this.errorLogged = true
+      }
       return
     }
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts)
     this.reconnectAttempts++
-    Logger.warn(`Scheduling WebSocket reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+    Logger.warn(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
     this.reconnectTimeout = cleanupManager.setTimeout(() => {
+      this.errorLogged = false
       this.connect()
     }, delay)
   }
