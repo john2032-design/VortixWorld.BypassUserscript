@@ -623,8 +623,8 @@ function runLocalLootlinkBypass() {
   validateStoredKey()
     .then(isValid => {
       keyCheckComplete = true
+      keyIsValid = isValid
       if (isValid) {
-        keyIsValid = true
         updateStatus('Key valid', 'Preparing bypass')
         
         if (pendingTcData) {
@@ -652,7 +652,6 @@ function runLocalLootlinkBypass() {
           }
         }, CONFIG.FALLBACK_CHECK_DELAY)
       } else {
-        keyIsValid = false
         updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
         showToast('API key invalid/expired', true, ERROR_JPG)
         cleanupManager.clearAll()
