@@ -558,10 +558,6 @@ function initLootlinkFetchOverride() {
 }
 
 function modifyParentElement(targetElement) {
-  if (!keyIsValid) {
-    Logger.warn('Key invalid, ignoring unlock element')
-    return
-  }
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
