@@ -522,12 +522,14 @@
   }
 
   function getStoredValue(key, defaultValue) {
-    if (hasGM()) {
-      try {
-        return GM_getValue(key, defaultValue)
-      } catch (_) {}
+    if (key === keys.userKey || key === keys.autoRedirect) {
+      if (hasGM()) {
+        try {
+          const val = GM_getValue(key, defaultValue)
+          if (val !== undefined && val !== null) return val
+        } catch (_) {}
+      }
     }
-
     try {
       const lsValue = localStorage.getItem(key)
       if (lsValue === null) return defaultValue
@@ -543,12 +545,13 @@
   }
 
   function setStoredValue(key, value) {
-    if (hasGM()) {
-      try {
-        GM_setValue(key, value)
-      } catch (_) {}
+    if (key === keys.userKey || key === keys.autoRedirect) {
+      if (hasGM()) {
+        try {
+          GM_setValue(key, value)
+        } catch (_) {}
+      }
     }
-
     try {
       localStorage.setItem(key, String(value))
     } catch (_) {}
