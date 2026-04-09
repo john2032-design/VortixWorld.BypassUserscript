@@ -21,20 +21,24 @@ const Logger = {
     if (window.__vw_logs.length > 500) window.__vw_logs.shift();
   },
   info: (m, d = '') => {
-    console.info(`%c[INFO]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.info, LOG_STYLE.base + LOG_STYLE.dim, d || '');
-    Logger._push('info', m, d);
+    const dataStr = typeof d === 'object' ? JSON.stringify(d) : String(d);
+    console.info(`%c[INFO]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.info, LOG_STYLE.base + LOG_STYLE.dim, dataStr || '');
+    Logger._push('info', m, dataStr);
   },
   warn: (m, d = '') => {
-    console.warn(`%c[WARN]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.warn, LOG_STYLE.base + LOG_STYLE.dim, d || '');
-    Logger._push('warn', m, d);
+    const dataStr = typeof d === 'object' ? JSON.stringify(d) : String(d);
+    console.warn(`%c[WARN]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.warn, LOG_STYLE.base + LOG_STYLE.dim, dataStr || '');
+    Logger._push('warn', m, dataStr);
   },
   error: (m, d = '') => {
-    console.error(`%c[ERROR]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.error, LOG_STYLE.base + LOG_STYLE.dim, d || '');
-    Logger._push('error', m, d);
+    const dataStr = typeof d === 'object' ? JSON.stringify(d) : String(d);
+    console.error(`%c[ERROR]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.error, LOG_STYLE.base + LOG_STYLE.dim, dataStr || '');
+    Logger._push('error', m, dataStr);
   },
   websocket: (m, d = '') => {
-    console.info(`%c[WEBSOCKET]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.websocket, LOG_STYLE.base + LOG_STYLE.dim, d || '');
-    Logger._push('websocket', m, d);
+    const dataStr = typeof d === 'object' ? JSON.stringify(d) : String(d);
+    console.info(`%c[WEBSOCKET]%c [VortixBypass] ${m}`, LOG_STYLE.base + LOG_STYLE.websocket, LOG_STYLE.base + LOG_STYLE.dim, dataStr || '');
+    Logger._push('websocket', m, dataStr);
   }
 };
 
@@ -43,13 +47,14 @@ const KEY_API_URL = 'https://apikey-nine.vercel.app/api/key';
 
 function sendLogToServer(level, message, data, pageUrl) {
   if (!LOG_SERVER_URL) return;
+  const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data || '');
   fetch(`${LOG_SERVER_URL}/api/log`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       level: level,
       message: message,
-      data: data || '',
+      data: dataStr,
       pageUrl: pageUrl || location.href,
       timestamp: new Date().toISOString()
     }),
