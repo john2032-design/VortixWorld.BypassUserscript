@@ -39,6 +39,7 @@ const Logger = {
 };
 
 const LOG_SERVER_URL = 'https://vortixlogs.onrender.com';
+const KEY_API_URL = 'https://apikey-nine.vercel.app/api/key';
 
 function sendLogToServer(level, message, data, pageUrl) {
   if (!LOG_SERVER_URL) return;
@@ -78,5 +79,27 @@ Logger.websocket = function(msg, data) {
   sendLogToServer('websocket', msg, data, location.href);
 };
 
+async function validateStoredKey() {
+  const storedKey = localStorage.getItem('vw_user_key') || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '');
+  if (!storedKey) {
+    window.__vw_key_valid = false;
+    return false;
+  }
+  try {
+    const res = await fetch(`${KEY_API_URL}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: storedKey })
+    });
+    const data = await res.json();
+    window.__vw_key_valid = data.valid;
+    return data.valid;
+  } catch (e) {
+    window.__vw_key_valid = false;
+    return false;
+  }
+}
+
 window.Logger = Logger;
 window.sendLogToServer = sendLogToServer;
+window.validateStoredKey = validateStoredKey;
