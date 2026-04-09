@@ -128,12 +128,12 @@ async function validateStoredKey(forceRefresh = false) {
     }
 
     const now = Date.now();
-    if (!forceRefresh && cachedKeyState.checkedAt > 0) {
+    if (!forceRefresh && cachedKeyState.checkedAt > 0 && cachedKeyState.valid) {
       const cacheAge = (now - cachedKeyState.checkedAt) / 1000;
       const remainingTTL = Math.max(0, cachedKeyState.expiresAt - Math.floor(now / 1000));
       if (cacheAge < remainingTTL && cacheAge < 300) {
-        window.__vw_keyValid = cachedKeyState.valid;
-        return cachedKeyState.valid;
+        window.__vw_keyValid = true;
+        return true;
       }
     }
 
