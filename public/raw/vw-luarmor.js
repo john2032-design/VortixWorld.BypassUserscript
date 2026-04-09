@@ -72,6 +72,7 @@ function findActiveKey() {
 async function generateAndCopyKey() {
   if (keyGenLocked) return
   keyGenLocked = true
+  await new Promise(r => setTimeout(r, 2500))
   const btn = document.querySelector('#newkeybtn')
   if (!btn) {
     keyGenLocked = false
