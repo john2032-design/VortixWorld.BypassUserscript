@@ -63,11 +63,9 @@ async function generateAndCopyKey() {
   const btn = document.querySelector('#newkeybtn')
   if (btn) {
     await humanClick(btn, { drawTrail: false })
-    await new Promise(r => setTimeout(r, 1000))
   } else {
     Logger.warn('AutoLuarmor', 'Get new key button not found')
   }
-  location.reload()
   keyGenLocked = false
 }
 
