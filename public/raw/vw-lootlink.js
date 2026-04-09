@@ -614,46 +614,62 @@ function runLocalLootlinkBypass() {
     Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA })
   } catch(e) { }
 
-  injectUI()
-  updateStatus('Checking key...', 'Validating API key')
-  
   setupOptimizedObserver()
   initLootlinkFetchOverride()
 
-  validateStoredKey()
-    .then(isValid => {
-      keyCheckComplete = true
-      keyIsValid = isValid
-      if (isValid) {
-        updateStatus('Key valid', 'Preparing bypass')
-        
-        if (pendingTcData) {
-          Logger.info('Processing stored /tc response')
-          processTcResponse(pendingTcData.data, pendingTcData.originalFetch)
-          pendingTcData = null
-        }
-        
-        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-        const existing = Array.from(document.querySelectorAll('*')).find(el => {
-          const text = el.textContent
-          return text && unlockText.some(t => text.includes(t))
-        })
-        if (existing) modifyParentElement(existing)
+  function startKeyCheck() {
+    injectUI()
+    updateStatus('Checking key...', 'Validating API key')
 
-        cleanupManager.setTimeout(() => {
-          if (!window.__vw_tc_processed && keyIsValid) {
-            Logger.warn('Bypass seems stuck, checking for unlock element again')
-            const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
-              const text = el.textContent
-              return text && unlockText.some(t => text.includes(t))
-            })
-            if (existingAgain) modifyParentElement(existingAgain)
-            else updateStatus('Bypass delayed', 'Trying alternative method...')
+    validateStoredKey()
+      .then(isValid => {
+        keyCheckComplete = true
+        keyIsValid = isValid
+        if (isValid) {
+          updateStatus('Key valid', 'Preparing bypass')
+          
+          if (pendingTcData) {
+            Logger.info('Processing stored /tc response')
+            processTcResponse(pendingTcData.data, pendingTcData.originalFetch)
+            pendingTcData = null
           }
-        }, CONFIG.FALLBACK_CHECK_DELAY)
-      } else {
-        updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
-        showToast('API key invalid/expired', true, ERROR_JPG)
+          
+          const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+          const existing = Array.from(document.querySelectorAll('*')).find(el => {
+            const text = el.textContent
+            return text && unlockText.some(t => text.includes(t))
+          })
+          if (existing) modifyParentElement(existing)
+
+          cleanupManager.setTimeout(() => {
+            if (!window.__vw_tc_processed && keyIsValid) {
+              Logger.warn('Bypass seems stuck, checking for unlock element again')
+              const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
+                const text = el.textContent
+                return text && unlockText.some(t => text.includes(t))
+              })
+              if (existingAgain) modifyParentElement(existingAgain)
+              else updateStatus('Bypass delayed', 'Trying alternative method...')
+            }
+          }, CONFIG.FALLBACK_CHECK_DELAY)
+        } else {
+          updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
+          showToast('API key invalid/expired', true, ERROR_JPG)
+          cleanupManager.clearAll()
+          if (window.bypassObserver) {
+            window.bypassObserver.disconnect()
+            window.bypassObserver = null
+          }
+          const overlay = document.getElementById('vortixWorldOverlay')
+          if (overlay) overlay.remove()
+        }
+      })
+      .catch(err => {
+        keyCheckComplete = true
+        keyIsValid = false
+        Logger.error('Key validation error:', err)
+        updateStatus('❌ Key check failed', 'Please try again')
+        showToast('Key validation error', true, ERROR_JPG)
         cleanupManager.clearAll()
         if (window.bypassObserver) {
           window.bypassObserver.disconnect()
@@ -661,22 +677,14 @@ function runLocalLootlinkBypass() {
         }
         const overlay = document.getElementById('vortixWorldOverlay')
         if (overlay) overlay.remove()
-      }
-    })
-    .catch(err => {
-      keyCheckComplete = true
-      keyIsValid = false
-      Logger.error('Key validation error:', err)
-      updateStatus('❌ Key check failed', 'Please try again')
-      showToast('Key validation error', true, ERROR_JPG)
-      cleanupManager.clearAll()
-      if (window.bypassObserver) {
-        window.bypassObserver.disconnect()
-        window.bypassObserver = null
-      }
-      const overlay = document.getElementById('vortixWorldOverlay')
-      if (overlay) overlay.remove()
-    })
+      })
+  }
+
+  if (document.readyState === 'complete') {
+    startKeyCheck()
+  } else {
+    window.addEventListener('load', startKeyCheck, { once: true })
+  }
 
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
 }
