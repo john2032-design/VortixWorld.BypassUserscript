@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      2.7
+// @version      2.8
 // @description  Bypass 💩 Fr
 // @author       afk.l0l
 // @match        *://*/*
@@ -14,6 +14,8 @@
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-api.js
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-tpi.js
 // @require      https://vortixworlduserscript.vercel.app/raw/vw-luarmor.js
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @grant        none
 // @license      MIT
 // @run-at       document-start
@@ -25,14 +27,27 @@
   const state = { processStartTime: Date.now() };
   window.state = state;
 
-  function main() {
+  async function main() {
     if (HOST.includes('luarmor.net')) {
       runAutoLuarmor();
       return;
     }
-    if (isTpiLi()) runLocalTpiLiBypass();
-    else if (isLootHost()) runLocalLootlinkBypass();
-    else if (isAllowedHost()) runApiBypass();
+
+    if (isTpiLi()) {
+      runLocalTpiLiBypass();
+      return;
+    }
+
+    if (isLootHost()) {
+      runLocalLootlinkBypass();
+      return;
+    }
+
+    if (isAllowedHost()) {
+      runApiBypass();
+      return;
+    }
+
     showToast('Userscript Loaded', false, 'https://i.ibb.co/jP7P4Dbw/IMG-0022.gif');
   }
 
