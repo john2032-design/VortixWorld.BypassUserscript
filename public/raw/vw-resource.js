@@ -23,7 +23,8 @@ const ALLOWED_SHORT_HOSTS = [
   'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
   'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net',
-  'fast-links.org', 'rapid-links.com', 'rapid-links.net'
+  'fast-links.org', 'rapid-links.com', 'rapid-links.net', 'hydrogen.lat',
+  'auth.platorelay.com'
 ];
 
 const UA = navigator.userAgent;
