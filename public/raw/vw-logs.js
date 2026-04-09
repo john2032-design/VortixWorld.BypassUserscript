@@ -85,7 +85,13 @@ Logger.websocket = function(msg, data) {
 };
 
 async function validateStoredKey() {
-  const storedKey = localStorage.getItem('vw_user_key') || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '');
+  let storedKey = null;
+  if (typeof GM_getValue === 'function') {
+    storedKey = GM_getValue('vw_user_key', '');
+  }
+  if (!storedKey) {
+    storedKey = localStorage.getItem('vw_user_key');
+  }
   if (!storedKey) {
     window.__vw_key_valid = false;
     return false;
