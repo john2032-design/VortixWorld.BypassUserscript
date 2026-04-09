@@ -22,6 +22,9 @@ const TOAST_CONTAINER_CSS = `
   @media (max-width: 768px) { #vwToastContainer { top: calc(60px + 12px) !important; } }
 `;
 
+let toastQueue = [];
+let isToastShowing = false;
+
 function ensureToastContainer() {
   let container = document.getElementById('vwToastContainer');
   if (!container) {
@@ -39,9 +42,16 @@ function ensureToastContainer() {
   return container;
 }
 
-function showToast(message, isError = false, emojiOrImg = null) {
-  if (window.top !== window.self) return;
-
+function processToastQueue() {
+  if (toastQueue.length === 0) {
+    isToastShowing = false;
+    return;
+  }
+  if (isToastShowing) return;
+  
+  isToastShowing = true;
+  const { message, isError, emojiOrImg, resolve } = toastQueue.shift();
+  
   const container = ensureToastContainer();
   const toast = document.createElement('div');
   toast.className = 'vw-toast';
@@ -63,13 +73,30 @@ function showToast(message, isError = false, emojiOrImg = null) {
     <div class="vw-toast-progress"></div>
   `;
   container.appendChild(toast);
+  
   const progressBar = toast.querySelector('.vw-toast-progress');
   progressBar.style.animation = 'vw-toast-progress 5s linear forwards';
-  const removeToast = () => { if (toast && toast.remove) toast.remove(); };
+  
+  const removeToast = () => {
+    if (toast && toast.remove) toast.remove();
+    isToastShowing = false;
+    if (resolve) resolve();
+    setTimeout(() => processToastQueue(), 50);
+  };
+  
   const timeoutId = setTimeout(removeToast, 5000);
   progressBar.addEventListener('animationend', () => {
     clearTimeout(timeoutId);
     removeToast();
+  });
+}
+
+function showToast(message, isError = false, emojiOrImg = null) {
+  if (window.top !== window.self) return;
+  
+  return new Promise((resolve) => {
+    toastQueue.push({ message, isError, emojiOrImg, resolve });
+    processToastQueue();
   });
 }
 
