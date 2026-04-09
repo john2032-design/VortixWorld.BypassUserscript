@@ -4,6 +4,8 @@ let autoLuaTimers = []
 let clickedButtons = new Set()
 let startDelayTimer = null
 let progressCheckInterval = null
+let nextClickLocked = false
+let keyGenLocked = false
 
 function clearAutoLuaTimeouts() {
   autoLuaTimers.forEach(clearTimeout)
@@ -68,8 +70,13 @@ function findActiveKey() {
 }
 
 async function generateAndCopyKey() {
+  if (keyGenLocked) return
+  keyGenLocked = true
   const btn = document.querySelector('#newkeybtn')
-  if (!btn) return
+  if (!btn) {
+    keyGenLocked = false
+    return
+  }
   await humanClick(btn, { drawTrail: false })
   await new Promise(r => setTimeout(r, 5000))
   const active = findActiveKey()
@@ -78,6 +85,7 @@ async function generateAndCopyKey() {
     if (copyBtn) copyBtn.click()
     else if (typeof GM_setClipboard === 'function') GM_setClipboard(active.keyText)
   }
+  keyGenLocked = false
 }
 
 function checkProgress() {
@@ -90,12 +98,14 @@ function checkProgress() {
     return
   }
   const btn = document.getElementById('nextbtn')
-  if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
+  if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed' && !nextClickLocked) {
     if (!clickedButtons.has('nextbtn')) {
       clickedButtons.add('nextbtn')
+      nextClickLocked = true
       Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
       triggerNativeLuarmor('nextbtn')
       autoLuaNavAttempted = true
+      setTimeout(() => { nextClickLocked = false }, 5000)
     }
   }
 }
@@ -142,6 +152,8 @@ async function startAutoLuarmor() {
   localStorage.setItem('vw_auto_luarmor_active', 'true')
   autoLuaNavAttempted = false
   clickedButtons.clear()
+  nextClickLocked = false
+  keyGenLocked = false
   const ui = document.getElementById('autoLuaUI')
   if (ui) {
     const startStopBtn = ui.querySelector('#startStopBtn')
