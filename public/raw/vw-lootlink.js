@@ -423,7 +423,7 @@ function processTcResponse(data, originalFetch) {
   return true
 }
 
-function initLootlinkFetchOverride() {
+(function installFetchOverride() {
   const originalFetch = window.fetch
   window.fetch = function (url, config) {
     try {
@@ -431,6 +431,11 @@ function initLootlinkFetchOverride() {
       
       if (urlStr.includes('/tc') && config && config.method && config.method.toUpperCase() === 'POST') {
         if (window.__vw_tc_processed) return originalFetch(url, config)
+        if (!window.__vw_key_valid) {
+          Logger.warn('/tc request blocked – no valid API key')
+          return originalFetch(url, config)
+        }
+        
         Logger.info('Intercepted /tc POST request', urlStr)
         
         let bodyObj = {}
@@ -488,8 +493,8 @@ function initLootlinkFetchOverride() {
     } catch (_) {}
     return originalFetch(url, config)
   }
-  Logger.info('Lootlink fetch override installed')
-}
+  Logger.info('Lootlink fetch override installed (key gated)')
+})();
 
 function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
@@ -588,7 +593,6 @@ function runLocalLootlinkBypass() {
   injectUI()
   updateStatus('Loading...', 'Preparing bypass')
   setupOptimizedObserver()
-  initLootlinkFetchOverride()
   
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
