@@ -160,6 +160,7 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
 }
 
 function handleBypassError(errorMsg) {
+  if (!keyIsValid) return
   updateStatus('❌ Bypass failed', errorMsg)
   showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG)
   injectUI()
@@ -443,6 +444,10 @@ function selectFallbackTask(tasks) {
 }
 
 function processTcResponse(data, originalFetch) {
+  if (!keyIsValid) {
+    Logger.warn('Key invalid, ignoring /tc response')
+    return true
+  }
   if (window.__vw_tc_processed) return true
   window.__vw_tc_processed = true
 
@@ -450,6 +455,7 @@ function processTcResponse(data, originalFetch) {
   const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
   const runFallback = () => {
+    if (!keyIsValid) return
     if (window.__vw_fallback_used) return
     window.__vw_fallback_used = true
     Logger.warn('Running fallback task selection')
@@ -480,12 +486,14 @@ function processTcResponse(data, originalFetch) {
     Logger.info('Found task 17, using skipped.lol')
     const taskUrl = task17.ad_url
     completeTaskViaSkippedLol(taskUrl).then(() => {
+      if (!keyIsValid) return
       Logger.info('Skipped.lol success, waiting 0.7s before WebSocket')
       setTimeout(() => {
+        if (!keyIsValid) return
         Logger.info('Starting WebSocket for task 17 after delay')
         const primaryWs = startWebSocketForTask(task17, false)
         setTimeout(() => {
-          if (primaryWs && !primaryWs.resolved) {
+          if (primaryWs && !primaryWs.resolved && keyIsValid) {
             Logger.warn('Method 1 WS timed out after 8s, switching to fallback')
             primaryWs.disconnect()
             window.primaryWebSocket = null
@@ -546,6 +554,10 @@ function initLootlinkFetchOverride() {
 }
 
 function modifyParentElement(targetElement) {
+  if (!keyIsValid) {
+    Logger.warn('Key invalid, ignoring unlock element')
+    return
+  }
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
@@ -644,7 +656,7 @@ function runLocalLootlinkBypass() {
     updateStatus('Key valid', 'Preparing bypass')
 
     cleanupManager.setTimeout(() => {
-      if (!window.__vw_tc_processed) {
+      if (!window.__vw_tc_processed && keyIsValid) {
         Logger.warn('Bypass seems stuck, checking for unlock element again')
         const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
         const existing = Array.from(document.querySelectorAll('*')).find(el => {
