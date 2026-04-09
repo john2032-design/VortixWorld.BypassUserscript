@@ -92,7 +92,17 @@ let cachedKeyState = {
 let pendingValidationPromise = null;
 
 function getStoredKey() {
-  return localStorage.getItem('vw_user_key') || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '');
+  if (typeof GM_getValue === 'function') {
+    try {
+      const key = GM_getValue('vw_user_key', '');
+      if (key) return key;
+    } catch (e) {}
+  }
+  try {
+    return localStorage.getItem('vw_user_key') || '';
+  } catch (e) {
+    return '';
+  }
 }
 
 async function validateKeyWithAPI(key) {
@@ -121,10 +131,9 @@ async function validateStoredKey(forceRefresh = false) {
   }
 
   const now = Date.now();
-  if (!forceRefresh && cachedKeyState.checkedAt > 0) {
-    const cacheAge = (now - cachedKeyState.checkedAt) / 1000;
+  if (!forceRefresh && cachedKeyState.checkedAt > 0 && cachedKeyState.expiresAt > 0) {
     const remainingTTL = Math.max(0, cachedKeyState.expiresAt - Math.floor(now / 1000));
-    if (cacheAge < remainingTTL && cacheAge < 300) {
+    if (remainingTTL > 0) {
       window.__vw_keyValid = cachedKeyState.valid;
       return cachedKeyState.valid;
     }
@@ -169,6 +178,15 @@ window.addEventListener('storage', (e) => {
     validateStoredKey(true);
   }
 });
+
+if (typeof GM_addValueChangeListener === 'function') {
+  try {
+    GM_addValueChangeListener('vw_user_key', () => {
+      clearKeyCache();
+      validateStoredKey(true);
+    });
+  } catch (e) {}
+}
 
 window.Logger = Logger;
 window.sendLogToServer = sendLogToServer;
