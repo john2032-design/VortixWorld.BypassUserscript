@@ -1,11 +1,11 @@
-let autoLuaActive = false;
-let autoLuaNavAttempted = false;
-let autoLuaTimers = [];
-let clickedButtons = new Set();
+let autoLuaActive = false
+let autoLuaNavAttempted = false
+let autoLuaTimers = []
+let clickedButtons = new Set()
 
 function clearAutoLuaTimeouts() {
-  autoLuaTimers.forEach(clearTimeout);
-  autoLuaTimers = [];
+  autoLuaTimers.forEach(clearTimeout)
+  autoLuaTimers = []
 }
 
 function triggerNativeLuarmor(btnId) {
