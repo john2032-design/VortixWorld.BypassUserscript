@@ -6,6 +6,7 @@ let countdownTimerId = null
 let currentRemainingSeconds = 60
 let keyIsValid = false
 let keyCheckComplete = false
+let pendingTcData = null
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   if (uiInjected && document.getElementById('vortixWorldOverlay')) return
@@ -538,6 +539,9 @@ function initLootlinkFetchOverride() {
           return response.clone().json().then(data => {
             if (keyIsValid) {
               processTcResponse(data, originalFetch)
+            } else if (!keyCheckComplete) {
+              pendingTcData = { data, originalFetch }
+              Logger.info('Key check pending, storing /tc response for later')
             } else {
               Logger.warn('Key invalid, bypass aborted – discarding /tc response')
             }
@@ -618,10 +622,16 @@ function runLocalLootlinkBypass() {
 
   validateStoredKey()
     .then(isValid => {
+      keyCheckComplete = true
       if (isValid) {
         keyIsValid = true
-        keyCheckComplete = true
         updateStatus('Key valid', 'Preparing bypass')
+        
+        if (pendingTcData) {
+          Logger.info('Processing stored /tc response')
+          processTcResponse(pendingTcData.data, pendingTcData.originalFetch)
+          pendingTcData = null
+        }
         
         const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
         const existing = Array.from(document.querySelectorAll('*')).find(el => {
@@ -643,7 +653,6 @@ function runLocalLootlinkBypass() {
         }, CONFIG.FALLBACK_CHECK_DELAY)
       } else {
         keyIsValid = false
-        keyCheckComplete = true
         updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
         showToast('API key invalid/expired', true, ERROR_JPG)
         cleanupManager.clearAll()
@@ -656,9 +665,9 @@ function runLocalLootlinkBypass() {
       }
     })
     .catch(err => {
-      Logger.error('Key validation error:', err)
-      keyIsValid = false
       keyCheckComplete = true
+      keyIsValid = false
+      Logger.error('Key validation error:', err)
       updateStatus('❌ Key check failed', 'Please try again')
       showToast('Key validation error', true, ERROR_JPG)
       cleanupManager.clearAll()
