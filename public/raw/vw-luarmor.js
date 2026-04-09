@@ -18,6 +18,11 @@ function clearAutoLuaTimeouts() {
   }
 }
 
+function removeAutoLuaUI() {
+  const ui = document.getElementById('autoLuaUI')
+  if (ui) ui.remove()
+}
+
 function triggerNativeLuarmor(btnId) {
   const scriptContent = `
     try {
@@ -122,6 +127,10 @@ async function humanClick(el, opts = {}) {
 
 async function startAutoLuarmor() {
   if (autoLuaActive) return
+  if (!window.location.hostname.includes('luarmor.net')) {
+    showToast('Auto Luarmor only works on luarmor.net', true)
+    return
+  }
   showToast('Checking API key...', false, '🔑')
   const isValid = await validateStoredKey()
   if (!isValid) {
@@ -179,6 +188,10 @@ function stopAutoLuarmor() {
 }
 
 function initAutoLuarmorUI() {
+  if (!window.location.hostname.includes('luarmor.net')) {
+    removeAutoLuaUI()
+    return
+  }
   if (document.getElementById('autoLuaUI')) return
   const ui = document.createElement('div')
   ui.id = 'autoLuaUI'
@@ -200,8 +213,11 @@ function initAutoLuarmorUI() {
   const appendUiSafely = () => {
     document.body.appendChild(ui)
     const startStopBtn = ui.querySelector('#startStopBtn')
-    if (localStorage.getItem('vw_auto_luarmor_active') === 'true') startAutoLuarmor()
-    else stopAutoLuarmor()
+    if (localStorage.getItem('vw_auto_luarmor_active') === 'true') {
+      startAutoLuarmor()
+    } else {
+      stopAutoLuarmor()
+    }
     startStopBtn.onclick = () => {
       if (autoLuaActive) stopAutoLuarmor()
       else startAutoLuarmor()
@@ -212,9 +228,14 @@ function initAutoLuarmorUI() {
 }
 
 function runAutoLuarmor() {
+  if (!window.location.hostname.includes('luarmor.net')) {
+    removeAutoLuaUI()
+    return
+  }
   localStorage.setItem('ppaccepted', 'true')
   localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25')
   initAutoLuarmorUI()
 }
 
 window.runAutoLuarmor = runAutoLuarmor
+window.removeAutoLuaUI = removeAutoLuaUI
