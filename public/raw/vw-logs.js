@@ -119,49 +119,55 @@ async function validateKeyWithAPI(key) {
 }
 
 async function validateStoredKey(forceRefresh = false) {
-  const storedKey = getStoredKey();
-  if (!storedKey) {
-    cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
+  try {
+    const storedKey = getStoredKey();
+    if (!storedKey) {
+      cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
+      window.__vw_keyValid = false;
+      return false;
+    }
+
+    const now = Date.now();
+    if (!forceRefresh && cachedKeyState.checkedAt > 0) {
+      const cacheAge = (now - cachedKeyState.checkedAt) / 1000;
+      const remainingTTL = Math.max(0, cachedKeyState.expiresAt - Math.floor(now / 1000));
+      if (cacheAge < remainingTTL && cacheAge < 300) {
+        window.__vw_keyValid = cachedKeyState.valid;
+        return cachedKeyState.valid;
+      }
+    }
+
+    if (pendingValidationPromise) {
+      const result = await pendingValidationPromise;
+      window.__vw_keyValid = result;
+      return result;
+    }
+
+    pendingValidationPromise = (async () => {
+      try {
+        const result = await validateKeyWithAPI(storedKey);
+        cachedKeyState = {
+          valid: result.valid,
+          expiresAt: result.expiresAt,
+          checkedAt: Date.now()
+        };
+        return result.valid;
+      } catch (e) {
+        cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
+        return false;
+      } finally {
+        pendingValidationPromise = null;
+      }
+    })();
+
+    const valid = await pendingValidationPromise;
+    window.__vw_keyValid = valid;
+    return valid;
+  } catch (error) {
+    console.error('[VW] Key validation crashed:', error);
     window.__vw_keyValid = false;
     return false;
   }
-
-  const now = Date.now();
-  if (!forceRefresh && cachedKeyState.checkedAt > 0) {
-    const cacheAge = (now - cachedKeyState.checkedAt) / 1000;
-    const remainingTTL = Math.max(0, cachedKeyState.expiresAt - Math.floor(now / 1000));
-    if (cacheAge < remainingTTL && cacheAge < 300) {
-      window.__vw_keyValid = cachedKeyState.valid;
-      return cachedKeyState.valid;
-    }
-  }
-
-  if (pendingValidationPromise) {
-    const result = await pendingValidationPromise;
-    window.__vw_keyValid = result;
-    return result;
-  }
-
-  pendingValidationPromise = (async () => {
-    try {
-      const result = await validateKeyWithAPI(storedKey);
-      cachedKeyState = {
-        valid: result.valid,
-        expiresAt: result.expiresAt,
-        checkedAt: Date.now()
-      };
-      return result.valid;
-    } catch (e) {
-      cachedKeyState = { valid: false, expiresAt: 0, checkedAt: Date.now() };
-      return false;
-    } finally {
-      pendingValidationPromise = null;
-    }
-  })();
-
-  const valid = await pendingValidationPromise;
-  window.__vw_keyValid = valid;
-  return valid;
 }
 
 function clearKeyCache() {
