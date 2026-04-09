@@ -522,18 +522,12 @@
   }
 
   function getStoredValue(key, defaultValue) {
-    if (key === keys.userKey && hasGM()) {
+    if (hasGM()) {
       try {
         return GM_getValue(key, defaultValue)
       } catch (_) {}
     }
-    if (key !== keys.userKey) {
-      if (hasGM()) {
-        try {
-          return GM_getValue(key, defaultValue)
-        } catch (_) {}
-      }
-    }
+
     try {
       const lsValue = localStorage.getItem(key)
       if (lsValue === null) return defaultValue
@@ -549,17 +543,12 @@
   }
 
   function setStoredValue(key, value) {
-    if (key === keys.userKey && hasGM()) {
-      try {
-        GM_setValue(key, value)
-        return
-      } catch (_) {}
-    }
-    if (key !== keys.userKey && hasGM()) {
+    if (hasGM()) {
       try {
         GM_setValue(key, value)
       } catch (_) {}
     }
+
     try {
       localStorage.setItem(key, String(value))
     } catch (_) {}
@@ -1020,7 +1009,7 @@
         updateKeyUI(result)
         window.__vw_keyValid = true
         showToast('Key saved successfully!')
-        if (typeof clearKeyCache === 'function') clearKeyCache()
+        clearKeyCache()
       } else {
         updateKeyUI(result)
         showToast('Cannot save invalid key', true)
