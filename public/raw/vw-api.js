@@ -4,11 +4,7 @@ function appendToBestContainer(node) {
 }
 
 function createApiTopBar(text = 'Bypassing...') {
-  if (document.getElementById('vwApiTopBar')) {
-    const bar = document.getElementById('vwApiTopBar');
-    bar.querySelector('.vw-api-loading-text').textContent = text;
-    return bar;
-  }
+  if (document.getElementById('vwApiTopBar')) return;
   const styleId = 'vwApiStyles';
   if (!document.getElementById(styleId)) {
     const styleSheet = document.createElement('style');
@@ -44,7 +40,8 @@ function createApiTopBar(text = 'Bypassing...') {
 function updateApiTopBarText(text) {
   const bar = document.getElementById('vwApiTopBar');
   if (bar) {
-    bar.querySelector('.vw-api-loading-text').textContent = text;
+    const textEl = bar.querySelector('.vw-api-loading-text');
+    if (textEl) textEl.textContent = text;
   }
 }
 
@@ -139,8 +136,8 @@ async function runApiBypass() {
   const isValid = await validateStoredKey();
   if (!isValid) {
     updateApiTopBarText('❌ Key invalid/expired');
-    showToast('API key invalid/expired. Update in settings.', true);
-    setTimeout(removeApiTopBar, 3000);
+    showToast('API key invalid/expired', true, ERROR_JPG);
+    setTimeout(() => removeApiTopBar(), 3000);
     return;
   }
   updateApiTopBarText('Key valid. Bypassing...');
