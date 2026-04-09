@@ -428,9 +428,8 @@ function initLootlinkFetchOverride() {
   window.fetch = function (url, config) {
     try {
       const urlStr = typeof url === 'string' ? url : url && url.url ? url.url : ''
-      const isTcRequest = urlStr.includes('/tc') && (urlStr.includes('nerventualken.com') || urlStr.includes(typeof INCENTIVE_SYNCER_DOMAIN !== 'undefined' ? INCENTIVE_SYNCER_DOMAIN : ''))
       
-      if (isTcRequest && config && config.method && config.method.toUpperCase() === 'POST') {
+      if (urlStr.includes('/tc') && config && config.method && config.method.toUpperCase() === 'POST') {
         if (window.__vw_tc_processed) return originalFetch(url, config)
         Logger.info('Intercepted /tc POST request', urlStr)
         
@@ -447,13 +446,15 @@ function initLootlinkFetchOverride() {
           }
         }
         
-        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined' && urlStr.includes('nerventualken.com')) {
-          const domain = 'nerventualken.com'
-          window.INCENTIVE_SYNCER_DOMAIN = domain
-          Logger.warn('Set INCENTIVE_SYNCER_DOMAIN to', domain)
+        if (typeof INCENTIVE_SYNCER_DOMAIN === 'undefined') {
+          const match = urlStr.match(/https?:\/\/([^\/]+)\/tc/)
+          if (match) {
+            window.INCENTIVE_SYNCER_DOMAIN = match[1]
+            Logger.warn('Set INCENTIVE_SYNCER_DOMAIN to', match[1])
+          }
         }
         
-        if (typeof INCENTIVE_SERVER_DOMAIN === 'undefined' && bodyObj.rkey) {
+        if (typeof INCENTIVE_SERVER_DOMAIN === 'undefined') {
           window.INCENTIVE_SERVER_DOMAIN = 'onsultingco.com'
           Logger.warn('Set INCENTIVE_SERVER_DOMAIN to onsultingco.com')
         }
@@ -591,7 +592,7 @@ function runLocalLootlinkBypass() {
   
   cleanupManager.setTimeout(() => {
     if (!window.__vw_tc_processed) {
-      Logger.warn('No /tc processed after 10 seconds, attempting manual trigger')
+      Logger.warn('No /tc processed after 15 seconds, attempting manual trigger')
       const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
       const existing = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent
@@ -605,7 +606,7 @@ function runLocalLootlinkBypass() {
         updateStatus('Bypass stalled', 'Could not find unlock button')
       }
     }
-  }, 10000)
+  }, 15000)
   
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
 }
