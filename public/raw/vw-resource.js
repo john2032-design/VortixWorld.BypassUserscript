@@ -24,7 +24,7 @@ const ALLOWED_SHORT_HOSTS = [
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
   'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net',
   'fast-links.org', 'rapid-links.com', 'rapid-links.net', 'hydrogen.lat',
-  'auth.platorelay.com'
+  'auth.platorelay.com', 'pandadevelopment.net', 'new.pandadevelopment.net'
 ];
 
 const UA = navigator.userAgent;
