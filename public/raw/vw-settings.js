@@ -6,6 +6,7 @@
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
   const GEAR_ICON_URL = 'https://iili.io/Blqo4Cg.webp'
+  const API_INFO_URL = 'https://apikey-nine.vercel.app/api/key/info/'
 
   const keys = {
     autoRedirect: 'vw_auto_redirect'
@@ -224,6 +225,10 @@
       grid-template-columns: minmax(0, 1fr) auto !important;
     }
 
+    .vw-row-keyinfo {
+      grid-template-columns: minmax(0, 1fr) auto !important;
+    }
+
     .vw-label {
       display: flex !important;
       flex-direction: column !important;
@@ -245,6 +250,25 @@
       font-weight: 500 !important;
       line-height: 1.35 !important;
       word-break: break-word !important;
+    }
+
+    .vw-key-value {
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      padding: 4px 12px !important;
+      background: #2a2a2a !important;
+      border-radius: 40px !important;
+      box-shadow: inset 2px 2px 4px #141414, inset -2px -2px 4px #282828 !important;
+      text-align: center !important;
+      min-width: 70px !important;
+    }
+
+    .vw-key-value.active {
+      color: #4ade80 !important;
+    }
+
+    .vw-key-value.inactive {
+      color: #ef4444 !important;
     }
 
     .vw-toggle {
@@ -532,6 +556,20 @@
     })
   }
 
+  function formatExpiration(expiresAt) {
+    if (!expiresAt) return 'Unknown'
+    if (expiresAt === 2147483647) return 'Never'
+    const now = Math.floor(Date.now() / 1000)
+    if (expiresAt <= now) return 'Expired'
+    const diff = expiresAt - now
+    const days = Math.floor(diff / 86400)
+    const hours = Math.floor((diff % 86400) / 3600)
+    const minutes = Math.floor((diff % 3600) / 60)
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
+
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID)
     if (existing) existing.remove()
@@ -568,6 +606,14 @@
           <button class="vw-close-btn" type="button" aria-label="Close settings">✕</button>
         </div>
         <div class="vw-body">
+          <div class="vw-row vw-row-keyinfo">
+            <div class="vw-label">
+              <div class="vw-label-title">API Key Status</div>
+              <div class="vw-label-desc" id="vwKeyStatusDesc">Loading...</div>
+            </div>
+            <span class="vw-key-value" id="vwKeyStatusValue">—</span>
+          </div>
+
           <div class="vw-row vw-row-toggle">
             <div class="vw-label">
               <div class="vw-label-title">Auto Redirect</div>
@@ -628,6 +674,8 @@
     const backToSettingsBtn = shadow.querySelector('#vwBackToSettingsBtn')
     const tabs = shadow.querySelectorAll('.vw-tab')
     const consoleContainer = shadow.querySelector('#vwConsoleLogs')
+    const keyStatusDesc = shadow.querySelector('#vwKeyStatusDesc')
+    const keyStatusValue = shadow.querySelector('#vwKeyStatusValue')
 
     let previousBodyOverflow = ''
     let previousHtmlOverflow = ''
@@ -734,11 +782,53 @@
       }, 2500)
     }
 
+    async function fetchKeyStatus() {
+      const apiKey = window.VW_API_KEY
+      if (!apiKey) {
+        keyStatusDesc.textContent = 'No API key found'
+        keyStatusValue.textContent = '—'
+        keyStatusValue.className = 'vw-key-value inactive'
+        return
+      }
+
+      try {
+        const response = await fetch(API_INFO_URL + apiKey)
+        if (!response.ok) throw new Error('API error')
+        const data = await response.json()
+        
+        const typeMap = { '24h': '24 Hours', '78h': '78 Hours', '1month': '1 Month', 'infinite': 'Infinite' }
+        const typeDisplay = typeMap[data.key_type] || data.key_type || 'Unknown'
+        
+        if (data.valid) {
+          const expiresDisplay = data.expires_at === 2147483647 ? 'Never' : formatExpiration(data.expires_at)
+          keyStatusDesc.textContent = `Type: ${typeDisplay} • Expires: ${expiresDisplay}`
+          keyStatusValue.textContent = 'Active'
+          keyStatusValue.className = 'vw-key-value active'
+        } else {
+          let reason = 'Inactive'
+          if (data.active === 0) reason = 'Deactivated'
+          else if (data.expires_at && data.expires_at < Math.floor(Date.now() / 1000)) reason = 'Expired'
+          keyStatusDesc.textContent = `Type: ${typeDisplay}`
+          keyStatusValue.textContent = reason
+          keyStatusValue.className = 'vw-key-value inactive'
+        }
+      } catch (error) {
+        console.error('[VW] Failed to fetch key status:', error)
+        keyStatusDesc.textContent = 'Failed to fetch status'
+        keyStatusValue.textContent = 'Error'
+        keyStatusValue.className = 'vw-key-value inactive'
+      }
+    }
+
     function openPanel(panel) {
       setVisible(settingsPanel, panel === 'settings')
       setVisible(consolePanel, panel === 'console')
       backdropDiv.classList.add('open')
       setScrollLock(true)
+
+      if (panel === 'settings') {
+        fetchKeyStatus()
+      }
 
       if (panel === 'console') {
         userHasScrolled = false
