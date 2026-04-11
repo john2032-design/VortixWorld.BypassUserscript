@@ -1,7 +1,7 @@
 let autoLuaActive = false;
-let autoLuaNavAttempted = false;
 let autoLuaTimers = [];
 let clickedButtons = new Set();
+let btnClicked = false;
 
 function clearAutoLuaTimeouts() {
   autoLuaTimers.forEach(clearTimeout);
@@ -33,8 +33,22 @@ function triggerNativeLuarmor(btnId) {
   script.remove();
 }
 
+function isBlocked() {
+  const blacklist = document.querySelector('.swal2-x-mark');
+  const loader = document.querySelector('.loader');
+  const captcha = document.getElementById('captchafield');
+  if (blacklist && blacklist.offsetParent !== null) return { type: "blacklist", blocked: true };
+  if (loader && loader.offsetParent !== null) return { type: "loader", blocked: true };
+  if (captcha && captcha.offsetParent !== null) return { type: "captcha", blocked: true };
+  return { type: null, blocked: false };
+}
+
 function checkProgress() {
   if (!autoLuaActive) return;
+  if (isBlocked().blocked) {
+    autoLuaTimers.push(setTimeout(checkProgress, 500));
+    return;
+  }
   const prog = document.getElementById('adprogressp');
   if (prog) {
     const match = prog.textContent.match(/(\d+)\/(\d+)/);
@@ -53,43 +67,44 @@ function checkProgress() {
       }
     }
   }
-  autoLuaTimers.push(setTimeout(checkProgress, 1000));
+  autoLuaTimers.push(setTimeout(checkProgress, 500));
 }
 
-function attemptNext() {
-  if (!autoLuaActive || autoLuaNavAttempted) return;
+function waitForButtonToBeClickable() {
+  if (!autoLuaActive || btnClicked) return;
+  if (isBlocked().blocked) {
+    autoLuaTimers.push(setTimeout(waitForButtonToBeClickable, 500));
+    return;
+  }
   const btn = document.getElementById('nextbtn');
-  if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
+  if (btn && btn.offsetParent !== null && !(btn.style.cursor === 'not-allowed' || btn.disabled)) {
     if (!clickedButtons.has('nextbtn')) {
       clickedButtons.add('nextbtn');
-      Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn');
       triggerNativeLuarmor('nextbtn');
-      autoLuaNavAttempted = true;
-      return;
+      btnClicked = true;
     }
   }
-  autoLuaTimers.push(setTimeout(attemptNext, 600));
+  autoLuaTimers.push(setTimeout(waitForButtonToBeClickable, 500));
 }
 
 async function startAutoLuarmor() {
   if (autoLuaActive) return;
   if (!window.location.hostname.includes('luarmor.net')) {
-    showToast('Auto Luarmor only works on luarmor.net', true);
+    if (typeof showToast === 'function') showToast('Auto Luarmor only works on luarmor.net', true);
     return;
   }
-  showToast('Checking API key...', false, '🔑');
-  const isValid = await validateStoredKey();
+  if (typeof showToast === 'function') showToast('Checking API key...', false, '🔑');
+  const isValid = typeof validateStoredKey === 'function' ? await validateStoredKey() : true;
   if (!isValid) {
-    showToast('API key invalid/expired. Auto Luarmor disabled.', true, ERROR_JPG);
+    if (typeof showToast === 'function') showToast('API key invalid/expired. Auto Luarmor disabled.', true, typeof ERROR_JPG !== 'undefined' ? ERROR_JPG : null);
     return;
   }
-  showToast('Key valid. Auto Luarmor starting...', false, SUCCESS_GIF);
-  
+  if (typeof showToast === 'function') showToast('Key valid. Auto Luarmor starting...', false, typeof SUCCESS_GIF !== 'undefined' ? SUCCESS_GIF : null);
+
   autoLuaActive = true;
   localStorage.setItem('vw_auto_luarmor_active', 'true');
-  autoLuaNavAttempted = false;
   clickedButtons.clear();
-  
+  btnClicked = false;
   const ui = document.getElementById('autoLuaUI');
   if (ui) {
     const startStopBtn = ui.querySelector("#startStopBtn");
@@ -103,9 +118,9 @@ async function startAutoLuarmor() {
       statusSpan.textContent = "● Running";
     }
   }
-  
+  clearAutoLuaTimeouts();
   checkProgress();
-  attemptNext();
+  waitForButtonToBeClickable();
 }
 
 function stopAutoLuarmor() {
@@ -151,7 +166,7 @@ function initAutoLuarmorUI() {
         <button id="startStopBtn" class="control-btn">Start</button>
       </div>
     </div>`;
-  
+
   const appendUiSafely = () => {
     document.body.appendChild(ui);
     const startStopBtn = ui.querySelector("#startStopBtn");
