@@ -611,10 +611,7 @@
               <div class="vw-label-title">API Key Status</div>
               <div class="vw-label-desc" id="vwKeyStatusDesc">Loading...</div>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <span class="vw-key-value" id="vwKeyStatusValue">—</span>
-              <button class="vw-btn" id="vwRefreshKeyBtn" type="button" style="padding: 6px 12px;">↻</button>
-            </div>
+            <span class="vw-key-value" id="vwKeyStatusValue">—</span>
           </div>
 
           <div class="vw-row vw-row-toggle">
@@ -679,7 +676,6 @@
     const consoleContainer = shadow.querySelector('#vwConsoleLogs')
     const keyStatusDesc = shadow.querySelector('#vwKeyStatusDesc')
     const keyStatusValue = shadow.querySelector('#vwKeyStatusValue')
-    const refreshKeyBtn = shadow.querySelector('#vwRefreshKeyBtn')
 
     let previousBodyOverflow = ''
     let previousHtmlOverflow = ''
@@ -937,16 +933,6 @@
       e.preventDefault()
       e.stopPropagation()
       openPanel('settings')
-    })
-
-    refreshKeyBtn.addEventListener('click', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      keyStatusDesc.textContent = 'Refreshing...'
-      keyStatusValue.textContent = '—'
-      fetchKeyStatus().then(() => {
-        showToast('Key status updated')
-      })
     })
 
     tabs.forEach(tab => {
