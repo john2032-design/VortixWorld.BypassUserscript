@@ -2,6 +2,7 @@ let autoLuaActive = false;
 let autoLuaTimers = [];
 let clickedButtons = new Set();
 let btnClicked = false;
+let apiKeyValid = false;
 
 function clearAutoLuaTimeouts() {
   autoLuaTimers.forEach(clearTimeout);
@@ -93,13 +94,10 @@ async function startAutoLuarmor() {
     if (typeof showToast === 'function') showToast('Auto Luarmor only works on luarmor.net', true);
     return;
   }
-  if (typeof showToast === 'function') showToast('Checking API key...', false, '🔑');
-  const isValid = typeof validateStoredKey === 'function' ? await validateStoredKey() : true;
-  if (!isValid) {
-    if (typeof showToast === 'function') showToast('API key invalid/expired. Auto Luarmor disabled.', true, typeof ERROR_JPG !== 'undefined' ? ERROR_JPG : null);
+  if (!apiKeyValid) {
+    if (typeof showToast === 'function') showToast('API key invalid. Cannot start.', true, typeof ERROR_JPG !== 'undefined' ? ERROR_JPG : null);
     return;
   }
-  if (typeof showToast === 'function') showToast('Key valid. Auto Luarmor starting...', false, typeof SUCCESS_GIF !== 'undefined' ? SUCCESS_GIF : null);
 
   autoLuaActive = true;
   localStorage.setItem('vw_auto_luarmor_active', 'true');
@@ -158,6 +156,7 @@ function initAutoLuarmorUI() {
       #autoLuaUI .title { font-size:15px; font-weight:700; color:#e0e0e0; margin-right:15px; text-shadow: 1px 1px 2px #141414; }
       #autoLuaUI .control-btn { background:#1e1e1e; box-shadow:3px 3px 6px #141414, -3px -3px 6px #282828; color:#e0e0e0; border:none; padding:8px 20px; border-radius:40px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
       #autoLuaUI .control-btn:active { box-shadow:inset 3px 3px 6px #141414, inset -3px -3px 6px #282828; }
+      #autoLuaUI .control-btn:disabled { opacity:0.5; cursor:not-allowed; box-shadow:none; }
     </style>
     <div class="top-bar">
       <div class="title">⚡ Auto Lua</div>
@@ -170,12 +169,22 @@ function initAutoLuarmorUI() {
   const appendUiSafely = () => {
     document.body.appendChild(ui);
     const startStopBtn = ui.querySelector("#startStopBtn");
-    if (localStorage.getItem('vw_auto_luarmor_active') === 'true') {
-      startAutoLuarmor();
+    const statusSpan = ui.querySelector("#autoStatus");
+
+    if (!apiKeyValid) {
+      statusSpan.textContent = '✖ Invalid Key';
+      statusSpan.style.color = '#ef4444';
+      startStopBtn.disabled = true;
     } else {
-      stopAutoLuarmor();
+      if (localStorage.getItem('vw_auto_luarmor_active') === 'true') {
+        startAutoLuarmor();
+      } else {
+        stopAutoLuarmor();
+      }
     }
+
     startStopBtn.onclick = () => {
+      if (!apiKeyValid) return;
       if (autoLuaActive) stopAutoLuarmor();
       else startAutoLuarmor();
     };
@@ -188,11 +197,21 @@ function initAutoLuarmorUI() {
   }
 }
 
-function runAutoLuarmor() {
+async function runAutoLuarmor() {
   if (!window.location.hostname.includes('luarmor.net')) {
     removeAutoLuaUI();
     return;
   }
+  if (typeof showToast === 'function') showToast('Checking API key...', false, '🔑');
+  const isValid = typeof validateStoredKey === 'function' ? await validateStoredKey() : true;
+  apiKeyValid = isValid;
+
+  if (!apiKeyValid) {
+    if (typeof showToast === 'function') showToast('API key invalid/expired. Auto Luarmor disabled.', true, typeof ERROR_JPG !== 'undefined' ? ERROR_JPG : null);
+  } else {
+    if (typeof showToast === 'function') showToast('Key valid. Ready.', false, typeof SUCCESS_GIF !== 'undefined' ? SUCCESS_GIF : null);
+  }
+
   localStorage.setItem('ppaccepted', 'true');
   localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25');
   initAutoLuarmorUI();
