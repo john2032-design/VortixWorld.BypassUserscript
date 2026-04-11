@@ -1,28 +1,16 @@
-let autoLuaActive = false
-let autoLuaNavAttempted = false
-let autoLuaTimers = []
-let clickedButtons = new Set()
-let startDelayTimer = null
-let progressCheckInterval = null
-let nextClickLocked = false
-let keyGenLocked = false
+let autoLuaActive = false;
+let autoLuaNavAttempted = false;
+let autoLuaTimers = [];
+let clickedButtons = new Set();
 
 function clearAutoLuaTimeouts() {
-  autoLuaTimers.forEach(clearTimeout)
-  autoLuaTimers = []
-  if (startDelayTimer) {
-    clearTimeout(startDelayTimer)
-    startDelayTimer = null
-  }
-  if (progressCheckInterval) {
-    clearInterval(progressCheckInterval)
-    progressCheckInterval = null
-  }
+  autoLuaTimers.forEach(clearTimeout);
+  autoLuaTimers = [];
 }
 
 function removeAutoLuaUI() {
-  const ui = document.getElementById('autoLuaUI')
-  if (ui) ui.remove()
+  const ui = document.getElementById('autoLuaUI');
+  if (ui) ui.remove();
 }
 
 function triggerNativeLuarmor(btnId) {
@@ -38,157 +26,117 @@ function triggerNativeLuarmor(btnId) {
         }
       }
     } catch (e) { }
-  `
-  const script = document.createElement('script')
-  script.textContent = scriptContent
-  ;(document.head || document.documentElement).appendChild(script)
-  script.remove()
-}
-
-function getProgressText() {
-  const el = document.querySelector('#adprogressp')
-  return el ? el.textContent.replace('Progress:', '').trim() : ''
-}
-
-function parseProgress(progressText) {
-  const match = /(\d+)\s*\/\s*(\d+)/.exec(progressText)
-  if (!match) return null
-  return { current: parseInt(match[1], 10), total: parseInt(match[2], 10) }
-}
-
-async function generateAndCopyKey() {
-  if (keyGenLocked) return
-  keyGenLocked = true
-  await new Promise(r => setTimeout(r, 5000))
-  const btn = document.querySelector('#newkeybtn')
-  if (btn) {
-    await humanClick(btn, { drawTrail: false })
-  } else {
-    Logger.warn('AutoLuarmor', 'Get new key button not found')
-  }
-  keyGenLocked = false
+  `;
+  const script = document.createElement('script');
+  script.textContent = scriptContent;
+  (document.head || document.documentElement).appendChild(script);
+  script.remove();
 }
 
 function checkProgress() {
-  if (!autoLuaActive) return
-  const progressText = getProgressText()
-  if (!progressText) return
-  const parsed = parseProgress(progressText)
-  if (parsed && parsed.current >= parsed.total && parsed.total > 0) {
-    generateAndCopyKey()
-    return
-  }
-  const btn = document.getElementById('nextbtn')
-  if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed' && !nextClickLocked) {
-    if (!clickedButtons.has('nextbtn')) {
-      clickedButtons.add('nextbtn')
-      nextClickLocked = true
-      Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn')
-      triggerNativeLuarmor('nextbtn')
-      autoLuaNavAttempted = true
-      setTimeout(() => { nextClickLocked = false }, 5000)
+  if (!autoLuaActive) return;
+  const prog = document.getElementById('adprogressp');
+  if (prog) {
+    const match = prog.textContent.match(/(\d+)\/(\d+)/);
+    if (match && match[1] === match[2]) {
+      const key = document.querySelector('h6.mb-0.text-sm')?.textContent.trim();
+      const btn = document.getElementById(`addtimebtn_${key}`) || document.getElementById('newkeybtn');
+      if (btn && !btn.disabled) {
+        if (!clickedButtons.has(btn.id)) {
+          clickedButtons.add(btn.id);
+          triggerNativeLuarmor(btn.id);
+          if (btn.id === 'newkeybtn') {
+            stopAutoLuarmor();
+            return;
+          }
+        }
+      }
     }
   }
+  autoLuaTimers.push(setTimeout(checkProgress, 1000));
 }
 
-async function humanClick(el, opts = {}) {
-  if (!el) return false
-  try {
-    const rect = el.getBoundingClientRect()
-    if (!rect || rect.width === 0 || rect.height === 0) {
-      if (typeof el.click === 'function') el.click()
-      return true
+function attemptNext() {
+  if (!autoLuaActive || autoLuaNavAttempted) return;
+  const btn = document.getElementById('nextbtn');
+  if (btn && btn.offsetParent !== null && !btn.disabled && btn.style.cursor !== 'not-allowed') {
+    if (!clickedButtons.has('nextbtn')) {
+      clickedButtons.add('nextbtn');
+      Logger.info('AutoLuarmor', 'Triggering native dispatch for nextbtn');
+      triggerNativeLuarmor('nextbtn');
+      autoLuaNavAttempted = true;
+      return;
     }
-    const target = {
-      x: rect.left + rect.width * (0.4 + Math.random() * 0.2),
-      y: rect.top + rect.height * (0.4 + Math.random() * 0.2)
-    }
-    const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']
-    for (const type of events) {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: target.x, clientY: target.y }))
-      await new Promise(r => setTimeout(r, 10 + Math.random() * 25))
-    }
-    if (typeof el.click === 'function') el.click()
-    return true
-  } catch (e) {
-    try { if (typeof el.click === 'function') el.click() } catch (_) {}
-    return false
   }
+  autoLuaTimers.push(setTimeout(attemptNext, 600));
 }
 
 async function startAutoLuarmor() {
-  if (autoLuaActive) return
+  if (autoLuaActive) return;
   if (!window.location.hostname.includes('luarmor.net')) {
-    showToast('Auto Luarmor only works on luarmor.net', true)
-    return
+    showToast('Auto Luarmor only works on luarmor.net', true);
+    return;
   }
-  showToast('Checking API key...', false, '🔑')
-  const isValid = await validateStoredKey()
+  showToast('Checking API key...', false, '🔑');
+  const isValid = await validateStoredKey();
   if (!isValid) {
-    showToast('API key invalid/expired. Auto Luarmor disabled.', true, ERROR_JPG)
-    return
+    showToast('API key invalid/expired. Auto Luarmor disabled.', true, ERROR_JPG);
+    return;
   }
-  showToast('Key valid. Auto Luarmor starting in 5s...', false, SUCCESS_GIF)
-  autoLuaActive = true
-  localStorage.setItem('vw_auto_luarmor_active', 'true')
-  autoLuaNavAttempted = false
-  clickedButtons.clear()
-  nextClickLocked = false
-  keyGenLocked = false
-  const ui = document.getElementById('autoLuaUI')
+  showToast('Key valid. Auto Luarmor starting...', false, SUCCESS_GIF);
+  
+  autoLuaActive = true;
+  localStorage.setItem('vw_auto_luarmor_active', 'true');
+  autoLuaNavAttempted = false;
+  clickedButtons.clear();
+  
+  const ui = document.getElementById('autoLuaUI');
   if (ui) {
-    const startStopBtn = ui.querySelector('#startStopBtn')
-    const statusSpan = ui.querySelector('#autoStatus')
+    const startStopBtn = ui.querySelector("#startStopBtn");
+    const statusSpan = ui.querySelector("#autoStatus");
     if (startStopBtn) {
-      startStopBtn.textContent = 'Stop'
-      startStopBtn.style.color = '#ef4444'
+      startStopBtn.textContent = "Stop";
+      startStopBtn.style.color = "#ef4444";
     }
     if (statusSpan) {
-      statusSpan.style.color = '#4ade80'
-      statusSpan.textContent = '● Starting in 5s...'
+      statusSpan.style.color = "#4ade80";
+      statusSpan.textContent = "● Running";
     }
   }
-  clearAutoLuaTimeouts()
-  startDelayTimer = setTimeout(() => {
-    const ui = document.getElementById('autoLuaUI')
-    if (ui) {
-      const statusSpan = ui.querySelector('#autoStatus')
-      if (statusSpan) statusSpan.textContent = '● Running'
-    }
-    progressCheckInterval = setInterval(checkProgress, 2000)
-    startDelayTimer = null
-  }, 5000)
+  
+  checkProgress();
+  attemptNext();
 }
 
 function stopAutoLuarmor() {
-  if (!autoLuaActive) return
-  autoLuaActive = false
-  localStorage.setItem('vw_auto_luarmor_active', 'false')
-  clearAutoLuaTimeouts()
-  const ui = document.getElementById('autoLuaUI')
+  if (!autoLuaActive) return;
+  autoLuaActive = false;
+  localStorage.setItem('vw_auto_luarmor_active', 'false');
+  clearAutoLuaTimeouts();
+  const ui = document.getElementById('autoLuaUI');
   if (ui) {
-    const startStopBtn = ui.querySelector('#startStopBtn')
-    const statusSpan = ui.querySelector('#autoStatus')
+    const startStopBtn = ui.querySelector("#startStopBtn");
+    const statusSpan = ui.querySelector("#autoStatus");
     if (startStopBtn) {
-      startStopBtn.textContent = 'Start'
-      startStopBtn.style.color = '#e0e0e0'
+      startStopBtn.textContent = "Start";
+      startStopBtn.style.color = "#e0e0e0";
     }
     if (statusSpan) {
-      statusSpan.style.color = '#a0a0a0'
-      statusSpan.textContent = '● Idle'
+      statusSpan.style.color = "#a0a0a0";
+      statusSpan.textContent = "● Idle";
     }
   }
 }
 
 function initAutoLuarmorUI() {
   if (!window.location.hostname.includes('luarmor.net')) {
-    removeAutoLuaUI()
-    return
+    removeAutoLuaUI();
+    return;
   }
-  if (document.getElementById('autoLuaUI')) return
-  const ui = document.createElement('div')
-  ui.id = 'autoLuaUI'
-  ui.style.cssText = `position:fixed;top:15px;left:50%;transform:translateX(-50%);width:max-content;min-width:280px;background:#1e1e1e;color:#e0e0e0;font-family:Poppins,Arial,sans-serif;z-index:2147483647;font-size:14px;box-shadow:6px 6px 12px #141414, -6px -6px 12px #282828;border-radius:50px;`
+  if (document.getElementById('autoLuaUI')) return;
+  const ui = document.createElement("div");
+  ui.id = "autoLuaUI";
+  ui.style.cssText = `position:fixed;top:15px;left:50%;transform:translateX(-50%);width:max-content;min-width:280px;background:#1e1e1e;color:#e0e0e0;font-family:Poppins,Arial,sans-serif;z-index:2147483647;font-size:14px;box-shadow:6px 6px 12px #141414, -6px -6px 12px #282828;border-radius:50px;`;
   ui.innerHTML = `
     <style>
       #autoLuaUI .top-bar { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; width:100%; }
@@ -202,33 +150,38 @@ function initAutoLuarmorUI() {
         <span id="autoStatus" style="font-size:12px; margin-right:12px; color:#a0a0a0; font-weight:600;">● Idle</span>
         <button id="startStopBtn" class="control-btn">Start</button>
       </div>
-    </div>`
+    </div>`;
+  
   const appendUiSafely = () => {
-    document.body.appendChild(ui)
-    const startStopBtn = ui.querySelector('#startStopBtn')
+    document.body.appendChild(ui);
+    const startStopBtn = ui.querySelector("#startStopBtn");
     if (localStorage.getItem('vw_auto_luarmor_active') === 'true') {
-      startAutoLuarmor()
+      startAutoLuarmor();
     } else {
-      stopAutoLuarmor()
+      stopAutoLuarmor();
     }
     startStopBtn.onclick = () => {
-      if (autoLuaActive) stopAutoLuarmor()
-      else startAutoLuarmor()
-    }
+      if (autoLuaActive) stopAutoLuarmor();
+      else startAutoLuarmor();
+    };
+  };
+
+  if (document.body) {
+    appendUiSafely();
+  } else {
+    document.addEventListener('DOMContentLoaded', appendUiSafely);
   }
-  if (document.body) appendUiSafely()
-  else document.addEventListener('DOMContentLoaded', appendUiSafely)
 }
 
 function runAutoLuarmor() {
   if (!window.location.hostname.includes('luarmor.net')) {
-    removeAutoLuaUI()
-    return
+    removeAutoLuaUI();
+    return;
   }
-  localStorage.setItem('ppaccepted', 'true')
-  localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25')
-  initAutoLuarmorUI()
+  localStorage.setItem('ppaccepted', 'true');
+  localStorage.setItem('trufflemayo', '1455660788512591984;87f07b547f1faf3d115b1592ddf41b25');
+  initAutoLuarmorUI();
 }
 
-window.runAutoLuarmor = runAutoLuarmor
-window.removeAutoLuaUI = removeAutoLuaUI
+window.runAutoLuarmor = runAutoLuarmor;
+window.removeAutoLuaUI = removeAutoLuaUI;
