@@ -5,7 +5,7 @@
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.postimg.cc/Y2TmKMf8/2180201F-FB5D-4574-9E55-158B4442F02A.png'
-  const GEAR_ICON_URL = 'https://iili.io/Blqo4Cg.webp'
+  const GEAR_ICON_URL = 'https://i.postimg.cc/KzkvJ3V4/BB752784-A3D8-4E6A-9955-E190A76EBD71.png'
   const API_INFO_URL = 'https://apikey-nine.vercel.app/api/key/info/'
 
   const keys = {
