@@ -4,7 +4,7 @@
   if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
-  const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg'
+  const ICON_URL = 'https://i.postimg.cc/Y2TmKMf8/2180201F-FB5D-4574-9E55-158B4442F02A.png'
   const GEAR_ICON_URL = 'https://iili.io/Blqo4Cg.webp'
   const API_INFO_URL = 'https://apikey-nine.vercel.app/api/key/info/'
 
