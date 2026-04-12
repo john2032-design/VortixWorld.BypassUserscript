@@ -112,6 +112,24 @@ function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
   appendToBestContainer(card);
 }
 
+function getStoredAutoRedirect() {
+  const key = 'vw_auto_redirect';
+  const defaultValue = true;
+  if (typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
+    try {
+      const val = GM_getValue(key, defaultValue);
+      if (val !== undefined && val !== null) return val;
+    } catch (_) {}
+  }
+  try {
+    const lsValue = localStorage.getItem(key);
+    if (lsValue === null) return defaultValue;
+    return lsValue === 'true';
+  } catch (_) {
+    return defaultValue;
+  }
+}
+
 async function initApi() {
   const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const json = await res.json();
@@ -152,8 +170,14 @@ async function runApiBypass() {
         showHashExpireUI(finalUrl);
         shutdown();
       } else {
-        showApiResultUI(finalUrl, timeLabel, false);
-        shutdown();
+        const autoRedirect = getStoredAutoRedirect();
+        if (autoRedirect) {
+          removeApiTopBar();
+          location.href = finalUrl;
+        } else {
+          showApiResultUI(finalUrl, timeLabel, false);
+          shutdown();
+        }
       }
     } else {
       throw new Error(result.result || 'Bypass failed');
