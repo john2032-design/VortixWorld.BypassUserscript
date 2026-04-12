@@ -39,6 +39,11 @@ const API_UI_CSS = `
 @keyframes vw-spin { to { transform: rotate(360deg); } }
 `;
 
+const safeLogger = {
+  info: (...args) => (typeof Logger !== 'undefined' ? Logger.info(...args) : console.log('[VW]', ...args)),
+  error: (...args) => (typeof Logger !== 'undefined' ? Logger.error(...args) : console.error('[VW]', ...args))
+};
+
 function hasGM() {
   return typeof GM_getValue === 'function' && typeof GM_setValue === 'function';
 }
@@ -228,7 +233,7 @@ function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
 async function initApi() {
   const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const json = await res.json();
-  Logger.info('API authentication successful', json.accessToken ? 'Token received' : 'No token');
+  safeLogger.info('API authentication successful', json.accessToken ? 'Token received' : 'No token');
   return json.accessToken;
 }
 
@@ -239,12 +244,12 @@ async function bypassUrl(url, accessToken) {
     body: JSON.stringify({ url })
   });
   const json = await res.json();
-  Logger.info('API bypass response', json.status);
+  safeLogger.info('API bypass response', json.status);
   return json;
 }
 
 async function runApiBypass() {
-  Logger.info('Starting API bypass for', location.href);
+  safeLogger.info('Starting API bypass for', location.href);
   createApiTopBar('Checking key...');
   const isValid = await validateStoredKey();
   if (!isValid) {
@@ -263,7 +268,11 @@ async function runApiBypass() {
       const autoRedirect = getStoredAutoRedirect();
       if (isLuarmorUrl(finalUrl)) {
         removeApiTopBar();
-        showHashExpireUI(finalUrl);
+        if (typeof showHashExpireUI === 'function') {
+          showHashExpireUI(finalUrl);
+        } else {
+          location.href = finalUrl;
+        }
         shutdown();
       } else {
         if (autoRedirect) {
@@ -278,7 +287,7 @@ async function runApiBypass() {
       throw new Error(result.result || 'Bypass failed');
     }
   } catch (err) {
-    Logger.error('API bypass failed', err.message);
+    safeLogger.error('API bypass failed', err.message);
     removeApiTopBar();
     showApiResultUI('', '', true, err.message);
   }
