@@ -9,7 +9,8 @@ let keyCheckComplete = false
 let pendingTcData = null
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
-  if (uiInjected && document.getElementById('vortixWorldOverlay')) return
+  if (document.getElementById('vortixWorldOverlay')) return
+  if (uiInjected) return
   const existing = document.getElementById('vortixWorldOverlay')
   if (existing) existing.remove()
 
@@ -484,20 +485,21 @@ function processTcResponse(data, originalFetch) {
     const taskUrl = task17.ad_url
     completeTaskViaSkippedLol(taskUrl).then(() => {
       if (!keyIsValid) return
-      Logger.info('Skipped.lol success, waiting 0.7s before WebSocket')
+      Logger.info('Skipped.lol success, waiting 1s before WebSocket')
+      updateStatus('Task completed', 'Establishing connection...')
       setTimeout(() => {
         if (!keyIsValid) return
         Logger.info('Starting WebSocket for task 17 after delay')
         const primaryWs = startWebSocketForTask(task17, false)
         setTimeout(() => {
           if (primaryWs && !primaryWs.resolved && keyIsValid) {
-            Logger.warn('Method 1 WS timed out after 8s, switching to fallback')
+            Logger.warn('Method 1 WS timed out after 10s, switching to fallback')
             primaryWs.disconnect()
             window.primaryWebSocket = null
             runFallback()
           }
-        }, 8000)
-      }, 700)
+        }, 10000)
+      }, 1000)
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
       runFallback()
@@ -583,6 +585,7 @@ function runLocalLootlinkBypass() {
           }
           const overlay = document.getElementById('vortixWorldOverlay')
           if (overlay) overlay.remove()
+          uiInjected = false
         }
       })
       .catch(err => {
@@ -598,6 +601,7 @@ function runLocalLootlinkBypass() {
         }
         const overlay = document.getElementById('vortixWorldOverlay')
         if (overlay) overlay.remove()
+        uiInjected = false
       })
   }
 
@@ -614,6 +618,7 @@ window.runLocalLootlinkBypass = runLocalLootlinkBypass
 window.showHashExpireUI = function(finalUrl) {
   const existingOverlay = document.getElementById('vortixWorldOverlay')
   if (existingOverlay) existingOverlay.remove()
+  uiInjected = false
   const existingExpire = document.getElementById('vwHashExpireOverlay')
   if (existingExpire) existingExpire.remove()
 
@@ -659,7 +664,6 @@ window.showHashExpireUI = function(finalUrl) {
   }
 }
 
-// ========== UPDATED FETCH INTERCEPTOR ==========
 const originalFetch = window.fetch;
 window.fetch = function(url, config) {
   const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
@@ -701,4 +705,3 @@ window.fetch = function(url, config) {
   return originalFetch(url, config);
 };
 window.__vw_fetch_interceptor_active = true;
-// ==============================================
