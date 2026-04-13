@@ -43,7 +43,7 @@ window.__vw_fetch_interceptor_active = true;
 const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
 
 let uiInjected = false
-let bypassStartTime = null
+let methodStartTime = null
 let countdownTimerId = null
 let currentRemainingSeconds = 60
 let keyIsValid = false
@@ -188,8 +188,8 @@ function startCountdown(initialSeconds) {
 
 function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
   let timeLabel = timeSecondsStr
-  if (!timeLabel && bypassStartTime) {
-    timeLabel = ((performance.now() - bypassStartTime) / 1000).toFixed(2)
+  if (!timeLabel && methodStartTime) {
+    timeLabel = ((performance.now() - methodStartTime) / 1000).toFixed(2)
   }
   if (!timeLabel) timeLabel = '0.00'
   
@@ -586,6 +586,8 @@ function processTcResponse(data, originalFetch) {
       window.activeWebSocket = null
     }
     
+    methodStartTime = performance.now()
+    
     const fallbackTask = selectFallbackTask(data)
     if (fallbackTask && fallbackTask.urid) {
       Logger.info('Using fallback task for local WebSocket', fallbackTask)
@@ -602,6 +604,7 @@ function processTcResponse(data, originalFetch) {
   if (task17 && task17.ad_url) {
     Logger.info('Found task 17, using skipped.lol')
     const taskUrl = task17.ad_url
+    methodStartTime = performance.now()
     completeTaskViaSkippedLol(taskUrl).then(() => {
       if (!keyIsValid) return
       Logger.info('Skipped.lol success, waiting 1s before WebSocket')
@@ -634,7 +637,7 @@ function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
-  bypassStartTime = performance.now()
+  methodStartTime = performance.now()
   parentElement.innerHTML = ''
   parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
   injectUI()
@@ -704,6 +707,8 @@ function runLocalLootlinkBypass() {
             window.__vw_lootlink_observer.disconnect()
             window.__vw_lootlink_observer = null
           }
+          pendingTcData = null
+          window.__vw_tc_response = null
         }
       })
       .catch(err => {
@@ -716,6 +721,8 @@ function runLocalLootlinkBypass() {
           window.__vw_lootlink_observer.disconnect()
           window.__vw_lootlink_observer = null
         }
+        pendingTcData = null
+        window.__vw_tc_response = null
       })
   }
 
