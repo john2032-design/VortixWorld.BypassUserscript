@@ -1,3 +1,45 @@
+const originalFetch = window.fetch;
+window.fetch = function(url, config) {
+  const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+  if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
+    let bodyObj = {};
+    if (config && config.body) {
+      try {
+        bodyObj = typeof config.body === 'string' ? JSON.parse(config.body) : config.body;
+      } catch(e) {}
+    }
+    bodyObj.bl = BL_TASKS;
+
+    return originalFetch(TC_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyObj)
+    }).then(response => {
+      if (!response.ok) throw new Error(`Proxy returned ${response.status}`);
+      return response.clone().json().then(data => {
+        window.__vw_tc_response = data;
+        
+        if (!keyCheckComplete) {
+          Logger.info('Key check not complete, storing /tc response for later');
+          pendingTcData = data;
+        } else if (keyIsValid) {
+          window.__vw_tc_processed = false;
+          processTcResponse(data, originalFetch);
+        } else {
+          Logger.warn('Key invalid, ignoring /tc response');
+        }
+        
+        return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      });
+    }).catch(err => {
+      console.error('[VW] Proxy fetch failed:', err);
+      return originalFetch(url, config);
+    });
+  }
+  return originalFetch(url, config);
+};
+window.__vw_fetch_interceptor_active = true;
+
 const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
 
 let uiInjected = false
@@ -674,45 +716,3 @@ window.showHashExpireUI = function(finalUrl) {
     goBtn.onclick = () => { window.location.href = finalUrl }
   }
 }
-
-const originalFetch = window.fetch;
-window.fetch = function(url, config) {
-  const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
-  if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
-    let bodyObj = {};
-    if (config && config.body) {
-      try {
-        bodyObj = typeof config.body === 'string' ? JSON.parse(config.body) : config.body;
-      } catch(e) {}
-    }
-    bodyObj.bl = BL_TASKS;
-
-    return originalFetch(TC_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyObj)
-    }).then(response => {
-      if (!response.ok) throw new Error(`Proxy returned ${response.status}`);
-      return response.clone().json().then(data => {
-        window.__vw_tc_response = data;
-        
-        if (!keyCheckComplete) {
-          Logger.info('Key check not complete, storing /tc response for later');
-          pendingTcData = data;
-        } else if (keyIsValid) {
-          window.__vw_tc_processed = false;
-          processTcResponse(data, originalFetch);
-        } else {
-          Logger.warn('Key invalid, ignoring /tc response');
-        }
-        
-        return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      });
-    }).catch(err => {
-      console.error('[VW] Proxy fetch failed:', err);
-      return originalFetch(url, config);
-    });
-  }
-  return originalFetch(url, config);
-};
-window.__vw_fetch_interceptor_active = true;
