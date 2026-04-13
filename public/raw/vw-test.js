@@ -659,71 +659,68 @@ function runLocalLootlinkBypass() {
   function startKeyCheck() {
     validateStoredKey()
       .then(isValid => {
-        keyCheckComplete = true
-        keyIsValid = isValid
+        keyCheckComplete = true;
+        keyIsValid = isValid;
         if (isValid) {
           waitForBody(() => {
             if (pendingTcData && !window.__vw_tc_processed) {
-              Logger.info('Processing pending /tc response')
-              processTcResponse(pendingTcData, window.fetch)
-              pendingTcData = null
-              window.__vw_tc_processed = true
+              Logger.info('Processing pending /tc response');
+              processTcResponse(pendingTcData, window.fetch);
+              pendingTcData = null;
+              window.__vw_tc_processed = true;
             }
             
             if (window.__vw_tc_response && !window.__vw_tc_processed) {
-              Logger.info('Processing captured /tc response')
-              processTcResponse(window.__vw_tc_response, window.fetch)
-              window.__vw_tc_processed = true
+              Logger.info('Processing captured /tc response');
+              processTcResponse(window.__vw_tc_response, window.fetch);
+              window.__vw_tc_processed = true;
             }
             
-            const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+            const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward'];
             const existing = Array.from(document.querySelectorAll('*')).find(el => {
-              const text = el.textContent
-              return text && unlockText.some(t => text.includes(t))
-            })
+              const text = el.textContent;
+              return text && unlockText.some(t => text.includes(t));
+            });
             if (existing) {
-              modifyParentElement(existing)
+              modifyParentElement(existing);
             } else {
-              injectUI()
-              updateStatus('Ready', 'Waiting for unlock button...')
+              injectUI();
+              updateStatus('Ready', 'Waiting for unlock button...');
             }
 
             cleanupManager.setTimeout(() => {
               if (!window.__vw_tc_processed && keyIsValid) {
-                Logger.warn('Bypass seems stuck, checking for unlock element again')
+                Logger.warn('Bypass seems stuck, checking for unlock element again');
                 const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
-                  const text = el.textContent
-                  return text && unlockText.some(t => text.includes(t))
-                })
-                if (existingAgain) modifyParentElement(existingAgain)
-                else updateStatus('Bypass delayed', 'Trying alternative method...')
+                  const text = el.textContent;
+                  return text && unlockText.some(t => text.includes(t));
+                });
+                if (existingAgain) modifyParentElement(existingAgain);
+                else updateStatus('Bypass delayed', 'Trying alternative method...');
               }
-            }, CONFIG.FALLBACK_CHECK_DELAY)
-          })
+            }, CONFIG.FALLBACK_CHECK_DELAY);
+          });
         } else {
-          showToast('API key invalid/expired', true, ERROR_JPG)
-          cleanupManager.clearAll()
-          if (window.__vw_lootlink_observer) {
-            window.__vw_lootlink_observer.disconnect()
-            window.__vw_lootlink_observer = null
-          }
-          pendingTcData = null
-          window.__vw_tc_response = null
+          Logger.warn('API key invalid/expired, showing overlay with waiting state');
+          waitForBody(() => {
+            injectUI();
+            updateStatus('Loading...', 'Waiting for task data');
+          });
+          pendingTcData = null;
+          window.__vw_tc_response = null;
         }
       })
       .catch(err => {
-        keyCheckComplete = true
-        keyIsValid = false
-        Logger.error('Key validation error:', err)
-        showToast('Key validation error', true, ERROR_JPG)
-        cleanupManager.clearAll()
-        if (window.__vw_lootlink_observer) {
-          window.__vw_lootlink_observer.disconnect()
-          window.__vw_lootlink_observer = null
-        }
-        pendingTcData = null
-        window.__vw_tc_response = null
-      })
+        keyCheckComplete = true;
+        keyIsValid = false;
+        Logger.error('Key validation error:', err);
+        waitForBody(() => {
+          injectUI();
+          updateStatus('Loading...', 'Waiting for task data');
+        });
+        pendingTcData = null;
+        window.__vw_tc_response = null;
+      });
   }
 
   if (document.readyState === 'loading') {
