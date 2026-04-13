@@ -607,22 +607,18 @@ function processTcResponse(data, originalFetch) {
     methodStartTime = performance.now()
     completeTaskViaSkippedLol(taskUrl).then(() => {
       if (!keyIsValid) return
-      Logger.info('Skipped.lol success, waiting 1s before WebSocket')
+      Logger.info('Skipped.lol success, starting WebSocket for task 17 immediately')
       updateStatus('Task completed', 'Establishing connection...')
-      setTimeout(() => {
-        if (!keyIsValid) return
-        Logger.info('Starting WebSocket for task 17 after delay')
-        const primaryWs = startWebSocketForTask(task17, false)
-        const fallbackTimeoutId = setTimeout(() => {
-          if (primaryWs && !primaryWs.resolved && keyIsValid) {
-            Logger.warn('Method 1 WS timed out after 10s, switching to fallback')
-            primaryWs.disconnect()
-            window.primaryWebSocket = null
-            runFallback()
-          }
-        }, 10000)
-        if (primaryWs) primaryWs.fallbackTimeoutId = fallbackTimeoutId
-      }, 1000)
+      const primaryWs = startWebSocketForTask(task17, false)
+      const fallbackTimeoutId = setTimeout(() => {
+        if (primaryWs && !primaryWs.resolved && keyIsValid) {
+          Logger.warn('Method 1 WS timed out after 10s, switching to fallback')
+          primaryWs.disconnect()
+          window.primaryWebSocket = null
+          runFallback()
+        }
+      }, 10000)
+      if (primaryWs) primaryWs.fallbackTimeoutId = fallbackTimeoutId
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
       runFallback()
