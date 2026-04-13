@@ -131,16 +131,8 @@ function getStoredAutoRedirect() {
 }
 
 async function initApi() {
-  const key = await getStoredKey();
-  if (!key) throw new Error("No API key found");
-
-  const res = await fetch(API_BASE + '/api/auth/anon', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key })
-  });
+  const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const json = await res.json();
-  if (json.status !== 'success') throw new Error(json.message);
   Logger.info('API authentication successful', json.accessToken ? 'Token received' : 'No token');
   return json.accessToken;
 }
@@ -148,7 +140,11 @@ async function initApi() {
 async function bypassUrl(url, accessToken) {
   const res = await fetch(API_BASE + '/api/bypass/direct', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + accessToken,
+      'X-VW-API-Key': KEY
+    },
     body: JSON.stringify({ url })
   });
   const json = await res.json();
