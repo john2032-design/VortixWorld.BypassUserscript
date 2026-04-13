@@ -138,13 +138,12 @@ async function initApi() {
 }
 
 async function bypassUrl(url, accessToken) {
-  const apiKey = window.VW_API_KEY || '';
   const res = await fetch(API_BASE + '/api/bypass/direct', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + accessToken,
-      'X-VW-API-Key': apiKey
+      'X-VW-API-Key': KEY
     },
     body: JSON.stringify({ url })
   });
