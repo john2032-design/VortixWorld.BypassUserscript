@@ -214,10 +214,12 @@ class RobustWebSocket {
     this.url = url
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY
     this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000
+    this.connectionTimeout = options.connectionTimeout || 3000
     this.maxReconnectAttempts = 5
     this.ws = null
     this.reconnectTimeout = null
     this.heartbeatTimer = null
+    this.connectionTimer = null
     this.reconnectAttempts = 0
     this.heartbeatCount = 0
     this.resolved = false
@@ -227,6 +229,7 @@ class RobustWebSocket {
     this.openLogged = false
     this.keyExpiryCheckInterval = null
     this.fallbackTimeoutId = null
+    this.onConnectionTimeout = options.onConnectionTimeout || null
   }
 
   connect() {
@@ -240,6 +243,23 @@ class RobustWebSocket {
       return
     }
     this.isConnecting = true
+    this.clearConnectionTimer()
+    this.connectionTimer = setTimeout(() => {
+      if (this.isConnecting && !this.resolved) {
+        Logger.warn('WebSocket connection timeout', this.url)
+        if (this.ws) {
+          this.ws.close()
+          this.ws = null
+        }
+        this.isConnecting = false
+        if (this.onConnectionTimeout) {
+          this.onConnectionTimeout()
+        } else {
+          this.scheduleReconnect()
+        }
+      }
+    }, this.connectionTimeout)
+    
     try {
       Logger.websocket('Connecting WebSocket', this.url)
       this.ws = new WebSocket(this.url)
@@ -248,6 +268,7 @@ class RobustWebSocket {
       this.ws.onclose = (e) => this.onClose(e)
       this.ws.onerror = (e) => this.onError(e)
     } catch (e) {
+      this.clearConnectionTimer()
       this.isConnecting = false
       if (!this.errorLogged) {
         Logger.error('WebSocket construction error', e.message)
@@ -257,7 +278,15 @@ class RobustWebSocket {
     }
   }
 
+  clearConnectionTimer() {
+    if (this.connectionTimer) {
+      clearTimeout(this.connectionTimer)
+      this.connectionTimer = null
+    }
+  }
+
   onOpen() {
+    this.clearConnectionTimer()
     this.isConnecting = false
     this.errorLogged = false
     if (window.isShutdown || !keyIsValid) {
@@ -274,11 +303,13 @@ class RobustWebSocket {
       cleanupManager.timeouts.delete(this.reconnectTimeout)
       this.reconnectTimeout = null
     }
+    this.sendHeartbeat()
     this.startHeartbeat()
     this.startKeyExpiryMonitor()
   }
 
   onClose(event) {
+    this.clearConnectionTimer()
     this.isConnecting = false
     this.openLogged = false
     this.stopKeyExpiryMonitor()
@@ -330,13 +361,17 @@ class RobustWebSocket {
     }
   }
 
+  sendHeartbeat() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send('0')
+      this.heartbeatCount++
+    }
+  }
+
   startHeartbeat() {
     this.stopHeartbeat()
     this.heartbeatTimer = cleanupManager.setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send('0')
-        this.heartbeatCount++
-      }
+      this.sendHeartbeat()
     }, this.heartbeatInterval)
   }
 
@@ -388,6 +423,7 @@ class RobustWebSocket {
   }
 
   disconnect() {
+    this.clearConnectionTimer()
     this.manualDisconnect = true
     this.stopHeartbeat()
     this.stopKeyExpiryMonitor()
@@ -446,7 +482,7 @@ async function completeTaskViaSkippedLol(taskUrl) {
   }
 }
 
-function startWebSocketForTask(taskData, isFallback = false) {
+function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 0) {
   if (!taskData || !taskData.urid) {
     Logger.error('Missing task data for WebSocket', taskData)
     return null
@@ -456,11 +492,20 @@ function startWebSocketForTask(taskData, isFallback = false) {
     return null
   }
   const { urid, task_id } = taskData
-  const wsUrl = `wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-  Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback})`, wsUrl)
+  const subdomainIndex = (parseInt(urid.substr(-5)) + subdomainAttempt) % 3
+  const wsUrl = `wss://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+  Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback}, attempt: ${subdomainAttempt})`, wsUrl)
+  
   const ws = new RobustWebSocket(wsUrl, {
     initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-    heartbeat: CONFIG.HEARTBEAT_INTERVAL
+    heartbeat: CONFIG.HEARTBEAT_INTERVAL,
+    connectionTimeout: 3000,
+    onConnectionTimeout: () => {
+      if (subdomainAttempt < 2 && !ws.resolved) {
+        Logger.warn(`WebSocket connection timeout on subdomain ${subdomainIndex}, trying next subdomain`)
+        startWebSocketForTask(taskData, isFallback, subdomainAttempt + 1)
+      }
+    }
   })
 
   if (isFallback) {
@@ -474,7 +519,7 @@ function startWebSocketForTask(taskData, isFallback = false) {
   ws.connect()
 
   try {
-    const beaconUrl = `https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
+    const beaconUrl = `https://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`
     navigator.sendBeacon(beaconUrl)
     Logger.info('Sent beacon', beaconUrl)
   } catch (_) {}
