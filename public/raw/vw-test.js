@@ -701,10 +701,12 @@ function runLocalLootlinkBypass() {
             }, CONFIG.FALLBACK_CHECK_DELAY);
           });
         } else {
-          Logger.warn('API key invalid/expired, showing overlay with waiting state');
+          Logger.warn('API key invalid/expired');
           waitForBody(() => {
             injectUI();
-            updateStatus('Loading...', 'Waiting for task data');
+            updateStatus('❌ API Key Invalid', 'Please enter a valid API key');
+            const spinner = document.getElementById('vwSpinner');
+            if (spinner) spinner.style.display = 'none';
           });
           pendingTcData = null;
           window.__vw_tc_response = null;
@@ -716,7 +718,9 @@ function runLocalLootlinkBypass() {
         Logger.error('Key validation error:', err);
         waitForBody(() => {
           injectUI();
-          updateStatus('Loading...', 'Waiting for task data');
+          updateStatus('❌ Key Validation Error', 'Unable to verify API key');
+          const spinner = document.getElementById('vwSpinner');
+          if (spinner) spinner.style.display = 'none';
         });
         pendingTcData = null;
         window.__vw_tc_response = null;
