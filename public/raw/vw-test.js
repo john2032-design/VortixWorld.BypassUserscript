@@ -50,34 +50,39 @@ let keyIsValid = false
 let keyCheckComplete = false
 let pendingTcData = null
 
-function injectUI(iconUrl = LOOTLINK_UI_ICON) {
-  if (uiInjected) return;
-  
-  if (!document.body) {
+function waitForBody(callback) {
+  if (document.body) {
+    callback();
+  } else {
     const observer = new MutationObserver(() => {
       if (document.body) {
         observer.disconnect();
-        injectUI(iconUrl);
+        callback();
       }
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
+}
+
+function injectUI(iconUrl = LOOTLINK_UI_ICON) {
+  if (!document.body) {
+    waitForBody(() => injectUI(iconUrl));
     return;
   }
-  
   if (document.getElementById('vortixWorldOverlay')) return;
-  
-  const existing = document.getElementById('vortixWorldOverlay');
-  if (existing) existing.remove();
+  if (uiInjected) return;
+  const existing = document.getElementById('vortixWorldOverlay')
+  if (existing) existing.remove()
 
-  const styleId = 'vortixWorldStyles';
+  const styleId = 'vortixWorldStyles'
   if (!document.getElementById(styleId)) {
-    const styleSheet = document.createElement('style');
-    styleSheet.id = styleId;
-    styleSheet.innerText = SHARED_UI_CSS;
-    (document.head || document.documentElement).appendChild(styleSheet);
+    const styleSheet = document.createElement('style')
+    styleSheet.id = styleId
+    styleSheet.innerText = SHARED_UI_CSS
+    ;(document.head || document.documentElement).appendChild(styleSheet)
   }
 
-  const wrapper = document.createElement('div');
+  const wrapper = document.createElement('div')
   wrapper.innerHTML = `
     <div id="vortixWorldOverlay">
       <div class="vw-header-bar">
@@ -89,21 +94,17 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
       <div class="vw-main-content">
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Checking key...</div>
-        <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
+        <div id="vwStatus" class="vw-status">Preparing bypass...</div>
+        <div id="vwSubStatus" class="vw-substatus">Waiting for task data</div>
       </div>
     </div>
-  `;
-  const overlay = wrapper.firstElementChild;
+  `
+  const overlay = wrapper.firstElementChild
 
-  requestAnimationFrame(() => {
-    if (document.body) {
-      document.body.appendChild(overlay);
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      uiInjected = true;
-    }
-  });
+  document.body.appendChild(overlay)
+  document.body.style.overflow = 'hidden'
+  document.documentElement.style.overflow = 'hidden'
+  uiInjected = true
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
@@ -186,7 +187,12 @@ function startCountdown(initialSeconds) {
 }
 
 function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
-  const timeLabel = timeSecondsStr || ((performance.now() - bypassStartTime) / 1000).toFixed(2)
+  let timeLabel = timeSecondsStr
+  if (!timeLabel && bypassStartTime) {
+    timeLabel = ((performance.now() - bypassStartTime) / 1000).toFixed(2)
+  }
+  if (!timeLabel) timeLabel = '0.00'
+  
   if (isLuarmorUrl(url)) {
     const overlay = document.getElementById('vortixWorldOverlay')
     if (overlay) overlay.remove()
@@ -648,78 +654,68 @@ function runLocalLootlinkBypass() {
   }
 
   function startKeyCheck() {
-    injectUI()
-    updateStatus('Checking key...', 'Validating API key')
-
     validateStoredKey()
       .then(isValid => {
         keyCheckComplete = true
         keyIsValid = isValid
         if (isValid) {
-          updateStatus('Key valid', 'Preparing bypass')
-          
-          if (pendingTcData && !window.__vw_tc_processed) {
-            Logger.info('Processing pending /tc response')
-            processTcResponse(pendingTcData, window.fetch)
-            pendingTcData = null
-            window.__vw_tc_processed = true
-          }
-          
-          if (window.__vw_tc_response && !window.__vw_tc_processed) {
-            Logger.info('Processing captured /tc response')
-            processTcResponse(window.__vw_tc_response, window.fetch)
-            window.__vw_tc_processed = true
-          }
-          
-          const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
-          const existing = Array.from(document.querySelectorAll('*')).find(el => {
-            const text = el.textContent
-            return text && unlockText.some(t => text.includes(t))
-          })
-          if (existing) modifyParentElement(existing)
-
-          cleanupManager.setTimeout(() => {
-            if (!window.__vw_tc_processed && keyIsValid) {
-              Logger.warn('Bypass seems stuck, checking for unlock element again')
-              const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
-                const text = el.textContent
-                return text && unlockText.some(t => text.includes(t))
-              })
-              if (existingAgain) modifyParentElement(existingAgain)
-              else updateStatus('Bypass delayed', 'Trying alternative method...')
+          waitForBody(() => {
+            if (pendingTcData && !window.__vw_tc_processed) {
+              Logger.info('Processing pending /tc response')
+              processTcResponse(pendingTcData, window.fetch)
+              pendingTcData = null
+              window.__vw_tc_processed = true
             }
-          }, CONFIG.FALLBACK_CHECK_DELAY)
+            
+            if (window.__vw_tc_response && !window.__vw_tc_processed) {
+              Logger.info('Processing captured /tc response')
+              processTcResponse(window.__vw_tc_response, window.fetch)
+              window.__vw_tc_processed = true
+            }
+            
+            const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward']
+            const existing = Array.from(document.querySelectorAll('*')).find(el => {
+              const text = el.textContent
+              return text && unlockText.some(t => text.includes(t))
+            })
+            if (existing) {
+              modifyParentElement(existing)
+            } else {
+              injectUI()
+              updateStatus('Ready', 'Waiting for unlock button...')
+            }
+
+            cleanupManager.setTimeout(() => {
+              if (!window.__vw_tc_processed && keyIsValid) {
+                Logger.warn('Bypass seems stuck, checking for unlock element again')
+                const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
+                  const text = el.textContent
+                  return text && unlockText.some(t => text.includes(t))
+                })
+                if (existingAgain) modifyParentElement(existingAgain)
+                else updateStatus('Bypass delayed', 'Trying alternative method...')
+              }
+            }, CONFIG.FALLBACK_CHECK_DELAY)
+          })
         } else {
-          updateStatus('❌ Key invalid/expired', 'Please update API key in settings')
           showToast('API key invalid/expired', true, ERROR_JPG)
           cleanupManager.clearAll()
           if (window.__vw_lootlink_observer) {
             window.__vw_lootlink_observer.disconnect()
             window.__vw_lootlink_observer = null
           }
-          const overlay = document.getElementById('vortixWorldOverlay')
-          if (overlay) overlay.remove()
-          uiInjected = false
-          if (document.body) document.body.style.overflow = ''
-          document.documentElement.style.overflow = ''
         }
       })
       .catch(err => {
         keyCheckComplete = true
         keyIsValid = false
         Logger.error('Key validation error:', err)
-        updateStatus('❌ Key check failed', 'Please try again')
         showToast('Key validation error', true, ERROR_JPG)
         cleanupManager.clearAll()
         if (window.__vw_lootlink_observer) {
           window.__vw_lootlink_observer.disconnect()
           window.__vw_lootlink_observer = null
         }
-        const overlay = document.getElementById('vortixWorldOverlay')
-        if (overlay) overlay.remove()
-        uiInjected = false
-        if (document.body) document.body.style.overflow = ''
-        document.documentElement.style.overflow = ''
       })
   }
 
