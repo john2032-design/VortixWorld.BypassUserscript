@@ -43,7 +43,7 @@ window.__vw_fetch_interceptor_active = true;
 const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
 
 let uiInjected = false
-let bypassStart = performance.now()
+let bypassStartTime = null
 let countdownTimerId = null
 let currentRemainingSeconds = 60
 let keyIsValid = false
@@ -51,8 +51,18 @@ let keyCheckComplete = false
 let pendingTcData = null
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
-  if (document.getElementById('vortixWorldOverlay')) return
-  if (uiInjected) return
+  if (!document.body) {
+    const observer = new MutationObserver(() => {
+      if (document.body) {
+        observer.disconnect();
+        injectUI(iconUrl);
+      }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    return;
+  }
+  if (document.getElementById('vortixWorldOverlay')) return;
+  if (uiInjected) return;
   const existing = document.getElementById('vortixWorldOverlay')
   if (existing) existing.remove()
 
@@ -83,14 +93,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   `
   const overlay = wrapper.firstElementChild
 
-  let container = document.body
-  if (!container) {
-    container = document.createElement('body')
-    document.documentElement.appendChild(container)
-    document.documentElement.style.overflow = 'hidden'
-  }
-  container.appendChild(overlay)
-  if (document.body) document.body.style.overflow = 'hidden'
+  document.body.appendChild(overlay)
+  document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
   uiInjected = true
 }
@@ -175,7 +179,7 @@ function startCountdown(initialSeconds) {
 }
 
 function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceCompleteUI = false) {
-  const timeLabel = timeSecondsStr || ((performance.now() - bypassStart) / 1000).toFixed(2)
+  const timeLabel = timeSecondsStr || ((performance.now() - bypassStartTime) / 1000).toFixed(2)
   if (isLuarmorUrl(url)) {
     const overlay = document.getElementById('vortixWorldOverlay')
     if (overlay) overlay.remove()
@@ -352,8 +356,7 @@ class RobustWebSocket {
             this.fallbackTimeoutId = null
           }
           this.disconnect()
-          const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
-          handleBypassSuccess(finalUrl, duration, 'lootlink')
+          handleBypassSuccess(finalUrl, null, 'lootlink')
         } else {
           Logger.error('Invalid final URL received', finalUrl)
         }
@@ -509,10 +512,16 @@ function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 
   })
 
   if (isFallback) {
-    if (window.fallbackWebSocket) window.fallbackWebSocket.disconnect()
+    if (window.fallbackWebSocket) {
+      window.fallbackWebSocket.disconnect()
+      window.fallbackWebSocket = null
+    }
     window.fallbackWebSocket = ws
   } else {
-    if (window.primaryWebSocket) window.primaryWebSocket.disconnect()
+    if (window.primaryWebSocket) {
+      window.primaryWebSocket.disconnect()
+      window.primaryWebSocket = null
+    }
     window.primaryWebSocket = ws
   }
   window.activeWebSocket = ws
@@ -612,7 +621,7 @@ function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
   if (!parentElement) return
   window.state.processStartTime = Date.now()
-  bypassStart = performance.now()
+  bypassStartTime = performance.now()
   parentElement.innerHTML = ''
   parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
   injectUI()
@@ -684,6 +693,8 @@ function runLocalLootlinkBypass() {
           const overlay = document.getElementById('vortixWorldOverlay')
           if (overlay) overlay.remove()
           uiInjected = false
+          if (document.body) document.body.style.overflow = ''
+          document.documentElement.style.overflow = ''
         }
       })
       .catch(err => {
@@ -700,6 +711,8 @@ function runLocalLootlinkBypass() {
         const overlay = document.getElementById('vortixWorldOverlay')
         if (overlay) overlay.remove()
         uiInjected = false
+        if (document.body) document.body.style.overflow = ''
+        document.documentElement.style.overflow = ''
       })
   }
 
@@ -717,6 +730,8 @@ window.showHashExpireUI = function(finalUrl) {
   const existingOverlay = document.getElementById('vortixWorldOverlay')
   if (existingOverlay) existingOverlay.remove()
   uiInjected = false
+  if (document.body) document.body.style.overflow = ''
+  document.documentElement.style.overflow = ''
   const existingExpire = document.getElementById('vwHashExpireOverlay')
   if (existingExpire) existingExpire.remove()
 
