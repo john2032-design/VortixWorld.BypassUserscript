@@ -184,6 +184,7 @@ class RobustWebSocket {
     this.errorLogged = false
     this.openLogged = false
     this.keyExpiryCheckInterval = null
+    this.fallbackTimeoutId = null
   }
 
   connect() {
@@ -272,6 +273,11 @@ class RobustWebSocket {
         }
 
         if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
+          this.resolved = true
+          if (this.fallbackTimeoutId) {
+            clearTimeout(this.fallbackTimeoutId)
+            this.fallbackTimeoutId = null
+          }
           this.disconnect()
           const duration = ((Date.now() - state.processStartTime) / 1000).toFixed(2)
           handleBypassSuccess(finalUrl, duration, 'lootlink')
@@ -347,6 +353,10 @@ class RobustWebSocket {
       clearTimeout(this.reconnectTimeout)
       cleanupManager.timeouts.delete(this.reconnectTimeout)
       this.reconnectTimeout = null
+    }
+    if (this.fallbackTimeoutId) {
+      clearTimeout(this.fallbackTimeoutId)
+      this.fallbackTimeoutId = null
     }
     if (this.ws) {
       this.ws.close()
@@ -491,7 +501,7 @@ function processTcResponse(data, originalFetch) {
         if (!keyIsValid) return
         Logger.info('Starting WebSocket for task 17 after delay')
         const primaryWs = startWebSocketForTask(task17, false)
-        setTimeout(() => {
+        const fallbackTimeoutId = setTimeout(() => {
           if (primaryWs && !primaryWs.resolved && keyIsValid) {
             Logger.warn('Method 1 WS timed out after 10s, switching to fallback')
             primaryWs.disconnect()
@@ -499,6 +509,7 @@ function processTcResponse(data, originalFetch) {
             runFallback()
           }
         }, 10000)
+        if (primaryWs) primaryWs.fallbackTimeoutId = fallbackTimeoutId
       }, 1000)
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
