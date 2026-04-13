@@ -143,7 +143,7 @@ async function bypassUrl(url, accessToken) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + accessToken,
-      'X-VW-API-Key': KEY
+      'X-VW-API-Key': window.VW_API_KEY || ''
     },
     body: JSON.stringify({ url })
   });
@@ -184,7 +184,8 @@ async function runApiBypass() {
         }
       }
     } else {
-      throw new Error(result.result || 'Bypass failed');
+      const errorDetail = JSON.stringify(result, null, 2);
+      throw new Error(errorDetail);
     }
   } catch (err) {
     Logger.error('API bypass failed', err.message);
