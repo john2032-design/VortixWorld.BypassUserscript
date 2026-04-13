@@ -616,10 +616,10 @@ function runLocalLootlinkBypass() {
       })
   }
 
-  if (document.readyState === 'complete') {
-    startKeyCheck()
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startKeyCheck, { once: true })
   } else {
-    window.addEventListener('load', startKeyCheck, { once: true })
+    startKeyCheck()
   }
 
   window.addEventListener('beforeunload', () => cleanupManager.clearAll())
