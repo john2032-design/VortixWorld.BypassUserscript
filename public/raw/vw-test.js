@@ -51,6 +51,8 @@ let keyCheckComplete = false
 let pendingTcData = null
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
+  if (uiInjected) return;
+  
   if (!document.body) {
     const observer = new MutationObserver(() => {
       if (document.body) {
@@ -61,20 +63,21 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     observer.observe(document.documentElement, { childList: true, subtree: true });
     return;
   }
+  
   if (document.getElementById('vortixWorldOverlay')) return;
-  if (uiInjected) return;
-  const existing = document.getElementById('vortixWorldOverlay')
-  if (existing) existing.remove()
+  
+  const existing = document.getElementById('vortixWorldOverlay');
+  if (existing) existing.remove();
 
-  const styleId = 'vortixWorldStyles'
+  const styleId = 'vortixWorldStyles';
   if (!document.getElementById(styleId)) {
-    const styleSheet = document.createElement('style')
-    styleSheet.id = styleId
-    styleSheet.innerText = SHARED_UI_CSS
-    ;(document.head || document.documentElement).appendChild(styleSheet)
+    const styleSheet = document.createElement('style');
+    styleSheet.id = styleId;
+    styleSheet.innerText = SHARED_UI_CSS;
+    (document.head || document.documentElement).appendChild(styleSheet);
   }
 
-  const wrapper = document.createElement('div')
+  const wrapper = document.createElement('div');
   wrapper.innerHTML = `
     <div id="vortixWorldOverlay">
       <div class="vw-header-bar">
@@ -90,13 +93,17 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
         <div id="vwSubStatus" class="vw-substatus">Validating API key</div>
       </div>
     </div>
-  `
-  const overlay = wrapper.firstElementChild
+  `;
+  const overlay = wrapper.firstElementChild;
 
-  document.body.appendChild(overlay)
-  document.body.style.overflow = 'hidden'
-  document.documentElement.style.overflow = 'hidden'
-  uiInjected = true
+  requestAnimationFrame(() => {
+    if (document.body) {
+      document.body.appendChild(overlay);
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      uiInjected = true;
+    }
+  });
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
