@@ -117,7 +117,7 @@ function getStoredAutoRedirect() {
   const defaultValue = true;
   if (typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
     try {
-      const val = GM_getValue(key, defaultValue);
+      const val = GM_getValue(key);
       if (val !== undefined && val !== null) return val;
     } catch (_) {}
   }
