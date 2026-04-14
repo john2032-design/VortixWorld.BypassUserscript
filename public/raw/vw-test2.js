@@ -3,8 +3,17 @@ function appendToBestContainer(node) {
   if (mount && node && node.parentNode !== mount) mount.appendChild(node);
 }
 
+let apiBarTimer = null;
+let apiResultTimer = null;
+
 function createApiTopBar(text = 'Bypassing...') {
-  if (document.getElementById('vwApiTopBar')) return;
+  if (apiBarTimer) clearTimeout(apiBarTimer);
+  const existing = document.getElementById('vwApiTopBar');
+  if (existing) {
+    const textEl = existing.querySelector('.vw-api-loading-text');
+    if (textEl) textEl.textContent = text;
+    return existing;
+  }
   const styleId = 'vwApiStyles';
   if (!document.getElementById(styleId)) {
     const styleSheet = document.createElement('style');
@@ -46,11 +55,13 @@ function updateApiTopBarText(text) {
 }
 
 function removeApiTopBar() {
+  if (apiBarTimer) clearTimeout(apiBarTimer);
   const bar = document.getElementById('vwApiTopBar');
   if (bar) bar.remove();
 }
 
 function showApiResultUI(finalUrl, timeLabel, isError = false, errorMsg = '') {
+  if (apiResultTimer) clearTimeout(apiResultTimer);
   removeApiTopBar();
   const styleId = 'vwApiStyles';
   if (!document.getElementById(styleId)) {
@@ -130,13 +141,21 @@ function getStoredAutoRedirect() {
   }
 }
 
-async function initApi() {
+let authTokenCache = null;
+let authTokenExpiry = 0;
+
+async function getAccessToken() {
+  const now = Date.now();
+  if (authTokenCache && now < authTokenExpiry) return authTokenCache;
   const res = await fetch(API_BASE + '/api/auth/anon', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const json = await res.json();
-  return json.accessToken;
+  authTokenCache = json.accessToken;
+  authTokenExpiry = now + (json.expiresIn - 30) * 1000;
+  return authTokenCache;
 }
 
-async function bypassUrl(url, accessToken) {
+async function bypassUrl(url) {
+  const accessToken = await getAccessToken();
   const apiKey = window.VW_API_KEY || '';
   const res = await fetch(API_BASE + '/api/bypass/direct', {
     method: 'POST',
@@ -153,42 +172,43 @@ async function bypassUrl(url, accessToken) {
 
 async function runApiBypass() {
   createApiTopBar('Checking key...');
-  const isValid = await validateStoredKey();
-  if (!isValid) {
-    updateApiTopBarText('❌ Key invalid/expired');
-    showToast('API key invalid/expired', true, ERROR_JPG);
-    setTimeout(() => removeApiTopBar(), 3000);
-    return;
-  }
-  updateApiTopBarText('Key valid. Bypassing...');
-  try {
-    const accessToken = await initApi();
-    const result = await bypassUrl(location.href, accessToken);
-    if (result.status === 'success') {
-      const finalUrl = result.result;
-      const timeLabel = result.time;
-      if (isLuarmorUrl(finalUrl)) {
-        removeApiTopBar();
-        showHashExpireUI(finalUrl);
-        shutdown();
-      } else {
-        const autoRedirect = getStoredAutoRedirect();
-        if (autoRedirect) {
-          removeApiTopBar();
-          location.href = finalUrl;
-        } else {
-          showApiResultUI(finalUrl, timeLabel, false);
-          shutdown();
-        }
-      }
-    } else {
-      const errorDetail = JSON.stringify(result, null, 2);
-      throw new Error(errorDetail);
+  requestIdleCallback(async () => {
+    const isValid = await validateStoredKey();
+    if (!isValid) {
+      updateApiTopBarText('❌ Key invalid/expired');
+      showToast('API key invalid/expired', true, ERROR_JPG);
+      apiBarTimer = setTimeout(() => removeApiTopBar(), 3000);
+      return;
     }
-  } catch (err) {
-    removeApiTopBar();
-    showApiResultUI('', '', true, err.message);
-  }
+    updateApiTopBarText('Key valid. Bypassing...');
+    try {
+      const result = await bypassUrl(location.href);
+      if (result.status === 'success') {
+        const finalUrl = result.result;
+        const timeLabel = result.time;
+        if (isLuarmorUrl(finalUrl)) {
+          removeApiTopBar();
+          showHashExpireUI(finalUrl);
+          shutdown();
+        } else {
+          const autoRedirect = getStoredAutoRedirect();
+          if (autoRedirect) {
+            removeApiTopBar();
+            location.href = finalUrl;
+          } else {
+            showApiResultUI(finalUrl, timeLabel, false);
+            shutdown();
+          }
+        }
+      } else {
+        const errorDetail = JSON.stringify(result, null, 2);
+        throw new Error(errorDetail);
+      }
+    } catch (err) {
+      removeApiTopBar();
+      showApiResultUI('', '', true, err.message);
+    }
+  });
 }
 
 window.runApiBypass = runApiBypass;
