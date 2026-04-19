@@ -8,7 +8,7 @@ const SITE_HOST = 'vortix-world-bypass.vercel.app';
 const TPI_HOST = 'tpi.li';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36';
 const API_BASE = 'https://vortixworld-end.vercel.app';
-const TC_PROXY_URL = 'https://lootlink-backend.onrender.com/tc';
+const TC_PROXY_URL = 'https://lootlink-backend-b526.onrender.com/tc';
 
 const LOOT_HOSTS = [
   'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
