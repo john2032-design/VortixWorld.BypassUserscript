@@ -1,7 +1,10 @@
+console.log('[VW] vw-lootlink.js loaded');
+
 const originalFetch = window.fetch;
 window.fetch = function(url, config) {
   const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
   if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
+    console.log('[VW] Intercepted /tc request:', urlStr);
     let bodyObj = {};
     if (config && config.body) {
       try {
@@ -18,6 +21,7 @@ window.fetch = function(url, config) {
       if (!response.ok) throw new Error(`Proxy returned ${response.status}`);
       return response.clone().json().then(data => {
         window.__vw_tc_response = data;
+        console.log('[VW] /tc proxy response received, tasks:', data.length);
         
         if (!keyCheckComplete) {
           Logger.info('Key check not complete, storing /tc response for later');
@@ -49,30 +53,46 @@ let currentRemainingSeconds = 60
 let keyIsValid = false
 let keyCheckComplete = false
 let pendingTcData = null
+let consoleLines = []
+let bypassActive = false
+let lootlinkResolved = false
 
 function waitForBody(callback) {
+  console.log('[VW] waitForBody called');
   if (document.body) {
+    console.log('[VW] body already exists');
     callback();
   } else {
-    const observer = new MutationObserver(() => {
-      if (document.body) {
-        observer.disconnect();
-        callback();
-      }
-    });
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    console.log('[VW] waiting for body via DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', callback, { once: true });
+  }
+}
+
+function addConsoleLine(text) {
+  consoleLines.push(text);
+  if (consoleLines.length > 8) consoleLines.shift();
+  const consoleEl = document.getElementById('vwConsoleOutput');
+  if (consoleEl) {
+    consoleEl.innerHTML = consoleLines.map(line => `<div class="vw-console-line">${line}</div>`).join('');
+    consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 }
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
+  console.log('[VW] injectUI called');
   if (!document.body) {
+    console.log('[VW] no body yet, waiting...');
     waitForBody(() => injectUI(iconUrl));
     return;
   }
-  if (document.getElementById('vortixWorldOverlay')) return;
-  if (uiInjected) return;
-  const existing = document.getElementById('vortixWorldOverlay')
-  if (existing) existing.remove()
+  if (document.getElementById('vortixWorldOverlay')) {
+    console.log('[VW] overlay already exists');
+    return;
+  }
+  if (uiInjected) {
+    console.log('[VW] UI already injected');
+    return;
+  }
 
   const styleId = 'vortixWorldStyles'
   if (!document.getElementById(styleId)) {
@@ -80,34 +100,39 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     styleSheet.id = styleId
     styleSheet.innerText = SHARED_UI_CSS
     ;(document.head || document.documentElement).appendChild(styleSheet)
+    console.log('[VW] UI styles injected');
   }
 
-  const wrapper = document.createElement('div')
-  wrapper.innerHTML = `
-    <div id="vortixWorldOverlay">
-      <div class="vw-header-bar">
-        <div class="vw-title">
-          <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
-          VortixWorld
-        </div>
-      </div>
-      <div class="vw-main-content">
-        <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
-        <div class="vw-spinner" id="vwSpinner"></div>
-        <div id="vwStatus" class="vw-status">Preparing bypass...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for task data</div>
+  const overlay = document.createElement('div')
+  overlay.id = 'vortixWorldOverlay'
+  overlay.innerHTML = `
+    <div class="vw-header-bar">
+      <div class="vw-title">
+        <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
+        VortixWorld
       </div>
     </div>
+    <div class="vw-main-content">
+      <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
+      <div class="vw-spinner" id="vwSpinner"></div>
+      <div id="vwStatus" class="vw-status">Preparing bypass...</div>
+      <div class="vw-console" id="vwConsoleOutput"></div>
+      <div id="vwCountdown" class="vw-countdown" style="display:none;"></div>
+    </div>
   `
-  const overlay = wrapper.firstElementChild
-
   document.body.appendChild(overlay)
   document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
   uiInjected = true
+  addConsoleLine('> Initializing bypass...');
+  console.log('[VW] UI overlay added to body');
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown');
+  if (countdownEl) countdownEl.style.display = 'none';
+  
   const overlay = document.getElementById('vortixWorldOverlay')
   if (!overlay) return
   const mainContent = overlay.querySelector('.vw-main-content')
@@ -124,7 +149,8 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
   mainContent.innerHTML = `
     <img src="${statusIcon}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
     <div id="vwStatus" class="vw-status">${statusText}</div>
-    <div id="vwSubStatus" class="vw-substatus">${subText}</div>
+    <div class="vw-console" id="vwConsoleOutput">${consoleLines.map(line => `<div class="vw-console-line">${line}</div>`).join('')}</div>
+    <div class="vw-substatus" style="font-size:14px;color:#a0a0a0;margin-bottom:20px;background:#1e1e1e;box-shadow:inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;padding:10px 15px;border-radius:10px;font-weight:600;">${subText}</div>
     ${isSuccess ? `<div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>` : ''}
     <div class="vw-button-group">
       ${isSuccess ? `<button id="vwCopyBtn" class="vw-btn vw-btn-copy">📋 Copy URL</button>` : ''}
@@ -147,18 +173,26 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
       else overlay.remove()
     })
   }
+  bypassActive = false
+  lootlinkResolved = true
 }
 
 function updateStatus(main, sub) {
-  if (!document.getElementById('vortixWorldOverlay')) injectUI()
+  console.log('[VW] updateStatus:', main, sub);
+  if (!document.getElementById('vortixWorldOverlay')) {
+    console.log('[VW] overlay not found, injecting UI');
+    injectUI();
+  }
   const m = document.getElementById('vwStatus')
-  const s = document.getElementById('vwSubStatus')
   if (m) m.innerText = main
-  if (s) s.innerText = sub
+  if (sub) addConsoleLine(`> ${sub}`)
   const spinner = document.getElementById('vwSpinner')
   if (spinner) {
     if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none'
     else spinner.style.display = 'block'
+  }
+  if (main.includes('Method 1') || main.includes('Task completed') || main.includes('Establishing')) {
+    bypassActive = true
   }
 }
 
@@ -193,6 +227,10 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
   }
   if (!timeLabel) timeLabel = '0.00'
   
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown')
+  if (countdownEl) countdownEl.style.display = 'none'
+  
   if (isLuarmorUrl(url)) {
     const overlay = document.getElementById('vortixWorldOverlay')
     if (overlay) overlay.remove()
@@ -220,10 +258,15 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
 }
 
 function handleBypassError(errorMsg) {
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown')
+  if (countdownEl) countdownEl.style.display = 'none'
+  
   updateStatus('❌ Bypass failed', errorMsg)
   showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG)
   injectUI()
   showCompleteUI('', '', false, errorMsg)
+  bypassActive = false
 }
 
 class RobustWebSocket {
@@ -560,6 +603,21 @@ function selectFallbackTask(tasks) {
   return eligible[0]
 }
 
+async function verifySession(sessionUuid) {
+  if (!sessionUuid) return
+  updateStatus('Verifying session...', 'Preparing anti-bot check')
+  try {
+    await fetch(`https://${location.hostname}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: sessionUuid })
+    })
+    Logger.info('Session verification sent')
+  } catch (e) {
+    Logger.warn('Session verification failed', e.message)
+  }
+}
+
 function processTcResponse(data, originalFetch) {
   if (!keyIsValid) {
     Logger.warn('Key invalid, ignoring /tc response')
@@ -632,15 +690,16 @@ function processTcResponse(data, originalFetch) {
 function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
   if (!parentElement) return
+  console.log('[VW] modifyParentElement called, hiding unlock button container');
   window.state.processStartTime = Date.now()
   methodStartTime = performance.now()
-  parentElement.innerHTML = ''
-  parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
+  parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important; position: absolute !important; pointer-events: none !important;'
   injectUI()
   updateStatus('Loading...', 'Waiting for task data')
 }
 
 function runLocalLootlinkBypass() {
+  console.log('[VW] runLocalLootlinkBypass called');
   Logger.info('VortixWorld local lootlinks bypass enabled (proxy + skipped.lol + WebSocket)')
   
   try {
@@ -653,12 +712,18 @@ function runLocalLootlinkBypass() {
   }
 
   function startKeyCheck() {
+    console.log('[VW] startKeyCheck called');
     validateStoredKey()
       .then(isValid => {
+        console.log('[VW] key validation result:', isValid);
         keyCheckComplete = true;
         keyIsValid = isValid;
         if (isValid) {
-          waitForBody(() => {
+          waitForBody(async () => {
+            console.log('[VW] body ready, continuing lootlink setup');
+            const sessionUuid = window.session || document.session
+            if (sessionUuid) await verifySession(sessionUuid)
+            
             if (pendingTcData && !window.__vw_tc_processed) {
               Logger.info('Processing pending /tc response');
               processTcResponse(pendingTcData, window.fetch);
@@ -678,8 +743,10 @@ function runLocalLootlinkBypass() {
               return text && unlockText.some(t => text.includes(t));
             });
             if (existing) {
+              console.log('[VW] unlock button found, hiding container');
               modifyParentElement(existing);
             } else {
+              console.log('[VW] unlock button not found, showing ready UI');
               injectUI();
               updateStatus('Ready', 'Waiting for unlock button...');
             }
