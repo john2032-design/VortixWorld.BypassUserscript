@@ -147,6 +147,10 @@ function isAutoRedirectEnabled() {
   const saved = localStorage.getItem(VW_KEYS.autoRedirect);
   return saved !== null ? saved === 'true' : true;
 }
+async function copyTextSilent(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(String(text)); return true; } } catch (_) {}
+  try { const ta = document.createElement('textarea'); ta.value = String(text); ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (_) { return false; }
+}
 function showCompleteUI(finalUrl, timeLabel, isSuccess=true, errorMsg='') {
   if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
   const el = document.getElementById('vwCountdown'); if (el) el.style.display = 'none';
