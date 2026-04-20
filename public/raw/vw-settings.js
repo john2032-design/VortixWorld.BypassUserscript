@@ -764,7 +764,7 @@
     }
 
     async function fetchKeyStatus() {
-      const apiKey = window.VW_API_KEY
+      const apiKey = window.VW_API_KEY || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '') || localStorage.getItem('vw_user_key') || ''
       if (!apiKey) {
         keyStatusDesc.textContent = 'No API key found'
         keyStatusValue.textContent = '—'
