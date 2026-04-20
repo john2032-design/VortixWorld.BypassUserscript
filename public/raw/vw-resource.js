@@ -63,6 +63,8 @@ const VW_KEYS = window.VW_CONFIG?.keys || {
 };
 
 const SHARED_UI_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
   :root {
     --vw-bg: #1e1e1e;
     --vw-glass-bg: #1e1e1e;
@@ -85,7 +87,7 @@ const SHARED_UI_CSS = `
     height: 100vh !important; height: 100dvh !important; background: var(--vw-bg) !important;
     z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
     align-items: center !important; justify-content: center !important;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
     box-sizing: border-box !important; isolation: isolate !important;
   }
@@ -99,8 +101,10 @@ const SHARED_UI_CSS = `
   }
   html.vw-ios .vw-header-bar { top: env(safe-area-inset-top) !important; }
   .vw-title {
+    font-family: 'Orbitron', sans-serif !important;
     font-weight: 700 !important; font-size: 1.5rem !important; display: flex !important;
     align-items: center !important; gap: 12px !important; color: var(--vw-text) !important;
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
   }
   .vw-header-icon {
     height: 36px !important; width: 36px !important; border-radius: 50% !important;
@@ -125,8 +129,10 @@ const SHARED_UI_CSS = `
   }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .vw-status {
+    font-family: 'Orbitron', sans-serif !important;
     font-size: 1.8rem !important; font-weight: 700 !important; color: var(--vw-text) !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.5rem !important; text-transform: uppercase; letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
   }
   .vw-substatus {
     font-size: 0.9rem !important; color: var(--vw-text-dim) !important; background: var(--vw-bg) !important;
@@ -142,6 +148,7 @@ const SHARED_UI_CSS = `
   .vw-console-line { padding: 2px 0; border-bottom: 1px solid rgba(74, 222, 128, 0.1); }
   .vw-console-line:last-child { border-bottom: none; }
   .vw-countdown {
+    font-family: 'Orbitron', sans-serif !important;
     font-size: 15px; font-weight: 700; color: #4ade80; margin-bottom: 15px;
     text-transform: uppercase; letter-spacing: 1px;
   }
@@ -155,10 +162,11 @@ const SHARED_UI_CSS = `
     display: flex !important; gap: 1rem !important; width: 100% !important; margin-top: 1rem !important;
   }
   .vw-btn {
+    font-family: 'Orbitron', sans-serif !important;
     background: var(--vw-bg) !important; color: var(--vw-text) !important; border: none !important;
     box-shadow: var(--neu-btn) !important; padding: 0.85rem 1rem !important; border-radius: 40px !important;
     font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s ease !important;
-    font-size: 0.95rem !important; flex: 1;
+    font-size: 0.95rem !important; flex: 1; text-transform: uppercase; letter-spacing: 1px;
   }
   .vw-btn-copy { color: #4ade80 !important; }
   .vw-btn-proceed { color: var(--vw-text) !important; }
@@ -175,12 +183,15 @@ const SHARED_UI_CSS = `
 `;
 
 const API_UI_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
   .vw-api-card {
     position: fixed !important; top: 50% !important; left: 50% !important;
     transform: translate(-50%, -50%) !important; width: min(500px, 90vw) !important;
     background: #1e1e1e !important; border-radius: 24px !important; border: none !important;
     box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important; padding: 24px !important;
-    text-align: center !important; z-index: 2147483647 !important; font-family: 'Inter', system-ui, sans-serif !important;
+    text-align: center !important; z-index: 2147483647 !important;
+    font-family: 'Inter', sans-serif !important;
   }
   .vw-api-card .vw-close {
     position: absolute !important; top: 16px !important; right: 16px !important; background: #1e1e1e !important;
@@ -190,16 +201,30 @@ const API_UI_CSS = `
   }
   .vw-api-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
   .vw-api-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
-  .vw-api-status { font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important; }
+  .vw-api-status {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important;
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
   .vw-api-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
   .vw-api-url { background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; border-radius: 12px !important; padding: 12px !important; word-break: break-all !important; font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important; margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important; }
   .vw-api-buttons { display: flex !important; gap: 12px !important; }
-  .vw-api-btn { flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important; font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important; }
+  .vw-api-btn {
+    font-family: 'Orbitron', sans-serif !important;
+    flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+    border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important;
+    font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
   .vw-api-btn-copy { color: #4ade80 !important; }
   .vw-api-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
   .vw-api-topbar-inner { display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: 100% !important; padding: 0 16px !important; white-space: nowrap !important; }
   .vw-api-loading-ring { width: 20px !important; height: 20px !important; flex: 0 0 auto !important; display: inline-block !important; border-radius: 50% !important; border: 3px solid #141414 !important; border-top: 3px solid #e0e0e0 !important; animation: vw-api-spin 0.8s linear infinite !important; }
-  .vw-api-loading-text { color: #e0e0e0 !important; font-weight: 600 !important; line-height: 1 !important; white-space: nowrap !important; }
+  .vw-api-loading-text {
+    font-family: 'Orbitron', sans-serif !important;
+    color: #e0e0e0 !important; font-weight: 600 !important; line-height: 1 !important; white-space: nowrap !important;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
   @keyframes vw-api-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @media (max-width: 640px) { .vw-api-card { padding: 20px !important; } .vw-api-status { font-size: 22px !important; } .vw-api-substatus { font-size: 12px !important; } }
 `;
