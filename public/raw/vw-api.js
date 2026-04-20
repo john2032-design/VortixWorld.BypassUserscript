@@ -96,6 +96,10 @@ async function bypassUrl(url, accessToken) {
   Logger.info('API bypass response', json.status);
   return json;
 }
+async function copyTextSilent(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(String(text)); return true; } } catch (_) {}
+  try { const ta = document.createElement('textarea'); ta.value = String(text); ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (_) { return false; }
+}
 async function runApiBypass() {
   Logger.info('Starting API bypass for', location.href);
   createApiTopBar('Checking key...');
