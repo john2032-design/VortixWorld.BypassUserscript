@@ -1,6 +1,7 @@
 const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
 const ICON_URL = 'https://i.postimg.cc/Y2TmKMf8/2180201F-FB5D-4574-9E55-158B4442F02A.png';
 const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png';
+const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png';
 const SUCCESS_GIF = 'https://cdn3.emoji.gg/emojis/529330-ai-baby.gif';
 const ERROR_JPG = 'https://iili.io/Blf65Is.md.jpg';
 const SITE_HOST = 'vortix-world-bypass.vercel.app';
@@ -275,6 +276,16 @@ async function copyTextSilent(text) {
   return false;
 }
 
+function isLuarmorUrl(url) {
+  try {
+    const u = new URL(String(url), location.href);
+    const h = (u.hostname || '').toLowerCase();
+    return h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net');
+  } catch (_) {
+    return String(url).includes('ads.luarmor.net');
+  }
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>]/g, function(m) {
     if (m === '&') return '&amp;';
@@ -306,6 +317,7 @@ function decodeURIxor(encodedString, prefixLength = 5) {
 window.HOST = HOST;
 window.ICON_URL = ICON_URL;
 window.LOOTLINK_UI_ICON = LOOTLINK_UI_ICON;
+window.LUARMOR_UI_ICON = LUARMOR_UI_ICON;
 window.SUCCESS_GIF = SUCCESS_GIF;
 window.ERROR_JPG = ERROR_JPG;
 window.TPI_HOST = TPI_HOST;
@@ -325,6 +337,7 @@ window.API_UI_CSS = API_UI_CSS;
 window.cleanupManager = cleanupManager;
 window.shutdown = shutdown;
 window.copyTextSilent = copyTextSilent;
+window.isLuarmorUrl = isLuarmorUrl;
 window.escapeHtml = escapeHtml;
 window.isAutoRedirectEnabled = isAutoRedirectEnabled;
 window.decodeURIxor = decodeURIxor;
