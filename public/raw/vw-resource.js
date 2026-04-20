@@ -8,6 +8,7 @@ const TPI_HOST = 'tpi.li';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36';
 const API_BASE = 'https://vortixworld-end.vercel.app';
 const TC_PROXY_URL = 'https://lootlink-backend-b526.onrender.com/tc';
+const INCENTIVE_SERVER_DOMAIN = 'onsultingco.com';
 
 const LOOT_HOSTS = [
   'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
@@ -311,6 +312,7 @@ window.TPI_HOST = TPI_HOST;
 window.ANDROID_UA = ANDROID_UA;
 window.API_BASE = API_BASE;
 window.TC_PROXY_URL = TC_PROXY_URL;
+window.INCENTIVE_SERVER_DOMAIN = INCENTIVE_SERVER_DOMAIN;
 window.LOOT_HOSTS = LOOT_HOSTS;
 window.ALLOWED_SHORT_HOSTS = ALLOWED_SHORT_HOSTS;
 window.isLootHost = isLootHost;
