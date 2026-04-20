@@ -49,6 +49,9 @@ let currentRemainingSeconds = 60
 let keyIsValid = false
 let keyCheckComplete = false
 let pendingTcData = null
+let consoleLines = []
+let bypassActive = false
+let lootlinkResolved = false
 
 function waitForBody(callback) {
   if (document.body) {
@@ -61,6 +64,16 @@ function waitForBody(callback) {
       }
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
+}
+
+function addConsoleLine(text) {
+  consoleLines.push(text);
+  if (consoleLines.length > 8) consoleLines.shift();
+  const consoleEl = document.getElementById('vwConsoleOutput');
+  if (consoleEl) {
+    consoleEl.innerHTML = consoleLines.map(line => `<div class="vw-console-line">${line}</div>`).join('');
+    consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 }
 
@@ -95,7 +108,8 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
         <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
         <div class="vw-spinner" id="vwSpinner"></div>
         <div id="vwStatus" class="vw-status">Preparing bypass...</div>
-        <div id="vwSubStatus" class="vw-substatus">Waiting for task data</div>
+        <div class="vw-console" id="vwConsoleOutput"></div>
+        <div id="vwCountdown" class="vw-countdown" style="display:none;"></div>
       </div>
     </div>
   `
@@ -105,9 +119,14 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
   uiInjected = true
+  addConsoleLine('> Initializing bypass...');
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown');
+  if (countdownEl) countdownEl.style.display = 'none';
+  
   const overlay = document.getElementById('vortixWorldOverlay')
   if (!overlay) return
   const mainContent = overlay.querySelector('.vw-main-content')
@@ -124,7 +143,8 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
   mainContent.innerHTML = `
     <img src="${statusIcon}" class="vw-icon-img" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
     <div id="vwStatus" class="vw-status">${statusText}</div>
-    <div id="vwSubStatus" class="vw-substatus">${subText}</div>
+    <div class="vw-console" id="vwConsoleOutput">${consoleLines.map(line => `<div class="vw-console-line">${line}</div>`).join('')}</div>
+    <div class="vw-substatus" style="font-size:14px;color:#a0a0a0;margin-bottom:20px;background:#1e1e1e;box-shadow:inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;padding:10px 15px;border-radius:10px;font-weight:600;">${subText}</div>
     ${isSuccess ? `<div class="vw-url-container" id="vwUrlContainer">${escapeHtml(finalUrl)}</div>` : ''}
     <div class="vw-button-group">
       ${isSuccess ? `<button id="vwCopyBtn" class="vw-btn vw-btn-copy">📋 Copy URL</button>` : ''}
@@ -147,40 +167,42 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
       else overlay.remove()
     })
   }
+  bypassActive = false
+  lootlinkResolved = true
 }
 
 function updateStatus(main, sub) {
   if (!document.getElementById('vortixWorldOverlay')) injectUI()
   const m = document.getElementById('vwStatus')
-  const s = document.getElementById('vwSubStatus')
   if (m) m.innerText = main
-  if (s) s.innerText = sub
+  if (sub) addConsoleLine(`> ${sub}`)
   const spinner = document.getElementById('vwSpinner')
   if (spinner) {
     if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none'
     else spinner.style.display = 'block'
   }
-}
-
-function updateCountdown(remaining) {
-  if (remaining !== undefined) currentRemainingSeconds = remaining
-  const sub = document.getElementById('vwSubStatus')
-  if (sub) sub.innerText = `Time Remaining ${currentRemainingSeconds} seconds...`
+  if (main.includes('Method 1') || main.includes('Task completed') || main.includes('Establishing')) {
+    bypassActive = true
+  }
 }
 
 function startCountdown(initialSeconds) {
-  if (countdownTimerId) {
-    clearInterval(countdownTimerId)
-    cleanupManager.intervals.delete(countdownTimerId)
-  }
+  if (countdownTimerId) clearInterval(countdownTimerId)
   currentRemainingSeconds = initialSeconds
-  updateCountdown()
-  countdownTimerId = cleanupManager.setInterval(() => {
+  const countdownEl = document.getElementById('vwCountdown')
+  if (countdownEl) {
+    countdownEl.style.display = 'block'
+    countdownEl.innerText = `Time Remaining: ${currentRemainingSeconds}s`
+  }
+  countdownTimerId = setInterval(() => {
     currentRemainingSeconds = Math.max(0, currentRemainingSeconds - 1)
-    updateCountdown()
+    const el = document.getElementById('vwCountdown')
+    if (el) {
+      el.innerText = `Time Remaining: ${currentRemainingSeconds}s`
+      if (currentRemainingSeconds <= 0) el.style.display = 'none'
+    }
     if (currentRemainingSeconds <= 0) {
       clearInterval(countdownTimerId)
-      cleanupManager.intervals.delete(countdownTimerId)
       countdownTimerId = null
     }
   }, 1000)
@@ -193,13 +215,10 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
   }
   if (!timeLabel) timeLabel = '0.00'
   
-  if (isLuarmorUrl(url)) {
-    const overlay = document.getElementById('vortixWorldOverlay')
-    if (overlay) overlay.remove()
-    showHashExpireUI(url)
-    shutdown()
-    return
-  }
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown')
+  if (countdownEl) countdownEl.style.display = 'none'
+  
   const auto = isAutoRedirectEnabled()
   if (forceCompleteUI) {
     injectUI()
@@ -211,7 +230,26 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
   if (auto) {
     updateStatus('Redirecting...', `Target URL acquired (${timeLabel}s)`)
     showToast(`Bypassed in ${timeLabel}s`, false, SUCCESS_GIF)
-    setTimeout(() => { location.href = url }, 1000)
+    const delay = 0
+    if (delay > 0) {
+      let remaining = delay
+      const countdownDiv = document.getElementById('vwCountdown')
+      if (countdownDiv) {
+        countdownDiv.style.display = 'block'
+        countdownDiv.innerText = `Redirecting in ${remaining} seconds...`
+      }
+      const interval = setInterval(() => {
+        remaining--
+        if (countdownDiv) countdownDiv.innerText = `Redirecting in ${remaining} seconds...`
+        if (remaining <= 0) {
+          clearInterval(interval)
+          if (countdownDiv) countdownDiv.style.display = 'none'
+          location.href = url
+        }
+      }, 1000)
+    } else {
+      setTimeout(() => { location.href = url }, 100)
+    }
   } else {
     injectUI()
     showCompleteUI(url, timeLabel, true)
@@ -220,60 +258,46 @@ function handleBypassSuccess(url, timeSecondsStr, bypassType = '', forceComplete
 }
 
 function handleBypassError(errorMsg) {
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwCountdown')
+  if (countdownEl) countdownEl.style.display = 'none'
+  
   updateStatus('❌ Bypass failed', errorMsg)
   showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG)
   injectUI()
   showCompleteUI('', '', false, errorMsg)
+  bypassActive = false
 }
 
 class RobustWebSocket {
   constructor(url, options = {}) {
     this.url = url
     this.reconnectDelay = options.initialDelay || CONFIG.INITIAL_RECONNECT_DELAY
-    this.heartbeatInterval = (options.heartbeat || CONFIG.HEARTBEAT_INTERVAL) * 1000
+    this.heartbeatInterval = 1000
     this.connectionTimeout = options.connectionTimeout || 3000
-    this.maxReconnectAttempts = 5
+    this.maxReconnectAttempts = 2
+    this.messageTimeout = 20000
     this.ws = null
     this.reconnectTimeout = null
     this.heartbeatTimer = null
     this.connectionTimer = null
+    this.messageTimer = null
     this.reconnectAttempts = 0
-    this.heartbeatCount = 0
     this.resolved = false
     this.manualDisconnect = false
-    this.isConnecting = false
-    this.errorLogged = false
-    this.openLogged = false
-    this.keyExpiryCheckInterval = null
-    this.fallbackTimeoutId = null
     this.onConnectionTimeout = options.onConnectionTimeout || null
   }
 
   connect() {
     if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
-    if (this.isConnecting) return
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      if (!this.errorLogged) {
-        Logger.error('WebSocket max reconnect attempts reached', this.url)
-        this.errorLogged = true
-      }
-      return
-    }
-    this.isConnecting = true
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) return
     this.clearConnectionTimer()
     this.connectionTimer = setTimeout(() => {
-      if (this.isConnecting && !this.resolved) {
+      if (!this.resolved) {
         Logger.warn('WebSocket connection timeout', this.url)
-        if (this.ws) {
-          this.ws.close()
-          this.ws = null
-        }
-        this.isConnecting = false
-        if (this.onConnectionTimeout) {
-          this.onConnectionTimeout()
-        } else {
-          this.scheduleReconnect()
-        }
+        if (this.ws) { this.ws.close(); this.ws = null; }
+        if (this.onConnectionTimeout) this.onConnectionTimeout()
+        else this.scheduleReconnect()
       }
     }, this.connectionTimeout)
     
@@ -286,11 +310,7 @@ class RobustWebSocket {
       this.ws.onerror = (e) => this.onError(e)
     } catch (e) {
       this.clearConnectionTimer()
-      this.isConnecting = false
-      if (!this.errorLogged) {
-        Logger.error('WebSocket construction error', e.message)
-        this.errorLogged = true
-      }
+      Logger.error('WebSocket construction error', e.message)
       this.scheduleReconnect()
     }
   }
@@ -302,49 +322,49 @@ class RobustWebSocket {
     }
   }
 
+  clearMessageTimer() {
+    if (this.messageTimer) {
+      clearTimeout(this.messageTimer)
+      this.messageTimer = null
+    }
+  }
+
   onOpen() {
     this.clearConnectionTimer()
-    this.isConnecting = false
-    this.errorLogged = false
-    if (window.isShutdown || !keyIsValid) {
-      this.disconnect()
-      return
-    }
-    if (!this.openLogged) {
-      Logger.websocket('WebSocket connection opened', this.url)
-      this.openLogged = true
-    }
     this.reconnectAttempts = 0
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       cleanupManager.timeouts.delete(this.reconnectTimeout)
       this.reconnectTimeout = null
     }
+    Logger.websocket('WebSocket connection opened', this.url)
     this.sendHeartbeat()
     this.startHeartbeat()
-    this.startKeyExpiryMonitor()
+    this.messageTimer = setTimeout(() => {
+      if (!this.resolved) {
+        Logger.warn('WebSocket message timeout (no r: received)', this.url)
+        this.disconnect()
+        if (this.onConnectionTimeout) this.onConnectionTimeout()
+      }
+    }, this.messageTimeout)
   }
 
   onClose(event) {
     this.clearConnectionTimer()
-    this.isConnecting = false
-    this.openLogged = false
-    this.stopKeyExpiryMonitor()
-    if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
+    this.clearMessageTimer()
     this.stopHeartbeat()
+    if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
     this.scheduleReconnect()
   }
 
   onError(error) {
-    if (!this.errorLogged) {
-      Logger.error('WebSocket fatal error', error.message || 'Unknown')
-      this.errorLogged = true
-    }
+    Logger.error('WebSocket fatal error', error.message || 'Unknown')
   }
 
   onMessage(event) {
     if (window.isShutdown || !keyIsValid) return
     if (event.data && event.data.includes('r:')) {
+      this.clearMessageTimer()
       let publisherLink = event.data.replace('r:', '').trim()
       Logger.info('Received publisher link from WebSocket', publisherLink)
       if (publisherLink) {
@@ -364,10 +384,6 @@ class RobustWebSocket {
 
         if (finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://'))) {
           this.resolved = true
-          if (this.fallbackTimeoutId) {
-            clearTimeout(this.fallbackTimeoutId)
-            this.fallbackTimeoutId = null
-          }
           this.disconnect()
           handleBypassSuccess(finalUrl, null, 'lootlink')
         } else {
@@ -380,7 +396,6 @@ class RobustWebSocket {
   sendHeartbeat() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send('0')
-      this.heartbeatCount++
     }
   }
 
@@ -399,58 +414,26 @@ class RobustWebSocket {
     }
   }
 
-  startKeyExpiryMonitor() {
-    this.stopKeyExpiryMonitor()
-    this.keyExpiryCheckInterval = setInterval(async () => {
-      const stillValid = await validateStoredKey()
-      if (!stillValid) {
-        Logger.warn('Key expired during WebSocket connection, disconnecting')
-        this.disconnect()
-        updateStatus('❌ Key expired', 'Please renew your API key')
-        showToast('API key expired', true, ERROR_JPG)
-      }
-    }, 60000)
-  }
-
-  stopKeyExpiryMonitor() {
-    if (this.keyExpiryCheckInterval) {
-      clearInterval(this.keyExpiryCheckInterval)
-      this.keyExpiryCheckInterval = null
-    }
-  }
-
   scheduleReconnect() {
     if (window.isShutdown || this.manualDisconnect || !keyIsValid) return
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      if (!this.errorLogged) {
-        Logger.error('Max reconnect attempts reached, giving up', this.url)
-        this.errorLogged = true
-      }
-      return
-    }
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) return
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts)
     this.reconnectAttempts++
     Logger.warn(`WebSocket connection slow to open`, `Retry ${this.reconnectAttempts} in ${delay}ms`)
     this.reconnectTimeout = cleanupManager.setTimeout(() => {
-      this.errorLogged = false
-      this.openLogged = false
       this.connect()
     }, delay)
   }
 
   disconnect() {
     this.clearConnectionTimer()
+    this.clearMessageTimer()
     this.manualDisconnect = true
     this.stopHeartbeat()
-    this.stopKeyExpiryMonitor()
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       cleanupManager.timeouts.delete(this.reconnectTimeout)
       this.reconnectTimeout = null
-    }
-    if (this.fallbackTimeoutId) {
-      clearTimeout(this.fallbackTimeoutId)
-      this.fallbackTimeoutId = null
     }
     if (this.ws) {
       this.ws.close()
@@ -467,6 +450,7 @@ async function completeTaskViaSkippedLol(taskUrl) {
   const payload = { ID: 17, URL: urlToSend }
   try {
     Logger.info('Sending request to skipped.lol', JSON.stringify(payload))
+    updateStatus('Completing task 17...', 'Contacting skipped.lol')
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 8000)
     const response = await fetch(endpoint, {
@@ -488,6 +472,7 @@ async function completeTaskViaSkippedLol(taskUrl) {
     }
     if (parsed && parsed.status === 'ok') {
       Logger.info('Skipped.lol confirmed task completion')
+      updateStatus('Task completed', 'Establishing connection...')
       return true
     } else {
       throw new Error('Unexpected response from skipped.lol')
@@ -498,7 +483,7 @@ async function completeTaskViaSkippedLol(taskUrl) {
   }
 }
 
-function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 0) {
+function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 0, sameSubdomainRetry = 0) {
   if (!taskData || !taskData.urid) {
     Logger.error('Missing task data for WebSocket', taskData)
     return null
@@ -507,19 +492,44 @@ function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 
     Logger.warn('Key invalid, WebSocket not started')
     return null
   }
-  const { urid, task_id } = taskData
+  const { urid, task_id, session_id } = taskData
   const subdomainIndex = (parseInt(urid.substr(-5)) + subdomainAttempt) % 3
-  const wsUrl = `wss://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+  let wsUrl = `wss://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
+  if (session_id) wsUrl += `&session_id=${session_id}`
+  if (typeof is_loot !== 'undefined') wsUrl += `&is_loot=${is_loot ? '1' : '0'}`
+  if (typeof TID !== 'undefined') wsUrl += `&tid=${TID}`
   Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback}, attempt: ${subdomainAttempt})`, wsUrl)
   
   const ws = new RobustWebSocket(wsUrl, {
     initialDelay: CONFIG.INITIAL_RECONNECT_DELAY,
-    heartbeat: CONFIG.HEARTBEAT_INTERVAL,
     connectionTimeout: 3000,
+    messageTimeout: 20000,
     onConnectionTimeout: () => {
-      if (subdomainAttempt < 2 && !ws.resolved) {
+      if (sameSubdomainRetry < 1 && !ws.resolved) {
+        Logger.warn(`WebSocket connection timeout on subdomain ${subdomainIndex}, retrying same subdomain`)
+        startWebSocketForTask(taskData, isFallback, subdomainAttempt, sameSubdomainRetry + 1)
+      } else if (subdomainAttempt < 2 && !ws.resolved) {
         Logger.warn(`WebSocket connection timeout on subdomain ${subdomainIndex}, trying next subdomain`)
-        startWebSocketForTask(taskData, isFallback, subdomainAttempt + 1)
+        startWebSocketForTask(taskData, isFallback, subdomainAttempt + 1, 0)
+      } else {
+        if (window.primaryWebSocket) {
+          window.primaryWebSocket.disconnect()
+          window.primaryWebSocket = null
+        }
+        if (window.__vw_fallback_used) return
+        window.__vw_fallback_used = true
+        Logger.warn('WebSocket failed after all attempts, falling back')
+        updateStatus('Method 1 Failed', 'Using Method 2')
+        const fallbackTask = selectFallbackTask(window.__vw_tc_response || [])
+        if (fallbackTask && fallbackTask.urid) {
+          if (fallbackTask.auto_complete_seconds) {
+            startCountdown(fallbackTask.auto_complete_seconds)
+          }
+          startWebSocketForTask(fallbackTask, true)
+        } else {
+          Logger.error('No fallback task available')
+          handleBypassError('No suitable task found')
+        }
       }
     }
   })
@@ -560,7 +570,22 @@ function selectFallbackTask(tasks) {
   return eligible[0]
 }
 
-function processTcResponse(data, originalFetch) {
+async function verifySession(sessionUuid) {
+  if (!sessionUuid) return
+  updateStatus('Verifying session...', 'Preparing anti-bot check')
+  try {
+    await fetch(`https://${location.hostname}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: sessionUuid })
+    })
+    Logger.info('Session verification sent')
+  } catch (e) {
+    Logger.warn('Session verification failed', e.message)
+  }
+}
+
+async function processTcResponse(data, originalFetch) {
   if (!keyIsValid) {
     Logger.warn('Key invalid, ignoring /tc response')
     return true
@@ -571,19 +596,21 @@ function processTcResponse(data, originalFetch) {
   Logger.info('Processing lootlink-backend.onrender.com/tc response', JSON.stringify(data, null, 2))
   const task17 = Array.isArray(data) ? data.find(item => item.task_id === 17) : null
 
-  const runFallback = () => {
+  const runFallback = async (reason = 'missing') => {
     if (!keyIsValid) return
     if (window.__vw_fallback_used) return
     window.__vw_fallback_used = true
-    Logger.warn('Running fallback task selection')
-    updateStatus('Method 1 Failed/Timeout', 'Using Method 2')
+    if (reason === 'error') {
+      Logger.warn('Running fallback task selection due to skipped.lol error')
+      updateStatus('Method 1 Failed', 'Using Method 2')
+    } else {
+      Logger.info('No task 17 found, using fallback task')
+      updateStatus('Using fallback task...', 'Selecting alternative offer')
+    }
     
     if (window.primaryWebSocket) {
       window.primaryWebSocket.disconnect()
       window.primaryWebSocket = null
-    }
-    if (window.activeWebSocket === window.primaryWebSocket) {
-      window.activeWebSocket = null
     }
     
     methodStartTime = performance.now()
@@ -592,9 +619,10 @@ function processTcResponse(data, originalFetch) {
     if (fallbackTask && fallbackTask.urid) {
       Logger.info('Using fallback task for local WebSocket', fallbackTask)
       if (fallbackTask.auto_complete_seconds) {
-          startCountdown(fallbackTask.auto_complete_seconds)
+        startCountdown(fallbackTask.auto_complete_seconds)
       }
       startWebSocketForTask(fallbackTask, true)
+      updateStatus('Establishing connection...', `Task ${fallbackTask.task_id} - waiting for response`)
     } else {
       Logger.error('No suitable task found in /tc response')
       handleBypassError('No suitable task found')
@@ -608,23 +636,22 @@ function processTcResponse(data, originalFetch) {
     completeTaskViaSkippedLol(taskUrl).then(() => {
       if (!keyIsValid) return
       Logger.info('Skipped.lol success, starting WebSocket for task 17 immediately')
-      updateStatus('Task completed', 'Establishing connection...')
       const primaryWs = startWebSocketForTask(task17, false)
       const fallbackTimeoutId = setTimeout(() => {
         if (primaryWs && !primaryWs.resolved && keyIsValid) {
           Logger.warn('Method 1 WS timed out after 10s, switching to fallback')
           primaryWs.disconnect()
           window.primaryWebSocket = null
-          runFallback()
+          runFallback('error')
         }
       }, 10000)
       if (primaryWs) primaryWs.fallbackTimeoutId = fallbackTimeoutId
     }).catch(err => {
       Logger.error('Skipped.lol request failed, falling back to direct WebSocket', err)
-      runFallback()
+      runFallback('error')
     })
   } else {
-    runFallback()
+    runFallback('missing')
   }
   return true
 }
@@ -652,75 +679,63 @@ function runLocalLootlinkBypass() {
     window.__vw_unlockDetected = false
   }
 
-  function startKeyCheck() {
-    validateStoredKey()
-      .then(isValid => {
-        keyCheckComplete = true;
-        keyIsValid = isValid;
-        if (isValid) {
-          waitForBody(() => {
-            if (pendingTcData && !window.__vw_tc_processed) {
-              Logger.info('Processing pending /tc response');
-              processTcResponse(pendingTcData, window.fetch);
-              pendingTcData = null;
-              window.__vw_tc_processed = true;
-            }
-            
-            if (window.__vw_tc_response && !window.__vw_tc_processed) {
-              Logger.info('Processing captured /tc response');
-              processTcResponse(window.__vw_tc_response, window.fetch);
-              window.__vw_tc_processed = true;
-            }
-            
-            const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward'];
-            const existing = Array.from(document.querySelectorAll('*')).find(el => {
+  async function startKeyCheck() {
+    const isValid = await validateStoredKey()
+    keyCheckComplete = true
+    keyIsValid = isValid
+    if (isValid) {
+      waitForBody(async () => {
+        const sessionUuid = window.session || document.session
+        if (sessionUuid) await verifySession(sessionUuid)
+        
+        if (pendingTcData && !window.__vw_tc_processed) {
+          Logger.info('Processing pending /tc response');
+          processTcResponse(pendingTcData, window.fetch);
+          pendingTcData = null;
+          window.__vw_tc_processed = true;
+        }
+        
+        if (window.__vw_tc_response && !window.__vw_tc_processed) {
+          Logger.info('Processing captured /tc response');
+          processTcResponse(window.__vw_tc_response, window.fetch);
+          window.__vw_tc_processed = true;
+        }
+        
+        const unlockText = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward'];
+        const existing = Array.from(document.querySelectorAll('*')).find(el => {
+          const text = el.textContent;
+          return text && unlockText.some(t => text.includes(t));
+        });
+        if (existing) {
+          modifyParentElement(existing);
+        } else {
+          injectUI();
+          updateStatus('Ready', 'Waiting for unlock button...');
+        }
+
+        cleanupManager.setTimeout(() => {
+          if (!window.__vw_tc_processed && keyIsValid) {
+            Logger.warn('Bypass seems stuck, checking for unlock element again');
+            const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
               const text = el.textContent;
               return text && unlockText.some(t => text.includes(t));
             });
-            if (existing) {
-              modifyParentElement(existing);
-            } else {
-              injectUI();
-              updateStatus('Ready', 'Waiting for unlock button...');
-            }
-
-            cleanupManager.setTimeout(() => {
-              if (!window.__vw_tc_processed && keyIsValid) {
-                Logger.warn('Bypass seems stuck, checking for unlock element again');
-                const existingAgain = Array.from(document.querySelectorAll('*')).find(el => {
-                  const text = el.textContent;
-                  return text && unlockText.some(t => text.includes(t));
-                });
-                if (existingAgain) modifyParentElement(existingAgain);
-                else updateStatus('Bypass delayed', 'Trying alternative method...');
-              }
-            }, CONFIG.FALLBACK_CHECK_DELAY);
-          });
-        } else {
-          Logger.warn('API key invalid/expired');
-          waitForBody(() => {
-            injectUI();
-            updateStatus('❌ API Key Invalid', 'Please enter a valid API key');
-            const spinner = document.getElementById('vwSpinner');
-            if (spinner) spinner.style.display = 'none';
-          });
-          pendingTcData = null;
-          window.__vw_tc_response = null;
-        }
-      })
-      .catch(err => {
-        keyCheckComplete = true;
-        keyIsValid = false;
-        Logger.error('Key validation error:', err);
-        waitForBody(() => {
-          injectUI();
-          updateStatus('❌ Key Validation Error', 'Unable to verify API key');
-          const spinner = document.getElementById('vwSpinner');
-          if (spinner) spinner.style.display = 'none';
-        });
-        pendingTcData = null;
-        window.__vw_tc_response = null;
+            if (existingAgain) modifyParentElement(existingAgain);
+            else updateStatus('Bypass delayed', 'Trying alternative method...');
+          }
+        }, CONFIG.FALLBACK_CHECK_DELAY);
       });
+    } else {
+      Logger.warn('API key invalid/expired');
+      waitForBody(() => {
+        injectUI();
+        updateStatus('❌ API Key Invalid', 'Please enter a valid API key');
+        const spinner = document.getElementById('vwSpinner');
+        if (spinner) spinner.style.display = 'none';
+      });
+      pendingTcData = null;
+      window.__vw_tc_response = null;
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -733,53 +748,3 @@ function runLocalLootlinkBypass() {
 }
 
 window.runLocalLootlinkBypass = runLocalLootlinkBypass
-window.showHashExpireUI = function(finalUrl) {
-  const existingOverlay = document.getElementById('vortixWorldOverlay')
-  if (existingOverlay) existingOverlay.remove()
-  uiInjected = false
-  if (document.body) document.body.style.overflow = ''
-  document.documentElement.style.overflow = ''
-  const existingExpire = document.getElementById('vwHashExpireOverlay')
-  if (existingExpire) existingExpire.remove()
-
-  document.documentElement.style.setProperty('visibility', 'visible', 'important')
-  document.documentElement.style.setProperty('display', 'block', 'important')
-  if (document.body) {
-    document.body.style.setProperty('visibility', 'visible', 'important')
-    document.body.style.setProperty('display', 'block', 'important')
-  }
-
-  const overlay = document.createElement('div')
-  overlay.id = 'vwHashExpireOverlay'
-  overlay.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1e1e1e;display:flex;align-items:center;justify-content:center;z-index:2147483647;color:#e0e0e0;font-family:sans-serif;`
-  overlay.innerHTML = `<div style="text-align:center;background:#1e1e1e;padding:40px;border-radius:24px;box-shadow:8px 8px 16px #141414, -8px -8px 16px #282828;">
-    <img src="${LUARMOR_UI_ICON}" style="width:80px;height:80px;border-radius:50%;margin-bottom:20px;box-shadow:4px 4px 8px #141414, -4px -4px 8px #282828;">
-    <h3 style="margin-top:0;font-size:1.4rem;">⚠️ Expiring Hash Detected</h3>
-    <p style="color:#a0a0a0;font-size:14px;">Please redirect quickly before the link expires.</p>
-    <div id="hz" style="font-size:45px;font-weight:bold;color:#ef4444;margin:20px;text-shadow:2px 2px 4px #141414;">7</div>
-    <button id="go" style="padding:14px 35px;border-radius:40px;border:none;background:#1e1e1e;box-shadow:4px 4px 8px #141414, -4px -4px 8px #282828;color:#e0e0e0;font-weight:700;cursor:pointer;transition:all 0.2s;font-size:15px;">🔗 Go to Link Now</button>
-  </div>`
-  document.documentElement.appendChild(overlay)
-
-  const goBtn = overlay.querySelector('#go')
-  let tl = 7
-  const iv = setInterval(() => {
-    tl--
-    const countdownEl = overlay.querySelector('#hz')
-    if (countdownEl) countdownEl.textContent = tl
-    if (tl <= 0) {
-      clearInterval(iv)
-      if (goBtn) {
-        goBtn.disabled = true
-        goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828'
-        goBtn.textContent = '🔄 Refreshing...'
-      }
-      window.location.reload()
-    }
-  }, 1000)
-  if (goBtn) {
-    goBtn.onmousedown = () => { goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828' }
-    goBtn.onmouseup = () => { goBtn.style.boxShadow = '4px 4px 8px #141414, -4px -4px 8px #282828' }
-    goBtn.onclick = () => { window.location.href = finalUrl }
-  }
-}
