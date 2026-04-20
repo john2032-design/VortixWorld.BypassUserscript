@@ -5,6 +5,7 @@
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
   const ICON_URL = 'https://i.postimg.cc/Y2TmKMf8/2180201F-FB5D-4574-9E55-158B4442F02A.png'
+  const GEAR_ICON_URL = 'https://i.postimg.cc/KzkvJ3V4/BB752784-A3D8-4E6A-9955-E190A76EBD71.png'
   const API_INFO_URL = 'https://apikey-nine.vercel.app/api/key/info/'
 
   const keys = {
@@ -32,34 +33,48 @@
       display: none !important;
     }
 
-    .vw-settings-btn {
+    .vw-gear-btn {
       position: fixed !important;
       left: calc(14px + env(safe-area-inset-left)) !important;
       bottom: calc(14px + env(safe-area-inset-bottom)) !important;
       z-index: 2147483647 !important;
-      padding: 14px 24px !important;
-      border-radius: 40px !important;
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 24px !important;
       border: none !important;
       background: #1e1e1e !important;
       box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
       color: #e0e0e0 !important;
-      font-weight: 700 !important;
+      font-size: 22px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
       cursor: pointer !important;
-      pointer-events: auto !important;
+      user-select: none !important;
       transition: all 0.2s ease !important;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: 14px;
+      pointer-events: auto !important;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
       -webkit-tap-highlight-color: transparent !important;
       touch-action: manipulation !important;
-      padding: 14px 24px !important;
+      padding: 0 !important;
     }
 
-    .vw-settings-btn:active {
+    .vw-gear-btn img {
+      width: 28px !important;
+      height: 28px !important;
+      object-fit: contain !important;
+      border-radius: 0 !important;
+      display: block !important;
+    }
+
+    .vw-gear-btn:hover {
+      transform: translateY(-2px) scale(1.02) !important;
+      box-shadow: 6px 6px 12px #141414, -6px -6px 12px #282828 !important;
+    }
+
+    .vw-gear-btn:active {
+      transform: scale(0.98) !important;
       box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
-      transform: translateY(2px);
-      color: #4ade80;
     }
 
     .vw-backdrop {
@@ -569,11 +584,15 @@
     style.textContent = SETTINGS_CSS
     shadow.appendChild(style)
 
-    const settingsBtn = document.createElement('button')
-    settingsBtn.type = 'button'
-    settingsBtn.className = 'vw-settings-btn'
-    settingsBtn.textContent = 'Settings'
-    shadow.appendChild(settingsBtn)
+    const gearBtn = document.createElement('button')
+    gearBtn.type = 'button'
+    gearBtn.className = 'vw-gear-btn'
+    gearBtn.setAttribute('aria-label', 'Open settings')
+    const gearImg = document.createElement('img')
+    gearImg.src = GEAR_ICON_URL
+    gearImg.alt = 'Settings'
+    gearBtn.appendChild(gearImg)
+    shadow.appendChild(gearBtn)
 
     const backdrop = document.createElement('div')
     backdrop.className = 'vw-backdrop'
@@ -764,7 +783,7 @@
     }
 
     async function fetchKeyStatus() {
-      const apiKey = window.VW_API_KEY || (typeof GM_getValue === 'function' ? GM_getValue('vw_user_key', '') : '') || localStorage.getItem('vw_user_key') || ''
+      const apiKey = window.VW_API_KEY
       if (!apiKey) {
         keyStatusDesc.textContent = 'No API key found'
         keyStatusValue.textContent = '—'
@@ -854,7 +873,7 @@
 
     window.addEventListener('storage', syncFromStorage)
 
-    settingsBtn.addEventListener('click', (e) => {
+    gearBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
       openPanel('settings')
