@@ -100,9 +100,9 @@ const SHARED_UI_CSS = `
 
 const cleanupManager = {
   intervals: new Set(), timeouts: new Set(),
-  setInterval(fn, delay, ...args) { const id = setInterval(fn, delay, ...args); this.intervals.add(id); return id; },
-  setTimeout(fn, delay, ...args) { const id = setTimeout(() => { this.timeouts.delete(id); fn(...args); }, delay); this.timeouts.add(id); return id; },
-  clearAll() { this.intervals.forEach(id => clearInterval(id)); this.timeouts.forEach(id => clearTimeout(id)); this.intervals.clear(); this.timeouts.clear(); }
+  setInterval(fn, delay) { const id = setInterval(fn, delay); this.intervals.add(id); return id; },
+  setTimeout(fn, delay) { const id = setTimeout(() => { this.timeouts.delete(id); fn(); }, delay); this.timeouts.add(id); return id; },
+  clearAll() { this.intervals.forEach(clearInterval); this.timeouts.forEach(clearTimeout); this.intervals.clear(); this.timeouts.clear(); }
 };
 
 let isShutdown = false;
@@ -113,6 +113,11 @@ function shutdown() {
   if (window.primaryWebSocket) { window.primaryWebSocket.disconnect(); window.primaryWebSocket = null; }
   if (window.fallbackWebSocket) { window.fallbackWebSocket.disconnect(); window.fallbackWebSocket = null; }
   if (window.activeWebSocket) { window.activeWebSocket.disconnect(); window.activeWebSocket = null; }
+}
+
+async function copyTextSilent(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(String(text)); return true; } } catch (_) {}
+  try { const ta = document.createElement('textarea'); ta.value = String(text); ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (_) { return false; }
 }
 
 function escapeHtml(str) {
