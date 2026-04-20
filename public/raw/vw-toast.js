@@ -9,7 +9,7 @@ const TOAST_CONTAINER_CSS = `
     padding: 10px 18px !important; border-radius: 40px !important; background: #1e1e1e !important;
     box-shadow: 6px 6px 12px #141414, -6px -6px 12px #282828 !important; color: #e0e0e0 !important;
     font-weight: 700 !important; font-size: 13px !important; animation: vw-toast-in 0.22s ease-out !important;
-    pointer-events: none !important; font-family: inherit !important; word-break: break-word !important;
+    pointer-events: none !important; font-family: 'Inter', sans-serif !important; word-break: break-word !important;
     border-left: 4px solid #16a34a !important; max-width: 100% !important;
   }
   .vw-toast-content { display: flex !important; align-items: center !important; gap: 8px !important; white-space: normal !important; }
@@ -58,7 +58,9 @@ function processToastQueue() {
   if (isError) toast.style.borderLeftColor = '#b91c1c';
   
   let iconHtml = '';
-  if (emojiOrImg && emojiOrImg.startsWith('http')) {
+  if (emojiOrImg === '◉') {
+    iconHtml = '<span class="vw-toast-emoji" style="color:#4ade80;">◉</span>';
+  } else if (emojiOrImg && emojiOrImg.startsWith('http')) {
     iconHtml = `<img src="${emojiOrImg}" class="vw-toast-img" alt="">`;
   } else {
     const emojiChar = emojiOrImg || (isError ? '⚠️' : '✓');
