@@ -14,7 +14,7 @@ const LOOT_HOSTS = [
   'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
   'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com',
   'linksloot.net', 'lootlinks.com', 'best-links.org', 'loot-labs.com',
-  'lootlabs.com'
+  'lootlabs.com', 'links.lootlabs.gg'
 ];
 
 const ALLOWED_SHORT_HOSTS = [
