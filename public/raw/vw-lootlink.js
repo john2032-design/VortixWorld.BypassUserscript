@@ -186,23 +186,25 @@ function updateStatus(main, sub) {
   }
 }
 
+function updateCountdown(remaining) {
+  if (remaining !== undefined) currentRemainingSeconds = remaining
+  const sub = document.getElementById('vwSubStatus')
+  if (sub) sub.innerText = `Time Remaining ${currentRemainingSeconds} seconds...`
+}
+
 function startCountdown(initialSeconds) {
-  if (countdownTimerId) clearInterval(countdownTimerId)
-  currentRemainingSeconds = initialSeconds
-  const countdownEl = document.getElementById('vwCountdown')
-  if (countdownEl) {
-    countdownEl.style.display = 'block'
-    countdownEl.innerText = `Time Remaining: ${currentRemainingSeconds}s`
+  if (countdownTimerId) {
+    clearInterval(countdownTimerId)
+    cleanupManager.intervals.delete(countdownTimerId)
   }
-  countdownTimerId = setInterval(() => {
+  currentRemainingSeconds = initialSeconds
+  updateCountdown()
+  countdownTimerId = cleanupManager.setInterval(() => {
     currentRemainingSeconds = Math.max(0, currentRemainingSeconds - 1)
-    const el = document.getElementById('vwCountdown')
-    if (el) {
-      el.innerText = `Time Remaining: ${currentRemainingSeconds}s`
-      if (currentRemainingSeconds <= 0) el.style.display = 'none'
-    }
+    updateCountdown()
     if (currentRemainingSeconds <= 0) {
       clearInterval(countdownTimerId)
+      cleanupManager.intervals.delete(countdownTimerId)
       countdownTimerId = null
     }
   }, 1000)
@@ -538,12 +540,9 @@ function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 
     Logger.warn('Key invalid, WebSocket not started')
     return null
   }
-  const { urid, task_id, session_id } = taskData
+  const { urid, task_id } = taskData
   const subdomainIndex = (parseInt(urid.substr(-5)) + subdomainAttempt) % 3
-  let wsUrl = `wss://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
-  if (session_id) wsUrl += `&session_id=${session_id}`
-  if (typeof is_loot !== 'undefined') wsUrl += `&is_loot=${is_loot ? '1' : '0'}`
-  if (typeof TID !== 'undefined') wsUrl += `&tid=${TID}`
+  const wsUrl = `wss://${subdomainIndex}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`
   Logger.info(`Initiating WebSocket connection (isFallback: ${isFallback}, attempt: ${subdomainAttempt})`, wsUrl)
   
   const ws = new RobustWebSocket(wsUrl, {
@@ -785,3 +784,53 @@ function runLocalLootlinkBypass() {
 }
 
 window.runLocalLootlinkBypass = runLocalLootlinkBypass
+window.showHashExpireUI = function(finalUrl) {
+  const existingOverlay = document.getElementById('vortixWorldOverlay')
+  if (existingOverlay) existingOverlay.remove()
+  uiInjected = false
+  if (document.body) document.body.style.overflow = ''
+  document.documentElement.style.overflow = ''
+  const existingExpire = document.getElementById('vwHashExpireOverlay')
+  if (existingExpire) existingExpire.remove()
+
+  document.documentElement.style.setProperty('visibility', 'visible', 'important')
+  document.documentElement.style.setProperty('display', 'block', 'important')
+  if (document.body) {
+    document.body.style.setProperty('visibility', 'visible', 'important')
+    document.body.style.setProperty('display', 'block', 'important')
+  }
+
+  const overlay = document.createElement('div')
+  overlay.id = 'vwHashExpireOverlay'
+  overlay.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1e1e1e;display:flex;align-items:center;justify-content:center;z-index:2147483647;color:#e0e0e0;font-family:sans-serif;`
+  overlay.innerHTML = `<div style="text-align:center;background:#1e1e1e;padding:40px;border-radius:24px;box-shadow:8px 8px 16px #141414, -8px -8px 16px #282828;">
+    <img src="${LUARMOR_UI_ICON}" style="width:80px;height:80px;border-radius:50%;margin-bottom:20px;box-shadow:4px 4px 8px #141414, -4px -4px 8px #282828;">
+    <h3 style="margin-top:0;font-size:1.4rem;">⚠️ Expiring Hash Detected</h3>
+    <p style="color:#a0a0a0;font-size:14px;">Please redirect quickly before the link expires.</p>
+    <div id="hz" style="font-size:45px;font-weight:bold;color:#ef4444;margin:20px;text-shadow:2px 2px 4px #141414;">7</div>
+    <button id="go" style="padding:14px 35px;border-radius:40px;border:none;background:#1e1e1e;box-shadow:4px 4px 8px #141414, -4px -4px 8px #282828;color:#e0e0e0;font-weight:700;cursor:pointer;transition:all 0.2s;font-size:15px;">🔗 Go to Link Now</button>
+  </div>`
+  document.documentElement.appendChild(overlay)
+
+  const goBtn = overlay.querySelector('#go')
+  let tl = 7
+  const iv = setInterval(() => {
+    tl--
+    const countdownEl = overlay.querySelector('#hz')
+    if (countdownEl) countdownEl.textContent = tl
+    if (tl <= 0) {
+      clearInterval(iv)
+      if (goBtn) {
+        goBtn.disabled = true
+        goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828'
+        goBtn.textContent = '🔄 Refreshing...'
+      }
+      window.location.reload()
+    }
+  }, 1000)
+  if (goBtn) {
+    goBtn.onmousedown = () => { goBtn.style.boxShadow = 'inset 4px 4px 8px #141414, inset -4px -4px 8px #282828' }
+    goBtn.onmouseup = () => { goBtn.style.boxShadow = '4px 4px 8px #141414, -4px -4px 8px #282828' }
+    goBtn.onclick = () => { window.location.href = finalUrl }
+  }
+}
