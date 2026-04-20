@@ -56,11 +56,15 @@ let bypassActive = false
 let lootlinkResolved = false
 
 function waitForBody(callback) {
+  console.log('[VW] waitForBody called');
   if (document.body) {
+    console.log('[VW] body already exists, calling callback');
     callback();
   } else {
+    console.log('[VW] waiting for body...');
     const observer = new MutationObserver(() => {
       if (document.body) {
+        console.log('[VW] body appeared, calling callback');
         observer.disconnect();
         callback();
       }
@@ -80,12 +84,20 @@ function addConsoleLine(text) {
 }
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
+  console.log('[VW] injectUI called');
   if (!document.body) {
+    console.log('[VW] no body yet, waiting...');
     waitForBody(() => injectUI(iconUrl));
     return;
   }
-  if (document.getElementById('vortixWorldOverlay')) return;
-  if (uiInjected) return;
+  if (document.getElementById('vortixWorldOverlay')) {
+    console.log('[VW] overlay already exists');
+    return;
+  }
+  if (uiInjected) {
+    console.log('[VW] UI already injected');
+    return;
+  }
   const existing = document.getElementById('vortixWorldOverlay')
   if (existing) existing.remove()
 
@@ -95,6 +107,7 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     styleSheet.id = styleId
     styleSheet.innerText = SHARED_UI_CSS
     ;(document.head || document.documentElement).appendChild(styleSheet)
+    console.log('[VW] UI styles injected');
   }
 
   const wrapper = document.createElement('div')
@@ -122,6 +135,7 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   document.documentElement.style.overflow = 'hidden'
   uiInjected = true
   addConsoleLine('> Initializing bypass...');
+  console.log('[VW] UI overlay added to body');
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
@@ -174,7 +188,11 @@ function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
 }
 
 function updateStatus(main, sub) {
-  if (!document.getElementById('vortixWorldOverlay')) injectUI()
+  console.log('[VW] updateStatus:', main, sub);
+  if (!document.getElementById('vortixWorldOverlay')) {
+    console.log('[VW] overlay not found, injecting UI');
+    injectUI();
+  }
   const m = document.getElementById('vwStatus')
   if (m) m.innerText = main
   if (sub) addConsoleLine(`> ${sub}`)
@@ -682,10 +700,10 @@ function processTcResponse(data, originalFetch) {
 function modifyParentElement(targetElement) {
   const parentElement = targetElement.parentElement
   if (!parentElement) return
+  console.log('[VW] modifyParentElement called, hiding unlock button container');
   window.state.processStartTime = Date.now()
   methodStartTime = performance.now()
-  parentElement.innerHTML = ''
-  parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;'
+  parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important; position: absolute !important; pointer-events: none !important;'
   injectUI()
   updateStatus('Loading...', 'Waiting for task data')
 }
@@ -704,12 +722,15 @@ function runLocalLootlinkBypass() {
   }
 
   function startKeyCheck() {
+    console.log('[VW] startKeyCheck called');
     validateStoredKey()
       .then(isValid => {
+        console.log('[VW] key validation result:', isValid);
         keyCheckComplete = true;
         keyIsValid = isValid;
         if (isValid) {
           waitForBody(async () => {
+            console.log('[VW] body ready, continuing lootlink setup');
             const sessionUuid = window.session || document.session
             if (sessionUuid) await verifySession(sessionUuid)
             
@@ -732,8 +753,10 @@ function runLocalLootlinkBypass() {
               return text && unlockText.some(t => text.includes(t));
             });
             if (existing) {
+              console.log('[VW] unlock button found, hiding container');
               modifyParentElement(existing);
             } else {
+              console.log('[VW] unlock button not found, showing ready UI');
               injectUI();
               updateStatus('Ready', 'Waiting for unlock button...');
             }
