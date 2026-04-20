@@ -58,7 +58,9 @@ function processToastQueue() {
   if (isError) toast.style.borderLeftColor = '#b91c1c';
   
   let iconHtml = '';
-  if (emojiOrImg && emojiOrImg.startsWith('http')) {
+  if (emojiOrImg === '◉') {
+    iconHtml = '<span class="vw-toast-emoji" style="color:#4ade80;">◉</span>';
+  } else if (emojiOrImg && emojiOrImg.startsWith('http')) {
     iconHtml = `<img src="${emojiOrImg}" class="vw-toast-img" alt="">`;
   } else {
     const emojiChar = emojiOrImg || (isError ? '⚠️' : '✓');
