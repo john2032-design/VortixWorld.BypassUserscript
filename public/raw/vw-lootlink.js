@@ -1,3 +1,5 @@
+console.log('[VW] vw-lootlink.js loaded');
+
 const originalFetch = window.fetch;
 window.fetch = function(url, config) {
   const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
@@ -689,6 +691,7 @@ function modifyParentElement(targetElement) {
 }
 
 function runLocalLootlinkBypass() {
+  console.log('[VW] runLocalLootlinkBypass called');
   Logger.info('VortixWorld local lootlinks bypass enabled (proxy + skipped.lol + WebSocket)')
   
   try {
