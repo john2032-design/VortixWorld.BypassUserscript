@@ -106,7 +106,24 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   let container = document.querySelector('.card-body') || 
                  document.querySelector('#taskList')?.parentElement ||
                  document.querySelector('#unlockBtn')?.parentElement ||
-                 document.querySelector('.tasks')?.parentElement;
+                 document.querySelector('.tasks')?.parentElement ||
+                 document.querySelector('[class*="task"]')?.closest('.card, .container, .content') ||
+                 document.querySelector('.unlock')?.parentElement;
+
+  if (!container) {
+    const headings = Array.from(document.querySelectorAll('div, h2, h3, h4'));
+    const tasksHeading = headings.find(el => el.textContent.includes('Complete Tasks') || el.textContent.includes('Tasks'));
+    if (tasksHeading) {
+      container = tasksHeading.parentElement;
+    }
+  }
+
+  if (!container) {
+    const taskDivs = document.querySelectorAll('[class*="task"]');
+    if (taskDivs.length >= 2) {
+      container = taskDivs[0].parentElement;
+    }
+  }
 
   if (!container) {
     console.warn('[VW] No suitable container found, falling back to body');
@@ -728,6 +745,11 @@ function runLocalLootlinkBypass() {
     modifyParentElement(window.__vw_unlockElement)
     window.__vw_unlockDetected = false
   }
+
+  waitForBody(() => {
+    injectUI();
+    updateStatus('Initializing...', 'Checking API key');
+  });
 
   function startKeyCheck() {
     console.log('[VW] startKeyCheck called');
