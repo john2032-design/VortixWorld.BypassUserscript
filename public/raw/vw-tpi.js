@@ -55,11 +55,8 @@ function updateTpiStatus(main, sub) {
   if (sub) addTpiConsoleLine(`> ${sub}`);
   const spinner = document.getElementById('vwSpinner');
   if (spinner) {
-    if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) {
-      spinner.style.display = 'none';
-    } else {
-      spinner.style.display = 'block';
-    }
+    if (main.includes('Complete') || main.includes('Redirecting') || main.includes('Failed')) spinner.style.display = 'none';
+    else spinner.style.display = 'block';
   }
 }
 
@@ -177,7 +174,7 @@ async function runLocalTpiLiBypass() {
     const finalUrl = atob(token.slice(offset));
     addTpiConsoleLine('> URL decoded successfully');
     if (!finalUrl.startsWith('http')) throw new Error('Invalid URL');
-    const duration = ((Date.now() - tpiMethodStartTime) / 1000).toFixed(2);
+    const duration = ((performance.now() - tpiMethodStartTime) / 1000).toFixed(2);
     handleTpiSuccess(finalUrl, duration);
   } catch (e) {
     Logger.error('tpi.li bypass failed', e.message);
