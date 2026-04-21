@@ -12,10 +12,7 @@ const TC_PROXY_URL = 'https://lootlink-backend-b526.onrender.com/tc';
 const INCENTIVE_SERVER_DOMAIN = 'onsultingco.com';
 
 const LOOT_HOSTS = [
-  'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
-  'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com',
-  'linksloot.net', 'lootlinks.com', 'best-links.org', 'loot-labs.com',
-  'lootlabs.com', 'links.lootlabs.gg', 'links-lootlabs.gg'
+  'links.lootlabs.gg'
 ];
 
 const ALLOWED_SHORT_HOSTS = [
