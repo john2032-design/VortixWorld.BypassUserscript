@@ -387,13 +387,14 @@ function processTcResponse(data) {
 
 function runLocalLootlinkBypass() {
   Logger.info('VortixWorld local lootlinks bypass enabled');
+  console.log('[VW] runLocalLootlinkBypass called');
   try { Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA }); } catch (_) {}
 
   function startKeyCheck() {
     validateStoredKey().then(isValid => {
       keyCheckComplete = true;
       keyIsValid = isValid;
-      waitForBody(async () => {
+      waitForBody(() => {
         if (isValid) {
           const uuid = window.session || document.session;
           if (uuid) verifySession(uuid);
@@ -407,12 +408,18 @@ function runLocalLootlinkBypass() {
         } else {
           injectUI();
           updateStatus('❌ API Key Invalid', 'Please enter a valid API key');
-          document.getElementById('vwLootlinkSpinner').style.display = 'none';
+          const spinner = document.getElementById('vwLootlinkSpinner');
+          if (spinner) spinner.style.display = 'none';
         }
       });
     }).catch(err => {
       keyCheckComplete = true; keyIsValid = false;
-      waitForBody(() => { injectUI(); updateStatus('❌ Key Validation Error', 'Unable to verify API key'); });
+      waitForBody(() => {
+        injectUI();
+        updateStatus('❌ Key Validation Error', 'Unable to verify API key');
+        const spinner = document.getElementById('vwLootlinkSpinner');
+        if (spinner) spinner.style.display = 'none';
+      });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startKeyCheck, { once: true });
