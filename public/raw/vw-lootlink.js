@@ -94,38 +94,58 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
     return;
   }
 
-  const styleId = 'vortixWorldStyles'
+  const styleId = 'vortixWorldStyles';
   if (!document.getElementById(styleId)) {
-    const styleSheet = document.createElement('style')
-    styleSheet.id = styleId
-    styleSheet.innerText = SHARED_UI_CSS
-    ;(document.head || document.documentElement).appendChild(styleSheet)
+    const styleSheet = document.createElement('style');
+    styleSheet.id = styleId;
+    styleSheet.innerText = SHARED_UI_CSS;
+    (document.head || document.documentElement).appendChild(styleSheet);
     console.log('[VW] UI styles injected');
   }
 
-  const overlay = document.createElement('div')
-  overlay.id = 'vortixWorldOverlay'
+  let container = document.querySelector('.card-body') || 
+                 document.querySelector('#taskList')?.parentElement ||
+                 document.querySelector('#unlockBtn')?.parentElement ||
+                 document.querySelector('.tasks')?.parentElement;
+
+  if (!container) {
+    console.warn('[VW] No suitable container found, falling back to body');
+    container = document.body;
+  }
+
+  console.log('[VW] Injecting UI into container:', container);
+  container.innerHTML = '';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'vortixWorldOverlay';
+  overlay.style.cssText = `
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+  `;
   overlay.innerHTML = `
-    <div class="vw-header-bar">
+    <div class="vw-header-bar" style="position:relative;width:100%;background:transparent;box-shadow:none;margin-bottom:20px;">
       <div class="vw-title">
         <img src="${ICON_URL}" class="vw-header-icon" alt="Icon">
         VortixWorld
       </div>
     </div>
-    <div class="vw-main-content">
+    <div class="vw-main-content" style="width:100%;max-width:100%;padding:1.5rem;background:#1e1e1e;border-radius:16px;box-shadow:var(--neu-out);">
       <img src="${iconUrl}" class="vw-icon-img" alt="VortixWorld" onerror="this.onerror=null;this.src='${ICON_URL}'">
       <div class="vw-spinner" id="vwSpinner"></div>
       <div id="vwStatus" class="vw-status">Preparing bypass...</div>
       <div class="vw-console" id="vwConsoleOutput"></div>
       <div id="vwCountdown" class="vw-countdown" style="display:none;"></div>
     </div>
-  `
-  document.body.appendChild(overlay)
-  document.body.style.overflow = 'hidden'
-  document.documentElement.style.overflow = 'hidden'
-  uiInjected = true
+  `;
+  container.appendChild(overlay);
+  uiInjected = true;
   addConsoleLine('> Initializing bypass...');
-  console.log('[VW] UI overlay added to body');
+  console.log('[VW] UI overlay added to container');
 }
 
 function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
@@ -603,19 +623,17 @@ function selectFallbackTask(tasks) {
   return eligible[0]
 }
 
-async function verifySession(sessionUuid) {
+function verifySession(sessionUuid) {
   if (!sessionUuid) return
-  updateStatus('Verifying session...', 'Preparing anti-bot check')
-  try {
-    await fetch(`https://${location.hostname}/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session: sessionUuid })
-    })
+  fetch(`https://${location.hostname}/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session: sessionUuid })
+  }).then(() => {
     Logger.info('Session verification sent')
-  } catch (e) {
+  }).catch(e => {
     Logger.warn('Session verification failed', e.message)
-  }
+  })
 }
 
 function processTcResponse(data, originalFetch) {
@@ -722,7 +740,7 @@ function runLocalLootlinkBypass() {
           waitForBody(async () => {
             console.log('[VW] body ready, continuing lootlink setup');
             const sessionUuid = window.session || document.session
-            if (sessionUuid) await verifySession(sessionUuid)
+            if (sessionUuid) verifySession(sessionUuid)
             
             if (pendingTcData && !window.__vw_tc_processed) {
               Logger.info('Processing pending /tc response');
