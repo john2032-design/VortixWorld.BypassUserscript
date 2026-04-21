@@ -25,11 +25,6 @@ window.fetch = function(url, config) {
         console.log('[VW] /tc proxy response received, tasks:', data.length);
         Logger.info('/tc proxy response received', 'tasks:' + data.length);
         
-        if (!uiInjected) {
-          injectUI();
-          updateStatus('Bypass Started', 'Task data intercepted');
-        }
-        
         if (!keyCheckComplete) {
           Logger.info('Key check not complete, storing /tc response for later');
           pendingTcData = data;
@@ -390,21 +385,10 @@ function processTcResponse(data) {
   } else runFallback();
 }
 
-function modifyParentElement(el) {
-  const parent = el.parentElement;
-  if (!parent) return;
-  parent.style.cssText = 'height:0!important;overflow:hidden!important;visibility:hidden!important;position:absolute!important;pointer-events:none!important';
-  injectUI();
-  updateStatus('Loading...', 'Waiting for task data');
-}
-
 function runLocalLootlinkBypass() {
   Logger.info('VortixWorld local lootlinks bypass enabled');
   try { Object.defineProperty(navigator, 'userAgent', { get: () => ANDROID_UA }); } catch (_) {}
-  if (window.__vw_unlockDetected && window.__vw_unlockElement) {
-    modifyParentElement(window.__vw_unlockElement);
-    window.__vw_unlockDetected = false;
-  }
+
   function startKeyCheck() {
     validateStoredKey().then(isValid => {
       keyCheckComplete = true;
@@ -415,21 +399,11 @@ function runLocalLootlinkBypass() {
           if (uuid) verifySession(uuid);
           if (pendingTcData && !window.__vw_tc_processed) { processTcResponse(pendingTcData); pendingTcData = null; }
           if (window.__vw_tc_response && !window.__vw_tc_processed) processTcResponse(window.__vw_tc_response);
-          const unlock = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward'];
-          const existing = Array.from(document.querySelectorAll('*')).find(el => el.textContent && unlock.some(t => el.textContent.includes(t)));
-          if (existing) modifyParentElement(existing);
-          else {
-            if (!uiInjected) {
-              injectUI();
-              updateStatus('Ready', 'Waiting for unlock button...');
-            }
+          
+          if (!uiInjected) {
+            injectUI();
+            updateStatus('Ready', 'Waiting for bypass tasks...');
           }
-          setTimeout(() => {
-            if (!window.__vw_tc_processed && keyIsValid) {
-              const again = Array.from(document.querySelectorAll('*')).find(el => el.textContent && unlock.some(t => el.textContent.includes(t)));
-              if (again) modifyParentElement(again); else if (!uiInjected) updateStatus('Bypass delayed', 'Trying alternative method...');
-            }
-          }, 15000);
         } else {
           injectUI();
           updateStatus('❌ API Key Invalid', 'Please enter a valid API key');
