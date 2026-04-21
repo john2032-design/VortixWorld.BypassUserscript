@@ -1,64 +1,18 @@
 console.log('[VW] vw-lootlink.js loaded');
 
-const originalFetch = window.fetch;
-window.fetch = function(url, config) {
-  const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
-  if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
-    console.log('[VW] Intercepted /tc request:', urlStr);
-    Logger.info('Intercepted /tc request', urlStr);
-    let bodyObj = {};
-    if (config && config.body) {
-      try {
-        bodyObj = typeof config.body === 'string' ? JSON.parse(config.body) : config.body;
-      } catch(e) {}
-    }
-    bodyObj.bl = BL_TASKS;
+const BL_TASKS = [18, 2, 33, 7, 21, 49, 48];
 
-    return originalFetch(TC_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyObj)
-    }).then(response => {
-      if (!response.ok) throw new Error(`Proxy returned ${response.status}`);
-      return response.clone().json().then(data => {
-        window.__vw_tc_response = data;
-        console.log('[VW] /tc proxy response received, tasks:', data.length);
-        Logger.info('/tc proxy response received', 'tasks:' + data.length);
-        
-        if (!keyCheckComplete) {
-          Logger.info('Key check not complete, storing /tc response for later');
-          pendingTcData = data;
-        } else if (keyIsValid) {
-          window.__vw_tc_processed = false;
-          processTcResponse(data, originalFetch);
-        } else {
-          Logger.warn('Key invalid, ignoring /tc response');
-        }
-        
-        return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      });
-    }).catch(err => {
-      console.error('[VW] Proxy fetch failed:', err);
-      Logger.error('Proxy fetch failed', err.message);
-      return originalFetch(url, config);
-    });
-  }
-  return originalFetch(url, config);
-};
-window.__vw_fetch_interceptor_active = true;
-
-const BL_TASKS = [18, 2, 33, 7, 21, 49, 48]
-
-let uiInjected = false
-let methodStartTime = null
-let countdownTimerId = null
-let currentRemainingSeconds = 60
-let keyIsValid = false
-let keyCheckComplete = false
-let pendingTcData = null
-let consoleLines = []
-let bypassActive = false
-let lootlinkResolved = false
+let uiInjected = false;
+let methodStartTime = null;
+let countdownTimerId = null;
+let currentRemainingSeconds = 60;
+let keyIsValid = false;
+let keyCheckComplete = false;
+let pendingTcData = null;
+let consoleLines = [];
+let bypassActive = false;
+let lootlinkResolved = false;
+let tcIntercepted = false;
 
 function waitForBody(callback) {
   if (document.body) callback();
@@ -73,6 +27,7 @@ function addConsoleLine(text) {
     consoleEl.innerHTML = consoleLines.map(line => `<div class="vw-lootlink-console-line">${line}</div>`).join('');
     consoleEl.scrollTop = consoleEl.scrollHeight;
   }
+  Logger.info(text);
 }
 
 function injectUI(iconUrl = LOOTLINK_UI_ICON) {
@@ -102,46 +57,6 @@ function injectUI(iconUrl = LOOTLINK_UI_ICON) {
   card.querySelector('.vw-close').addEventListener('click', () => card.remove());
   uiInjected = true;
   addConsoleLine('> Initializing bypass...');
-}
-
-function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
-  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
-  const countdownEl = document.getElementById('vwLootlinkCountdown');
-  if (countdownEl) countdownEl.style.display = 'none';
-
-  const card = document.getElementById('vwLootlinkCard');
-  if (!card) return;
-  const spinner = document.getElementById('vwLootlinkSpinner');
-  if (spinner) spinner.style.display = 'none';
-
-  const statusIcon = isSuccess ? SUCCESS_GIF : ERROR_JPG;
-  const statusText = isSuccess ? '✔️ Bypass Complete!' : '❌ Bypass Failed';
-  const subText = isSuccess ? `Completed in ${timeLabel}s` : errorMsg;
-
-  card.innerHTML = `
-    <button class="vw-close">✕</button>
-    <img src="${statusIcon}" class="vw-lootlink-icon" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
-    <div id="vwLootlinkStatus" class="vw-lootlink-status">${statusText}</div>
-    <div class="vw-lootlink-console" id="vwLootlinkConsole">${consoleLines.map(line => `<div class="vw-lootlink-console-line">${line}</div>`).join('')}</div>
-    <div class="vw-lootlink-substatus" style="font-size:14px;color:#a0a0a0;margin-bottom:20px;background:#1e1e1e;box-shadow:inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;padding:10px 15px;border-radius:10px;font-weight:600;">${subText}</div>
-    ${isSuccess ? `<div class="vw-lootlink-url" id="vwLootlinkUrl">${escapeHtml(finalUrl)}</div>` : ''}
-    <div class="vw-lootlink-buttons">
-      ${isSuccess ? `<button id="vwLootlinkCopyBtn" class="vw-lootlink-btn vw-lootlink-btn-copy">📋 Copy URL</button>` : ''}
-      <button id="vwLootlinkProceedBtn" class="vw-lootlink-btn">${isSuccess ? '➡️ Proceed' : 'OK'}</button>
-    </div>
-  `;
-  card.querySelector('.vw-close').addEventListener('click', () => card.remove());
-  if (isSuccess) {
-    document.getElementById('vwLootlinkCopyBtn').addEventListener('click', () => {
-      copyTextSilent(finalUrl).then(() => showToast('URL copied to clipboard', false, '📋'));
-    });
-  }
-  document.getElementById('vwLootlinkProceedBtn').addEventListener('click', () => {
-    if (isSuccess) location.href = finalUrl;
-    else card.remove();
-  });
-  bypassActive = false;
-  lootlinkResolved = true;
 }
 
 function updateStatus(main, sub) {
@@ -201,11 +116,50 @@ function handleBypassSuccess(url, timeSecondsStr) {
 
 function handleBypassError(errorMsg) {
   if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
-  const el = document.getElementById('vwLootlinkCountdown'); if (el) el.style.display = 'none';
   updateStatus('❌ Bypass failed', errorMsg);
   showToast(`Bypass failed: ${errorMsg}`, true, ERROR_JPG);
   showCompleteUI('', '', false, errorMsg);
   bypassActive = false;
+}
+
+function showCompleteUI(finalUrl, timeLabel, isSuccess = true, errorMsg = '') {
+  if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  const countdownEl = document.getElementById('vwLootlinkCountdown');
+  if (countdownEl) countdownEl.style.display = 'none';
+
+  const card = document.getElementById('vwLootlinkCard');
+  if (!card) return;
+  const spinner = document.getElementById('vwLootlinkSpinner');
+  if (spinner) spinner.style.display = 'none';
+
+  const statusIcon = isSuccess ? SUCCESS_GIF : ERROR_JPG;
+  const statusText = isSuccess ? '✔️ Bypass Complete!' : '❌ Bypass Failed';
+  const subText = isSuccess ? `Completed in ${timeLabel}s` : errorMsg;
+
+  card.innerHTML = `
+    <button class="vw-close">✕</button>
+    <img src="${statusIcon}" class="vw-lootlink-icon" style="display:block" onerror="this.onerror=null;this.src='${ICON_URL}'">
+    <div id="vwLootlinkStatus" class="vw-lootlink-status">${statusText}</div>
+    <div class="vw-lootlink-console" id="vwLootlinkConsole">${consoleLines.map(line => `<div class="vw-lootlink-console-line">${line}</div>`).join('')}</div>
+    <div class="vw-lootlink-substatus" style="font-size:14px;color:#a0a0a0;margin-bottom:20px;background:#1e1e1e;box-shadow:inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;padding:10px 15px;border-radius:10px;font-weight:600;">${subText}</div>
+    ${isSuccess ? `<div class="vw-lootlink-url" id="vwLootlinkUrl">${escapeHtml(finalUrl)}</div>` : ''}
+    <div class="vw-lootlink-buttons">
+      ${isSuccess ? `<button id="vwLootlinkCopyBtn" class="vw-lootlink-btn vw-lootlink-btn-copy">📋 Copy URL</button>` : ''}
+      <button id="vwLootlinkProceedBtn" class="vw-lootlink-btn">${isSuccess ? '➡️ Proceed' : 'OK'}</button>
+    </div>
+  `;
+  card.querySelector('.vw-close').addEventListener('click', () => card.remove());
+  if (isSuccess) {
+    document.getElementById('vwLootlinkCopyBtn').addEventListener('click', () => {
+      copyTextSilent(finalUrl).then(() => showToast('URL copied to clipboard', false, '📋'));
+    });
+  }
+  document.getElementById('vwLootlinkProceedBtn').addEventListener('click', () => {
+    if (isSuccess) location.href = finalUrl;
+    else card.remove();
+  });
+  bypassActive = false;
+  lootlinkResolved = true;
 }
 
 class RobustWebSocket {
@@ -361,6 +315,8 @@ function verifySession(uuid) {
 function processTcResponse(data) {
   if (!keyIsValid || window.__vw_tc_processed) return;
   window.__vw_tc_processed = true;
+  Logger.info('Processing /tc response with ' + data.length + ' tasks');
+  addConsoleLine(`> Received ${data.length} tasks`);
   const task17 = Array.isArray(data) ? data.find(t => t.task_id === 17) : null;
   const runFallback = () => {
     if (window.__vw_fallback_used) return;
@@ -376,6 +332,7 @@ function processTcResponse(data) {
   };
   if (task17?.ad_url) {
     methodStartTime = performance.now();
+    addConsoleLine('> Using Method 1 (task 17)');
     completeTaskViaSkippedLol(task17.ad_url).then(() => {
       if (!keyIsValid) return;
       updateStatus('Task completed', 'Establishing connection...');
@@ -384,6 +341,52 @@ function processTcResponse(data) {
     }).catch(() => runFallback());
   } else runFallback();
 }
+
+const originalFetch = window.fetch;
+window.fetch = function(url, config) {
+  const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+  if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
+    tcIntercepted = true;
+    Logger.info('Intercepted /tc request', urlStr);
+    addConsoleLine('> /tc request intercepted');
+    let bodyObj = {};
+    if (config && config.body) {
+      try {
+        bodyObj = typeof config.body === 'string' ? JSON.parse(config.body) : config.body;
+      } catch(e) {}
+    }
+    bodyObj.bl = BL_TASKS;
+
+    return originalFetch(TC_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyObj)
+    }).then(response => {
+      if (!response.ok) throw new Error(`Proxy returned ${response.status}`);
+      return response.clone().json().then(data => {
+        window.__vw_tc_response = data;
+        Logger.info('/tc proxy response received', 'tasks:' + data.length);
+        
+        if (!keyCheckComplete) {
+          Logger.info('Key check not complete, storing /tc response for later');
+          pendingTcData = data;
+        } else if (keyIsValid) {
+          window.__vw_tc_processed = false;
+          processTcResponse(data);
+        } else {
+          Logger.warn('Key invalid, ignoring /tc response');
+        }
+        
+        return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      });
+    }).catch(err => {
+      Logger.error('Proxy fetch failed', err.message);
+      return originalFetch(url, config);
+    });
+  }
+  return originalFetch(url, config);
+};
+window.__vw_fetch_interceptor_active = true;
 
 function runLocalLootlinkBypass() {
   Logger.info('VortixWorld local lootlinks bypass enabled');
@@ -404,6 +407,14 @@ function runLocalLootlinkBypass() {
           if (!uiInjected) {
             injectUI();
             updateStatus('Ready', 'Waiting for bypass tasks...');
+          }
+          if (!tcIntercepted) {
+            setTimeout(() => {
+              if (!tcIntercepted && !lootlinkResolved) {
+                addConsoleLine('> No /tc request detected after 5s, retrying...');
+                updateStatus('Retrying', 'Attempting to trigger bypass');
+              }
+            }, 5000);
           }
         } else {
           injectUI();
