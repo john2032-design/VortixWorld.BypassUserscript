@@ -5,6 +5,7 @@ window.fetch = function(url, config) {
   const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
   if (urlStr.includes('nerventualken.com/tc') || urlStr.includes('INCENTIVE_SYNCER_DOMAIN/tc')) {
     console.log('[VW] Intercepted /tc request:', urlStr);
+    Logger.info('Intercepted /tc request', urlStr);
     let bodyObj = {};
     if (config && config.body) {
       try {
@@ -22,6 +23,7 @@ window.fetch = function(url, config) {
       return response.clone().json().then(data => {
         window.__vw_tc_response = data;
         console.log('[VW] /tc proxy response received, tasks:', data.length);
+        Logger.info('/tc proxy response received', 'tasks:' + data.length);
         
         if (!uiInjected) {
           injectUI();
@@ -42,6 +44,7 @@ window.fetch = function(url, config) {
       });
     }).catch(err => {
       console.error('[VW] Proxy fetch failed:', err);
+      Logger.error('Proxy fetch failed', err.message);
       return originalFetch(url, config);
     });
   }
@@ -61,75 +64,6 @@ let pendingTcData = null
 let consoleLines = []
 let bypassActive = false
 let lootlinkResolved = false
-
-const LOOTLINK_CARD_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
-
-  .vw-lootlink-card {
-    position: fixed !important; top: 50% !important; left: 50% !important;
-    transform: translate(-50%, -50%) !important; width: min(500px, 90vw) !important;
-    background: #1e1e1e !important; border-radius: 24px !important; border: none !important;
-    box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important; padding: 24px !important;
-    text-align: center !important; z-index: 2147483647 !important;
-    font-family: 'Inter', sans-serif !important;
-  }
-  .vw-lootlink-card .vw-close {
-    position: absolute !important; top: 16px !important; right: 16px !important; background: #1e1e1e !important;
-    box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important; border: none !important; color: #aaa !important;
-    font-size: 18px !important; cursor: pointer !important; padding: 6px 10px !important; border-radius: 50% !important;
-    transition: all 0.2s !important;
-  }
-  .vw-lootlink-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
-  .vw-lootlink-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
-  .vw-lootlink-status {
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important;
-    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
-  }
-  .vw-lootlink-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
-  .vw-lootlink-console {
-    width: 100%; height: 120px; overflow-y: auto; background: #1e1e1e;
-    box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
-    border-radius: 10px; padding: 12px; margin-bottom: 15px;
-    font-family: 'Courier New', monospace; font-size: 12px; color: #a0a0a0;
-    text-align: left; border-left: 3px solid #4ade80;
-  }
-  .vw-lootlink-console-line { padding: 2px 0; border-bottom: 1px solid rgba(74, 222, 128, 0.1); }
-  .vw-lootlink-console-line:last-child { border-bottom: none; }
-  .vw-lootlink-countdown {
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 15px; font-weight: 700; color: #4ade80; margin-bottom: 15px;
-    text-transform: uppercase; letter-spacing: 1px;
-  }
-  .vw-lootlink-url {
-    background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
-    border-radius: 12px !important; padding: 12px !important; word-break: break-all !important;
-    font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important;
-    margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important;
-  }
-  .vw-lootlink-buttons { display: flex !important; gap: 12px !important; }
-  .vw-lootlink-btn {
-    font-family: 'Orbitron', sans-serif !important;
-    flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
-    border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important;
-    font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important;
-    text-transform: uppercase; letter-spacing: 1px;
-  }
-  .vw-lootlink-btn-copy { color: #4ade80 !important; }
-  .vw-lootlink-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
-  .vw-lootlink-spinner {
-    width: 48px !important; height: 48px !important; border: 4px solid #141414 !important;
-    border-top: 4px solid #e0e0e0 !important; border-radius: 50% !important;
-    animation: vw-spin 0.8s linear infinite !important; margin: 0 auto 20px !important;
-    box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
-  }
-  @keyframes vw-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  @media (max-width: 640px) {
-    .vw-lootlink-card { padding: 20px !important; }
-    .vw-lootlink-status { font-size: 22px !important; }
-    .vw-lootlink-substatus { font-size: 12px !important; }
-  }
-`;
 
 function waitForBody(callback) {
   if (document.body) callback();
