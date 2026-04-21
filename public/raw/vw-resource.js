@@ -75,31 +75,22 @@ const SHARED_UI_CSS = `
     --neu-btn: 4px 4px 8px #141414, -4px -4px 8px #282828;
     --neu-btn-active: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
   }
-  html, body {
-    margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--vw-bg);
-  }
-  html.vw-ios #vortixWorldOverlay {
-    padding-top: env(safe-area-inset-top) !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
-  }
   #vortixWorldOverlay {
-    position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
-    height: 100vh !important; height: 100dvh !important; background: var(--vw-bg) !important;
-    z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
-    align-items: center !important; justify-content: center !important;
+    width: 100%;
     font-family: 'Inter', sans-serif !important;
-    opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
-    box-sizing: border-box !important; isolation: isolate !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    box-sizing: border-box !important;
+    isolation: isolate !important;
   }
   #vortixWorldOverlay * { box-sizing: border-box !important; }
   .vw-header-bar {
-    position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important;
-    height: 72px !important; padding: 0 28px !important; display: flex !important;
-    align-items: center !important; justify-content: space-between !important;
-    background: var(--vw-bg) !important; box-shadow: 0 4px 10px #141414 !important;
-    z-index: 2147483648 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
   }
-  html.vw-ios .vw-header-bar { top: env(safe-area-inset-top) !important; }
   .vw-title {
     font-family: 'Orbitron', sans-serif !important;
     font-weight: 700 !important; font-size: 1.5rem !important; display: flex !important;
@@ -112,8 +103,8 @@ const SHARED_UI_CSS = `
   }
   .vw-main-content {
     display: flex !important; flex-direction: column !important; align-items: center !important;
-    justify-content: center !important; width: 100% !important; max-width: 520px !important;
-    padding: 2.5rem !important; background: var(--vw-bg) !important; border-radius: 24px !important;
+    justify-content: center !important; width: 100% !important;
+    padding: 1.5rem !important; background: var(--vw-bg) !important; border-radius: 16px !important;
     border: none !important; box-shadow: var(--neu-out) !important; text-align: center !important;
     animation: vw-fade-in 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1) !important;
   }
@@ -134,11 +125,6 @@ const SHARED_UI_CSS = `
     margin-bottom: 0.5rem !important; text-transform: uppercase; letter-spacing: 1px;
     text-shadow: 0 0 8px rgba(255,255,255,0.3);
   }
-  .vw-substatus {
-    font-size: 0.9rem !important; color: var(--vw-text-dim) !important; background: var(--vw-bg) !important;
-    box-shadow: var(--neu-in) !important; padding: 8px 18px !important; border-radius: 40px !important;
-    display: inline-block !important; word-break: break-word !important; max-width: 90vw !important;
-  }
   .vw-console {
     width: 100%; height: 120px; overflow-y: auto; background: var(--vw-bg);
     box-shadow: var(--neu-in); border-radius: 10px; padding: 12px; margin-bottom: 15px;
@@ -156,7 +142,7 @@ const SHARED_UI_CSS = `
     width: 100% !important; margin: 1.5rem 0 1rem 0 !important; padding: 1rem !important;
     background: var(--vw-bg) !important; border-radius: 12px !important; box-shadow: var(--neu-in) !important;
     word-break: break-all !important; font-size: 0.85rem !important; color: #b3b3b3 !important;
-    font-family: monospace !important; max-height: 100px !important; overflow-y: auto !important; border: none !important;
+    font-family: monospace !important; max-height: 100px !important; overflow-y: auto !important;
   }
   .vw-button-group {
     display: flex !important; gap: 1rem !important; width: 100% !important; margin-top: 1rem !important;
@@ -172,12 +158,10 @@ const SHARED_UI_CSS = `
   .vw-btn-proceed { color: var(--vw-text) !important; }
   .vw-btn:hover { filter: brightness(1.1) !important; }
   .vw-btn:active { box-shadow: var(--neu-btn-active) !important; transform: translateY(1px) !important; }
-  .vw-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; box-shadow: var(--neu-in) !important; }
   @keyframes vw-fade-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
   @media (max-width: 640px) {
     .vw-status { font-size: 1.4rem !important; }
-    .vw-main-content { padding: 1.5rem !important; margin: 1rem !important; max-width: 90vw !important; }
-    .vw-header-bar { height: 60px !important; padding: 0 16px !important; }
+    .vw-main-content { padding: 1rem !important; }
     .vw-btn { padding: 0.6rem 1rem !important; font-size: 0.8rem !important; }
   }
 `;
