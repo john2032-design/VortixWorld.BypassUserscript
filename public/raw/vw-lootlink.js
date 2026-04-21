@@ -23,6 +23,11 @@ window.fetch = function(url, config) {
         window.__vw_tc_response = data;
         console.log('[VW] /tc proxy response received, tasks:', data.length);
         
+        if (!uiInjected) {
+          injectUI();
+          updateStatus('Bypass Started', 'Task data intercepted');
+        }
+        
         if (!keyCheckComplete) {
           Logger.info('Key check not complete, storing /tc response for later');
           pendingTcData = data;
@@ -389,7 +394,7 @@ function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 
   if (!taskData?.urid || !keyIsValid) return null;
   const { urid, task_id } = taskData;
   const subIdx = (parseInt(urid.substr(-5)) + subdomainAttempt) % 3;
-  const wsUrl = `wss://${subIdx}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`;
+  const wsUrl = `wss://${subIdx}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${window.VW_API_KEY}`;
   Logger.info(`Initiating WebSocket (fallback:${isFallback})`, wsUrl);
   const ws = new RobustWebSocket(wsUrl, {
     onConnectionTimeout: () => {
@@ -405,7 +410,7 @@ function startWebSocketForTask(taskData, isFallback = false, subdomainAttempt = 
   }
   ws.connect();
   try { navigator.sendBeacon(`https://${subIdx}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`); } catch (_) {}
-  fetch(`https://nerventualken.com/td?ac=1&urid=${urid}&cat=${task_id}&tid=${TID}`, { credentials: 'include' }).catch(() => {});
+  fetch(`https://nerventualken.com/td?ac=1&urid=${urid}&cat=${task_id}`, { credentials: 'include' }).catch(() => {});
   return ws;
 }
 
@@ -479,11 +484,16 @@ function runLocalLootlinkBypass() {
           const unlock = ['UNLOCK CONTENT', 'Unlock Content', 'Complete Task', 'Get Reward', 'Claim Reward'];
           const existing = Array.from(document.querySelectorAll('*')).find(el => el.textContent && unlock.some(t => el.textContent.includes(t)));
           if (existing) modifyParentElement(existing);
-          else { injectUI(); updateStatus('Ready', 'Waiting for unlock button...'); }
+          else {
+            if (!uiInjected) {
+              injectUI();
+              updateStatus('Ready', 'Waiting for unlock button...');
+            }
+          }
           setTimeout(() => {
             if (!window.__vw_tc_processed && keyIsValid) {
               const again = Array.from(document.querySelectorAll('*')).find(el => el.textContent && unlock.some(t => el.textContent.includes(t)));
-              if (again) modifyParentElement(again); else updateStatus('Bypass delayed', 'Trying alternative method...');
+              if (again) modifyParentElement(again); else if (!uiInjected) updateStatus('Bypass delayed', 'Trying alternative method...');
             }
           }, 15000);
         } else {
@@ -503,4 +513,4 @@ function runLocalLootlinkBypass() {
 }
 
 window.runLocalLootlinkBypass = runLocalLootlinkBypass;
-window.showHashExpireUI = function(finalUrl) { /* unchanged */ };
+window.showHashExpireUI = function(finalUrl) { };
