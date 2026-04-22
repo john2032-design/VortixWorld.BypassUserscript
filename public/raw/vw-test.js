@@ -137,7 +137,7 @@ function VW_createSettingsUI(GM_storage, VW_KEYS, ICON_URL, HARDCODED_KEY, EMOJI
         keyStatusEl.innerText = 'STATUS: CHECKING...';
         if (!HARDCODED_KEY) { keyStatusEl.innerText = 'STATUS: NO KEY SET'; keyStatusEl.classList.add('invalid'); return; }
         try {
-            const res = await new Promise((res,rej)=> GM_xmlhttpRequest({ method:'GET', url:`${KEY_VALIDATION_URL.replace('/validate','/info')}/${HARDCODED_KEY}`, onload:res, onerror:rej }));
+            const res = await new Promise((res,rej)=> GM_xmlhttpRequest({ method:'GET', url:`https://apikey-nine.vercel.app/api/key/info/${HARDCODED_KEY}`, onload:res, onerror:rej }));
             const data = JSON.parse(res.responseText);
             if (data.valid) { keyStatusEl.classList.add('valid'); keyStatusEl.innerText = `STATUS: VALID (EXPIRES IN ${(d=>{if(!d)return'Unknown';const n=Math.floor(Date.now()/1000),df=d-n;if(df<=0)return'Expired';const day=Math.floor(df/86400),h=Math.floor((df%86400)/3600);return day>0?`${day}d ${h}h`:h>0?`${h}h ${Math.floor((df%3600)/60)}m`:`${Math.floor(df/60)}m`})(data.expires_at)})`; }
             else { keyStatusEl.classList.add('invalid'); keyStatusEl.innerText = 'STATUS: INVALID OR EXPIRED'; }
