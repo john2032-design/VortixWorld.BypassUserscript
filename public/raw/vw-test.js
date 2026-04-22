@@ -1,182 +1,330 @@
-function VW_createSettingsUI(GM_storage, VW_KEYS, ICON_URL, HARDCODED_KEY, EMOJI, KEY_VALIDATION_URL) {
-    if (document.getElementById('vw-settings-shadow-host')) return;
-    const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');`;
-    const NEU_VARS = `
-        :root {
-            --clay-bg: #1a1c23; --clay-text: #e0e5ec; --clay-text-dim: #9ba1ab; --clay-accent: #ef4444;
-            --neu-out: 6px 6px 12px #121419, -6px -6px 12px #22242d;
-            --neu-in: inset 4px 4px 8px #121419, inset -4px -4px 8px #22242d;
-            --clay-btn: inset 2px 2px 4px rgba(255,255,255,0.05), inset -2px -2px 4px rgba(0,0,0,0.3), 4px 4px 8px rgba(0,0,0,0.4);
-            --clay-btn-active: inset 4px 4px 8px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.05);
-        }
-    `;
-    const SETTINGS_CSS = FONT_IMPORT + NEU_VARS + `
-        .vw-settings-btn { position: fixed !important; left: 20px !important; bottom: 20px !important; z-index: 2147483647 !important; padding: 14px 24px !important; border-radius: 40px !important; border: none !important; background: #1a1c23 !important; box-shadow: var(--clay-btn) !important; color: var(--clay-text) !important; font-weight: 700 !important; cursor: grab !important; pointer-events: auto !important; transition: all 0.2s ease !important; text-transform: uppercase; letter-spacing: 1px; font-size: 14px; font-family: 'Orbitron', sans-serif; opacity: 1 !important; user-select: none; display: flex !important; align-items: center !important; gap: 8px !important; }
-        .vw-settings-btn:active { cursor: grabbing !important; box-shadow: var(--clay-btn-active) !important; transform: translateY(2px); color: var(--clay-accent); }
-        .vw-backdrop { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; background: #1a1c23 !important; backdrop-filter: blur(8px); z-index: 2147483647 !important; display: none !important; align-items: center !important; justify-content: center !important; pointer-events: auto !important; opacity: 1 !important; }
-        .vw-backdrop.open { display: flex !important; }
-        .vw-panel { width: clamp(300px, 90vw, 600px) !important; max-height: 85vh !important; border-radius: 20px !important; background: var(--clay-bg) !important; box-shadow: 12px 12px 24px #121419, -12px -12px 24px #22242d !important; color: var(--clay-text) !important; display: flex !important; flex-direction: column !important; animation: vw-slide-in 0.3s ease-out !important; pointer-events: auto !important; border: 1px solid rgba(239,68,68,0.1); overflow: hidden; opacity: 1 !important; }
-        @keyframes vw-slide-in { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .vw-header { display: flex !important; align-items: center !important; justify-content: space-between !important; padding: clamp(15px, 4vw, 20px) clamp(15px, 4vw, 25px) !important; border-bottom: 2px solid rgba(239,68,68,0.1); }
-        .vw-title { font-weight: 800 !important; font-size: clamp(16px, 5vw, 20px) !important; display: flex !important; align-items: center !important; gap: 15px !important; color: #EDEDED !important; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
-        .vw-title img { width: clamp(30px, 8vw, 38px) !important; height: clamp(30px, 8vw, 38px) !important; border-radius: 50% !important; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.05), inset -2px -2px 4px rgba(0,0,0,0.3), 5px 5px 10px rgba(0,0,0,0.4) !important; object-fit: cover !important; }
-        .vw-close-btn { width: clamp(30px, 8vw, 40px) !important; height: clamp(30px, 8vw, 40px) !important; border-radius: 50% !important; border: none !important; background: var(--clay-bg) !important; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.05), inset -2px -2px 4px rgba(0,0,0,0.3), 5px 5px 10px rgba(0,0,0,0.4) !important; color: var(--clay-text-dim) !important; cursor: pointer !important; font-size: clamp(14px, 4vw, 18px) !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold; transition: all 0.2s ease !important; opacity: 1 !important; }
-        .vw-close-btn:active { box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.05) !important; color: var(--clay-accent) !important; }
-        .vw-navbar { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; padding: clamp(15px, 4vw, 20px) !important; gap: 10px !important; }
-        .vw-nav-btn { background: var(--clay-bg) !important; border: none !important; color: var(--clay-text-dim) !important; font-weight: 700 !important; font-size: clamp(11px, 3.5vw, 13px) !important; padding: 10px 16px !important; border-radius: 10px !important; cursor: pointer !important; box-shadow: 4px 4px 8px #121419, -4px -4px 8px #22242d !important; transition: all 0.2s !important; text-transform: uppercase; flex: 1 1 auto; text-align: center; opacity: 1 !important; }
-        .vw-nav-btn.active { box-shadow: var(--neu-in) !important; color: var(--clay-accent) !important; border: 1px solid rgba(239,68,68,0.2); }
-        .vw-body { padding: clamp(15px, 4vw, 25px) !important; display: flex !important; flex-direction: column !important; gap: 20px !important; flex: 1 1 auto !important; overflow-y: auto !important; }
-        .vw-tab-content { display: none !important; flex-direction: column !important; gap: 20px !important; }
-        .vw-tab-content.active { display: flex !important; animation: vw-fade-in 0.2s; }
-        .vw-home-container { text-align: center; padding: 25px; background: var(--clay-bg); box-shadow: var(--neu-in); border-radius: 15px; border: 1px solid rgba(239,68,68,0.05); opacity: 1 !important; }
-        .vw-home-container h2 { font-size: clamp(18px, 5vw, 22px); color: var(--clay-text); margin-bottom: 10px; font-weight: 800; text-transform: uppercase; }
-        .vw-home-container p { font-size: clamp(13px, 3.5vw, 15px); color: var(--clay-text-dim); line-height: 1.5; font-weight: 600; }
-        .vw-home-container .owner { margin-top: 15px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .owner-owner { color: #fbbf24; font-weight: 800; }
-        .owner-at { color: #00ffff; font-weight: 800; }
-        .owner-afk { font-weight: 800; background: linear-gradient(135deg, #ef4444, #ec4899); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .owner-l0l { font-weight: 800; background: linear-gradient(135deg, #ec4899, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .vw-row { display: flex !important; flex-wrap: wrap; justify-content: space-between !important; align-items: center !important; gap: 15px !important; padding: clamp(15px, 4vw, 20px) !important; border-radius: 15px !important; background: var(--clay-bg) !important; box-shadow: var(--neu-in) !important; border: 1px solid rgba(239,68,68,0.05); opacity: 1 !important; }
-        .vw-row > div { flex: 1 1 100%; }
-        @media (min-width: 450px) { .vw-row > div:first-child { flex: 1; } .vw-row > *:not(:first-child) { flex: 0 0 auto; } }
-        .vw-label-title { font-size: clamp(14px, 4vw, 15px) !important; font-weight: 800 !important; color: var(--clay-text) !important; margin-bottom: 6px !important; text-transform: uppercase; letter-spacing: 0.5px; }
-        .vw-label-desc { font-size: clamp(11px, 3vw, 12px) !important; color: var(--clay-text-dim) !important; font-weight: 600 !important; }
-        .vw-key-status { margin-top: 15px; padding: 15px; border-radius: 10px; background: var(--clay-bg); box-shadow: var(--neu-out); font-size: 13px; font-weight: 700; text-align: center; color: var(--clay-text-dim); text-transform: uppercase; opacity: 1 !important; }
-        .vw-key-status.valid { color: #4ade80; box-shadow: inset 2px 2px 4px rgba(74,222,128,0.05), var(--neu-out); border: 1px solid rgba(74,222,128,0.2); }
-        .vw-key-status.invalid { color: var(--clay-accent); border: 1px solid rgba(239,68,68,0.2); }
-        .vw-toggle { position: relative !important; display: inline-block !important; width: 56px !important; height: 30px !important; }
-        .vw-toggle input { opacity: 0 !important; width: 0 !important; height: 0 !important; }
-        .vw-toggle-slider { position: absolute !important; inset: 0 !important; background-color: var(--clay-bg) !important; box-shadow: inset 3px 3px 6px #121419, inset -3px -3px 6px #22242d !important; border-radius: 30px !important; transition: .3s !important; cursor: pointer; opacity: 1 !important; }
-        .vw-toggle-slider:before { position: absolute !important; content: "" !important; height: 22px !important; width: 22px !important; left: 4px !important; bottom: 4px !important; background-color: #ef4444 !important; box-shadow: 2px 2px 5px rgba(0,0,0,0.5) !important; border-radius: 50% !important; transition: .3s !important; }
-        input:checked + .vw-toggle-slider:before { transform: translateX(26px) !important; background-color: #4ade80 !important; }
-        .vw-actions { display: flex !important; justify-content: flex-end !important; gap: 10px !important; margin-top: auto !important; flex-wrap: wrap; }
-        .vw-btn-action { flex: 1 1 auto; text-align: center; padding: 14px 20px !important; border-radius: 10px !important; border: none !important; background: var(--clay-bg) !important; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.05), inset -2px -2px 4px rgba(0,0,0,0.3), 4px 4px 8px rgba(0,0,0,0.4) !important; color: var(--clay-text) !important; font-weight: 800 !important; font-size: clamp(12px, 3.5vw, 14px) !important; cursor: pointer !important; transition: all 0.2s ease !important; font-family: 'Orbitron', sans-serif !important; text-transform: uppercase; letter-spacing: 1px; opacity: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; }
-        .vw-btn-action:active { box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.05) !important; transform: translateY(2px) !important; color: var(--clay-accent) !important; }
-        .vw-console { height: clamp(200px, 40vh, 300px) !important; overflow-y: auto !important; background: var(--clay-bg) !important; border-radius: 15px !important; padding: 20px !important; font-family: 'Courier New', monospace !important; font-size: clamp(11px, 3vw, 13px) !important; box-shadow: var(--neu-in) !important; word-break: break-word; border: 1px solid rgba(239,68,68,0.1); opacity: 1 !important; }
-        .vw-supported-list { display: flex; flex-direction: column; gap: 8px; background: var(--clay-bg); box-shadow: var(--neu-in); border-radius: 15px; padding: 20px; border: 1px solid rgba(239,68,68,0.05); opacity: 1 !important; }
-        .vw-domain-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(239,68,68,0.1); }
-        .vw-domain-item:last-child { border-bottom: none; }
-        .vw-domain-name { font-size: 13px; font-weight: 600; color: var(--clay-text); text-transform: lowercase; }
-        .vw-domain-note { font-size: 11px; color: var(--clay-text-dim); margin-left: 5px; }
-    `;
-    const host = document.createElement('div'); host.id = 'vw-settings-shadow-host';
-    host.style.cssText = 'all:initial;position:fixed;inset:0;z-index:2147483647;pointer-events:none;isolation:isolate;background:transparent;';
-    const shadow = host.attachShadow({mode:'closed'});
-    GM_addStyle(SETTINGS_CSS);
-    const style = document.createElement('style'); style.textContent = SETTINGS_CSS; shadow.appendChild(style);
-    const btn = document.createElement('button'); btn.className = 'vw-settings-btn';
-    btn.innerHTML = `<span>${EMOJI.COG}</span> Settings`;
-    shadow.appendChild(btn);
-    const backdrop = document.createElement('div'); backdrop.className = 'vw-backdrop';
-    backdrop.innerHTML = `
-        <div class="vw-panel">
-            <div class="vw-header"><div class="vw-title"><img src="${ICON_URL}"> Settings</div><button class="vw-close-btn">&times;</button></div>
-            <div class="vw-navbar">
-                <button class="vw-nav-btn active" data-target="home">Home</button>
-                <button class="vw-nav-btn" data-target="key">Key</button>
-                <button class="vw-nav-btn" data-target="redirect">Redirect</button>
-                <button class="vw-nav-btn" data-target="supported">Supported</button>
-                <button class="vw-nav-btn" data-target="console">Console</button>
-            </div>
-            <div class="vw-body">
-                <div id="tab-home" class="vw-tab-content active">
-                    <div class="vw-home-container"><h2>VortixWorld Settings.</h2><p>For API key, AutoRedirect, Console Logs</p><br><p class="owner"><span>${EMOJI.CROWN}</span><span class="owner-owner">OWNER</span> <span class="owner-at">@</span><span class="owner-afk">AFK</span><span class="owner-l0l">.L0L</span></p></div>
-                </div>
-                <div id="tab-key" class="vw-tab-content">
-                    <div class="vw-row"><div><div class="vw-label-title">API Key Status</div><div class="vw-label-desc">Current VortixWorld API key</div></div></div>
-                    <div id="vwKeyStatus" class="vw-key-status">Status: Checking...</div>
-                    <div class="vw-actions"><button class="vw-btn-action" id="vwRefreshKeyBtn">Refresh Status</button></div>
-                </div>
-                <div id="tab-redirect" class="vw-tab-content">
-                    <div class="vw-row"><div><div class="vw-label-title">Auto Redirect</div><div class="vw-label-desc">Automatically redirect when bypass completes</div></div><label class="vw-toggle"><input type="checkbox" id="vwAutoToggle"><span class="vw-toggle-slider"></span></label></div>
-                    <div class="vw-row"><div><div class="vw-label-title">Redirect Delay (Seconds)</div><input type="number" id="vwDelayInput" class="vw-input" placeholder="0" min="0" max="60"></div></div>
-                    <div class="vw-actions"><button class="vw-btn-action" id="vwSaveRedirectBtn">Save Settings</button></div>
-                </div>
-                <div id="tab-supported" class="vw-tab-content">
-                    <div class="vw-supported-list">
-                        <div class="vw-domain-item"><span class="vw-domain-name">admaven.com</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">auth.platorelay.com</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">beta.shortearn.eu</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">cuty.io</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">fast-links.org</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">hydrogen.lat</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">links-lootlabs.gg</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">linkvertise.com</span><span class="vw-domain-note">(all domains)</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">lockr.so</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">lootlinks</span><span class="vw-domain-note">(all domains)</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">mboost.me</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">new.pandadevelopment.net</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">ouo.io</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">pandadevelopment.net</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">rapid-links.com</span><span class="vw-domain-note">(all domains)</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">rekonise.com</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">shortearn.eu</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">spdmteam.com</span><span class="vw-domain-note">(Arceus key system)</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">tpi.li</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">work.ink</span></div>
-                        <div class="vw-domain-item"><span class="vw-domain-name">draculahub.xyz</span><span class="vw-domain-note">(LootLabs key)</span></div>
-                    </div>
-                </div>
-                <div id="tab-console" class="vw-tab-content">
-                    <div class="vw-console" id="vwConsoleLogs"></div>
-                    <div class="vw-actions"><button class="vw-btn-action" id="vwCopyConsoleBtn"><span>${EMOJI.COPY}</span> Copy Logs</button><button class="vw-btn-action" id="vwClearConsoleBtn" style="color:var(--clay-accent);">Clear</button></div>
-                </div>
-            </div>
-        </div>
-    `;
-    shadow.appendChild(backdrop);
-    const closeBtn = shadow.querySelector('.vw-close-btn');
-    const navBtns = shadow.querySelectorAll('.vw-nav-btn');
-    const tabs = shadow.querySelectorAll('.vw-tab-content');
-    const autoToggle = shadow.querySelector('#vwAutoToggle');
-    const delayInput = shadow.querySelector('#vwDelayInput');
-    const keyStatusEl = shadow.querySelector('#vwKeyStatus');
+const HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
+const ICON_URL = 'https://i.ibb.co/LdshK1fR/461-F6268-08-F3-4-E8A-BC73-409218-A3-F168.jpg';
+const LOOTLINK_UI_ICON = 'https://i.ibb.co/s0yg2cv/AA1-D3-E03-2205-4572-ACFB-29-B8-B9-DDE381.png';
+const LUARMOR_UI_ICON = 'https://i.ibb.co/BDQS9rS/F20-A6183-C85E-447-C-A27-C-11-B9-E8971-B45.png';
+const SUCCESS_GIF = 'https://s13.gifyu.com/images/bqw8M.gif';
+const ERROR_JPG = 'https://iili.io/Blf65Is.md.jpg';
+const SITE_HOST = 'vortix-world-bypass.vercel.app';
+const TPI_HOST = 'tpi.li';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36';
+const API_BASE = 'https://vortixworld-end.vercel.app';
+const TC_PROXY_URL = 'https://lootlink-backend.onrender.com/tc';
 
-    async function updateKeyStatusUI() {
-        keyStatusEl.className = 'vw-key-status';
-        keyStatusEl.innerText = 'STATUS: CHECKING...';
-        if (!HARDCODED_KEY) { keyStatusEl.innerText = 'STATUS: NO KEY SET'; keyStatusEl.classList.add('invalid'); return; }
-        try {
-            const res = await new Promise((res,rej)=> GM_xmlhttpRequest({ method:'GET', url:`https://apikey-nine.vercel.app/api/key/info/${HARDCODED_KEY}`, onload:res, onerror:rej }));
-            const data = JSON.parse(res.responseText);
-            if (data.valid) { keyStatusEl.classList.add('valid'); keyStatusEl.innerText = `STATUS: VALID (EXPIRES IN ${(d=>{if(!d)return'Unknown';const n=Math.floor(Date.now()/1000),df=d-n;if(df<=0)return'Expired';const day=Math.floor(df/86400),h=Math.floor((df%86400)/3600);return day>0?`${day}d ${h}h`:h>0?`${h}h ${Math.floor((df%3600)/60)}m`:`${Math.floor(df/60)}m`})(data.expires_at)})`; }
-            else { keyStatusEl.classList.add('invalid'); keyStatusEl.innerText = 'STATUS: INVALID OR EXPIRED'; }
-        } catch(e) { keyStatusEl.innerText = 'STATUS: NETWORK ERROR'; keyStatusEl.classList.add('invalid'); }
-    }
+const LOOT_HOSTS = [
+  'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
+  'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com',
+  'linksloot.net', 'lootlinks.com', 'best-links.org', 'loot-labs.com',
+  'lootlabs.com'
+];
 
-    (async () => {
-        const stored = await GM_storage.get(['vw_auto_redirect','vw_redirect_delay','vw_settings_pos']);
-        autoToggle.checked = stored.vw_auto_redirect !== false;
-        delayInput.value = stored.vw_redirect_delay || 0;
-        updateKeyStatusUI();
-        if (stored.vw_settings_pos) { btn.style.left = stored.vw_settings_pos.left; btn.style.bottom = stored.vw_settings_pos.bottom; btn.style.right='auto'; btn.style.top='auto'; }
-    })();
+const ALLOWED_SHORT_HOSTS = [
+  'linkvertise.com', 'admaven.com', 'work.ink', 'shortearn.eu',
+  'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
+  'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
+  'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
+  'link-pays.in', 'link-target.net', 'link-target.org', 'link-to.net',
+  'fast-links.org', 'rapid-links.com', 'rapid-links.net', 'hydrogen.lat',
+  'auth.platorelay.com', 'pandadevelopment.net', 'new.pandadevelopment.net'
+];
 
-    btn.onclick = () => backdrop.classList.add('open');
-    closeBtn.onclick = () => backdrop.classList.remove('open');
-    backdrop.onclick = e => { if(e.target===backdrop) backdrop.classList.remove('open'); };
-    navBtns.forEach(b => b.onclick = () => { navBtns.forEach(n=>n.classList.remove('active')); tabs.forEach(t=>t.classList.remove('active')); b.classList.add('active'); shadow.querySelector(`#tab-${b.dataset.target}`).classList.add('active'); if(b.dataset.target==='key') updateKeyStatusUI(); });
-    shadow.querySelector('#vwRefreshKeyBtn').onclick = () => updateKeyStatusUI();
-    shadow.querySelector('#vwSaveRedirectBtn').onclick = () => GM_storage.set({ [VW_KEYS.autoRedirect]: autoToggle.checked, [VW_KEYS.redirectDelay]: parseInt(delayInput.value||'0',10) }).then(()=>alert('Settings Saved!'));
-    shadow.querySelector('#vwClearConsoleBtn').onclick = () => { window.__vw_logs = []; shadow.querySelector('#vwConsoleLogs').innerHTML = ''; };
-    shadow.querySelector('#vwCopyConsoleBtn').onclick = async () => {
-        const logs = window.__vw_logs || [], text = logs.map(l=>`[${l.timestamp}] [${l.level.toUpperCase()}] ${l.message} ${l.data}`).join('\n');
-        try { await navigator.clipboard.writeText(text); const b = shadow.querySelector('#vwCopyConsoleBtn'); b.innerHTML = `<span>${EMOJI.CHECK}</span> Copied!`; setTimeout(()=>b.innerHTML=`<span>${EMOJI.COPY}</span> Copy Logs`,2000); } catch(e){}
-    };
-    setInterval(() => {
-        if (!backdrop.classList.contains('open') || !shadow.querySelector('#tab-console').classList.contains('active')) return;
-        const logsEl = shadow.querySelector('#vwConsoleLogs');
-        if (logsEl) {
-            logsEl.innerHTML = (window.__vw_logs||[]).map(l=>{
-                let color = '#4ade80'; if(l.level==='error')color='#ef4444'; else if(l.level==='warn')color='#fbbf24'; else if(l.level==='websocket')color='#c084fc'; else if(l.level==='network')color='#60a5fa';
-                return `<div style="margin-bottom:5px;"><span style="color:${color};font-weight:bold;">[${l.level.toUpperCase()}]</span> <span style="color:var(--clay-text)">${l.message}</span> <span style="color:var(--clay-text-dim)">${l.data}</span></div>`;
-            }).join('');
-        }
-    }, 1000);
+const UA = navigator.userAgent;
+const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/.test(UA);
+const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(UA);
 
-    let dragging = false, startX, startY, startLeft, startBottom;
-    btn.addEventListener('mousedown', e => { if(e.button!==0)return; dragging=true; startX=e.clientX; startY=e.clientY; const r=btn.getBoundingClientRect(); startLeft=r.left; startBottom=window.innerHeight-r.bottom; btn.style.cursor='grabbing'; e.preventDefault(); });
-    window.addEventListener('mousemove', e => { if(!dragging)return; let l=startLeft+(e.clientX-startX), b=startBottom-(e.clientY-startY); l=Math.max(0,Math.min(window.innerWidth-btn.offsetWidth,l)); b=Math.max(0,Math.min(window.innerHeight-btn.offsetHeight,b)); btn.style.left=l+'px'; btn.style.bottom=b+'px'; btn.style.right='auto'; btn.style.top='auto'; });
-    window.addEventListener('mouseup', () => { if(dragging) { dragging=false; btn.style.cursor='grab'; GM_storage.set({ vw_settings_pos: { left: btn.style.left, bottom: btn.style.bottom } }); } });
-    document.documentElement.appendChild(host);
+if (isIOS) document.documentElement.classList.add('vw-ios');
+if (isAndroid) document.documentElement.classList.add('vw-android');
+if (isMobile) document.documentElement.classList.add('vw-mobile');
+if (!isMobile) document.documentElement.classList.add('vw-desktop');
+
+function hostMatchesAny(list) {
+  const h = HOST;
+  for (const base of list) {
+    if (h === base) return true;
+    if (h.endsWith('.' + base)) return true;
+  }
+  return false;
 }
+
+const isLootHost = () => hostMatchesAny(LOOT_HOSTS);
+const isAllowedHost = () => hostMatchesAny(ALLOWED_SHORT_HOSTS);
+const isTpiLi = () => HOST === TPI_HOST || HOST.endsWith('.' + TPI_HOST);
+
+const CONFIG = Object.freeze({
+  HEARTBEAT_INTERVAL: 0.1,
+  INITIAL_RECONNECT_DELAY: 1000,
+  COUNTDOWN_INTERVAL: 1000,
+  FALLBACK_CHECK_DELAY: 15000
+});
+
+const VW_KEYS = window.VW_CONFIG?.keys || {
+  autoRedirect: 'vw_auto_redirect'
+};
+
+const SHARED_UI_CSS = `
+  :root {
+    --vw-bg: #1e1e1e;
+    --vw-glass-bg: #1e1e1e;
+    --vw-text: #e0e0e0;
+    --vw-text-dim: #a0a0a0;
+    --neu-out: 8px 8px 16px #141414, -8px -8px 16px #282828;
+    --neu-in: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
+    --neu-btn: 4px 4px 8px #141414, -4px -4px 8px #282828;
+    --neu-btn-active: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
+  }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--vw-bg);
+  }
+  html.vw-ios #vortixWorldOverlay {
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  #vortixWorldOverlay {
+    position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
+    height: 100vh !important; height: 100dvh !important; background: var(--vw-bg) !important;
+    z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
+    box-sizing: border-box !important; isolation: isolate !important;
+  }
+  #vortixWorldOverlay * { box-sizing: border-box !important; }
+  .vw-header-bar {
+    position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important;
+    height: 72px !important; padding: 0 28px !important; display: flex !important;
+    align-items: center !important; justify-content: space-between !important;
+    background: var(--vw-bg) !important; box-shadow: 0 4px 10px #141414 !important;
+    z-index: 2147483648 !important;
+  }
+  html.vw-ios .vw-header-bar { top: env(safe-area-inset-top) !important; }
+  .vw-title {
+    font-weight: 700 !important; font-size: 1.5rem !important; display: flex !important;
+    align-items: center !important; gap: 12px !important; color: var(--vw-text) !important;
+  }
+  .vw-header-icon {
+    height: 36px !important; width: 36px !important; border-radius: 50% !important;
+    object-fit: cover !important; box-shadow: var(--neu-btn) !important;
+  }
+  .vw-main-content {
+    display: flex !important; flex-direction: column !important; align-items: center !important;
+    justify-content: center !important; width: 100% !important; max-width: 520px !important;
+    padding: 2.5rem !important; background: var(--vw-bg) !important; border-radius: 24px !important;
+    border: none !important; box-shadow: var(--neu-out) !important; text-align: center !important;
+    animation: vw-fade-in 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1) !important;
+  }
+  .vw-icon-img {
+    width: 96px !important; height: 96px !important; border-radius: 50% !important;
+    margin-bottom: 1.5rem !important; object-fit: cover !important; box-shadow: var(--neu-btn) !important;
+  }
+  .vw-spinner {
+    width: 48px !important; height: 48px !important; border: 4px solid #141414 !important;
+    border-top: 4px solid var(--vw-text) !important; border-radius: 50% !important;
+    animation: spin 0.8s linear infinite !important; margin-bottom: 1.5rem !important;
+    box-shadow: var(--neu-btn) !important;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .vw-status {
+    font-size: 1.8rem !important; font-weight: 700 !important; color: var(--vw-text) !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .vw-substatus {
+    font-size: 0.9rem !important; color: var(--vw-text-dim) !important; background: var(--vw-bg) !important;
+    box-shadow: var(--neu-in) !important; padding: 8px 18px !important; border-radius: 40px !important;
+    display: inline-block !important; word-break: break-word !important; max-width: 90vw !important;
+  }
+  .vw-url-container {
+    width: 100% !important; margin: 1.5rem 0 1rem 0 !important; padding: 1rem !important;
+    background: var(--vw-bg) !important; border-radius: 12px !important; box-shadow: var(--neu-in) !important;
+    word-break: break-all !important; font-size: 0.85rem !important; color: #b3b3b3 !important;
+    font-family: monospace !important; max-height: 100px !important; overflow-y: auto !important; border: none !important;
+  }
+  .vw-button-group {
+    display: flex !important; gap: 1rem !important; width: 100% !important; margin-top: 1rem !important;
+  }
+  .vw-btn {
+    background: var(--vw-bg) !important; color: var(--vw-text) !important; border: none !important;
+    box-shadow: var(--neu-btn) !important; padding: 0.85rem 1rem !important; border-radius: 40px !important;
+    font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s ease !important;
+    font-size: 0.95rem !important; flex: 1;
+  }
+  .vw-btn-copy { color: #4ade80 !important; }
+  .vw-btn-proceed { color: var(--vw-text) !important; }
+  .vw-btn:hover { filter: brightness(1.1) !important; }
+  .vw-btn:active { box-shadow: var(--neu-btn-active) !important; transform: translateY(1px) !important; }
+  .vw-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; box-shadow: var(--neu-in) !important; }
+  @keyframes vw-fade-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 640px) {
+    .vw-status { font-size: 1.4rem !important; }
+    .vw-main-content { padding: 1.5rem !important; margin: 1rem !important; max-width: 90vw !important; }
+    .vw-header-bar { height: 60px !important; padding: 0 16px !important; }
+    .vw-btn { padding: 0.6rem 1rem !important; font-size: 0.8rem !important; }
+  }
+`;
+
+const API_UI_CSS = `
+  .vw-api-card {
+    position: fixed !important; top: 50% !important; left: 50% !important;
+    transform: translate(-50%, -50%) !important; width: min(500px, 90vw) !important;
+    background: #1e1e1e !important; border-radius: 24px !important; border: none !important;
+    box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important; padding: 24px !important;
+    text-align: center !important; z-index: 2147483647 !important; font-family: 'Inter', system-ui, sans-serif !important;
+  }
+  .vw-api-card .vw-close {
+    position: absolute !important; top: 16px !important; right: 16px !important; background: #1e1e1e !important;
+    box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important; border: none !important; color: #aaa !important;
+    font-size: 18px !important; cursor: pointer !important; padding: 6px 10px !important; border-radius: 50% !important;
+    transition: all 0.2s !important;
+  }
+  .vw-api-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
+  .vw-api-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
+  .vw-api-status { font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important; }
+  .vw-api-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
+  .vw-api-url { background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; border-radius: 12px !important; padding: 12px !important; word-break: break-all !important; font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important; margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important; }
+  .vw-api-buttons { display: flex !important; gap: 12px !important; }
+  .vw-api-btn { flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important; font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important; }
+  .vw-api-btn-copy { color: #4ade80 !important; }
+  .vw-api-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
+  .vw-api-topbar-inner { display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: 100% !important; padding: 0 16px !important; white-space: nowrap !important; }
+  .vw-api-loading-ring { width: 20px !important; height: 20px !important; flex: 0 0 auto !important; display: inline-block !important; border-radius: 50% !important; border: 3px solid #141414 !important; border-top: 3px solid #e0e0e0 !important; animation: vw-api-spin 0.8s linear infinite !important; }
+  .vw-api-loading-text { color: #e0e0e0 !important; font-weight: 600 !important; line-height: 1 !important; white-space: nowrap !important; }
+  @keyframes vw-api-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @media (max-width: 640px) { .vw-api-card { padding: 20px !important; } .vw-api-status { font-size: 22px !important; } .vw-api-substatus { font-size: 12px !important; } }
+`;
+
+const cleanupManager = {
+  intervals: new Set(),
+  timeouts: new Set(),
+  setInterval(fn, delay, ...args) {
+    const id = setInterval(fn, delay, ...args);
+    this.intervals.add(id);
+    return id;
+  },
+  setTimeout(fn, delay, ...args) {
+    const id = setTimeout(() => {
+      this.timeouts.delete(id);
+      fn(...args);
+    }, delay);
+    this.timeouts.add(id);
+    return id;
+  },
+  clearAll() {
+    this.intervals.forEach(id => clearInterval(id));
+    this.timeouts.forEach(id => clearTimeout(id));
+    this.intervals.clear();
+    this.timeouts.clear();
+  }
+};
+
+let isShutdown = false;
+
+function shutdown() {
+  if (isShutdown) return;
+  isShutdown = true;
+  cleanupManager.clearAll();
+  if (window.bypassObserver) {
+    window.bypassObserver.disconnect();
+    window.bypassObserver = null;
+  }
+  if (window.primaryWebSocket) {
+    window.primaryWebSocket.disconnect();
+    window.primaryWebSocket = null;
+  }
+  if (window.fallbackWebSocket) {
+    window.fallbackWebSocket.disconnect();
+    window.fallbackWebSocket = null;
+  }
+  if (window.activeWebSocket) {
+    window.activeWebSocket.disconnect();
+    window.activeWebSocket = null;
+  }
+}
+
+async function copyTextSilent(text) {
+  try {
+    if (!text) return false;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(String(text));
+      return true;
+    }
+  } catch (_) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = String(text);
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    (document.body || document.documentElement).appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return !!ok;
+  } catch (_) {}
+  return false;
+}
+
+function isLuarmorUrl(url) {
+  try {
+    const u = new URL(String(url), location.href);
+    const h = (u.hostname || '').toLowerCase();
+    return h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net');
+  } catch (_) {
+    return String(url).includes('ads.luarmor.net');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c });
+}
+
+function isAutoRedirectEnabled() {
+  const saved = localStorage.getItem(VW_KEYS.autoRedirect);
+  return saved !== null ? saved === 'true' : true;
+}
+
+function decodeURIxor(encodedString, prefixLength = 5) {
+  const base64Decoded = atob(encodedString);
+  const prefix = base64Decoded.substring(0, prefixLength);
+  const encodedPortion = base64Decoded.substring(prefixLength);
+  const prefixLen = prefix.length;
+  const decodedChars = new Array(encodedPortion.length);
+  for (let i = 0; i < encodedPortion.length; i++) {
+    const encodedChar = encodedPortion.charCodeAt(i);
+    const prefixChar = prefix.charCodeAt(i % prefixLen);
+    decodedChars[i] = String.fromCharCode(encodedChar ^ prefixChar);
+  }
+  return decodedChars.join('');
+}
+
+window.HOST = HOST;
+window.ICON_URL = ICON_URL;
+window.LOOTLINK_UI_ICON = LOOTLINK_UI_ICON;
+window.LUARMOR_UI_ICON = LUARMOR_UI_ICON;
+window.SUCCESS_GIF = SUCCESS_GIF;
+window.ERROR_JPG = ERROR_JPG;
+window.TPI_HOST = TPI_HOST;
+window.ANDROID_UA = ANDROID_UA;
+window.API_BASE = API_BASE;
+window.TC_PROXY_URL = TC_PROXY_URL;
+window.LOOT_HOSTS = LOOT_HOSTS;
+window.ALLOWED_SHORT_HOSTS = ALLOWED_SHORT_HOSTS;
+window.isLootHost = isLootHost;
+window.isAllowedHost = isAllowedHost;
+window.isTpiLi = isTpiLi;
+window.CONFIG = CONFIG;
+window.VW_KEYS = VW_KEYS;
+window.SHARED_UI_CSS = SHARED_UI_CSS;
+window.API_UI_CSS = API_UI_CSS;
+window.cleanupManager = cleanupManager;
+window.shutdown = shutdown;
+window.copyTextSilent = copyTextSilent;
+window.isLuarmorUrl = isLuarmorUrl;
+window.escapeHtml = escapeHtml;
+window.isAutoRedirectEnabled = isAutoRedirectEnabled;
+window.decodeURIxor = decodeURIxor;
+window.isShutdown = isShutdown;
