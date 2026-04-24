@@ -48,15 +48,15 @@ function processToastQueue() {
     return;
   }
   if (isToastShowing) return;
-
+  
   isToastShowing = true;
   const { message, isError, emojiOrImg, resolve } = toastQueue.shift();
-
+  
   const container = ensureToastContainer();
   const toast = document.createElement('div');
   toast.className = 'vw-toast';
   if (isError) toast.style.borderLeftColor = '#b91c1c';
-
+  
   let iconHtml = '';
   if (emojiOrImg === '◉') {
     iconHtml = '<span class="vw-toast-emoji" style="color:#4ade80;">◉</span>';
@@ -66,7 +66,7 @@ function processToastQueue() {
     const emojiChar = emojiOrImg || (isError ? '⚠️' : '✓');
     iconHtml = `<span class="vw-toast-emoji">${emojiChar}</span>`;
   }
-
+  
   toast.innerHTML = `
     <div class="vw-toast-content">
       ${iconHtml}
@@ -75,17 +75,17 @@ function processToastQueue() {
     <div class="vw-toast-progress"></div>
   `;
   container.appendChild(toast);
-
+  
   const progressBar = toast.querySelector('.vw-toast-progress');
   progressBar.style.animation = 'vw-toast-progress 5s linear forwards';
-
+  
   const removeToast = () => {
     if (toast && toast.remove) toast.remove();
     isToastShowing = false;
     if (resolve) resolve();
     setTimeout(() => processToastQueue(), 50);
   };
-
+  
   const timeoutId = setTimeout(removeToast, 5000);
   progressBar.addEventListener('animationend', () => {
     clearTimeout(timeoutId);
@@ -95,6 +95,7 @@ function processToastQueue() {
 
 function showToast(message, isError = false, emojiOrImg = null) {
   if (window.top !== window.self) return;
+  
   return new Promise((resolve) => {
     toastQueue.push({ message, isError, emojiOrImg, resolve });
     processToastQueue();
