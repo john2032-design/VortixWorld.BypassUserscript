@@ -12,14 +12,11 @@ const TC_PROXY_URL = 'https://lootlink-backend-b526.onrender.com/tc';
 const INCENTIVE_SERVER_DOMAIN = 'onsultingco.com';
 
 const LOOT_HOSTS = [
-  'loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co',
-  'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com',
-  'linksloot.net', 'lootlinks.com', 'best-links.org', 'loot-labs.com',
-  'lootlabs.com', 'links.lootlabs.gg'
+  'links.lootlabs.gg'
 ];
 
 const ALLOWED_SHORT_HOSTS = [
-  'linkvertise.com', 'admaven.com', 'shortearn.eu',
+  'linkvertise.com', 'admaven.com', 'work.ink', 'shortearn.eu',
   'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
   'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
@@ -32,6 +29,7 @@ const UA = navigator.userAgent;
 const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/.test(UA);
 const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(UA);
+
 if (isIOS) document.documentElement.classList.add('vw-ios');
 if (isAndroid) document.documentElement.classList.add('vw-android');
 if (isMobile) document.documentElement.classList.add('vw-mobile');
@@ -57,91 +55,296 @@ const CONFIG = Object.freeze({
   FALLBACK_CHECK_DELAY: 15000
 });
 
-const VW_KEYS = {
-  autoRedirect: 'vw_auto_redirect',
-  lootUseLocal: 'vw_loot_use_local'
+const VW_KEYS = window.VW_CONFIG?.keys || {
+  autoRedirect: 'vw_auto_redirect'
 };
 
-const WORKINK_UI_CSS = `
+const LOOTLINK_CARD_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
-  .vw-workink-card {
+
+  .vw-lootlink-card {
     position: fixed !important; top: 50% !important; left: 50% !important;
-    transform: translate(-50%, -50%) !important; width: min(420px, 90vw) !important;
+    transform: translate(-50%, -50%) !important; width: min(500px, 90vw) !important;
     background: #1e1e1e !important; border-radius: 24px !important; border: none !important;
     box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important; padding: 24px !important;
     text-align: center !important; z-index: 2147483647 !important;
-    font-family: 'Inter', sans-serif !important; animation: vw-fade-in 0.3s ease-out !important;
+    font-family: 'Inter', sans-serif !important;
   }
-  .vw-workink-card .vw-close {
+  .vw-lootlink-card .vw-close {
     position: absolute !important; top: 16px !important; right: 16px !important; background: #1e1e1e !important;
     box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important; border: none !important; color: #aaa !important;
     font-size: 18px !important; cursor: pointer !important; padding: 6px 10px !important; border-radius: 50% !important;
+    transition: all 0.2s !important;
   }
-  .vw-workink-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
-  .vw-workink-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
-  .vw-workink-status {
-    font-family: 'Orbitron', sans-serif !important; font-size: 28px !important; font-weight: 700 !important;
-    margin-bottom: 8px !important; color: #e0e0e0 !important; text-transform: uppercase; letter-spacing: 1px;
-    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  .vw-lootlink-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
+  .vw-lootlink-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
+  .vw-lootlink-status {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important;
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
   }
-  .vw-workink-url {
+  .vw-lootlink-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
+  .vw-lootlink-console {
+    width: 100%; height: 120px; overflow-y: auto; background: #1e1e1e;
+    box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
+    border-radius: 10px; padding: 12px; margin-bottom: 15px;
+    font-family: 'Courier New', monospace; font-size: 12px; color: #a0a0a0;
+    text-align: left; border-left: 3px solid #4ade80;
+  }
+  .vw-lootlink-console-line { padding: 2px 0; border-bottom: 1px solid rgba(74, 222, 128, 0.1); }
+  .vw-lootlink-console-line:last-child { border-bottom: none; }
+  .vw-lootlink-countdown {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 15px; font-weight: 700; color: #4ade80; margin-bottom: 15px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .vw-lootlink-url {
     background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
     border-radius: 12px !important; padding: 12px !important; word-break: break-all !important;
     font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important;
     margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important;
   }
-  .vw-workink-countdown {
-    font-family: 'Orbitron', sans-serif !important; font-size: 15px; font-weight: 700; color: #4ade80;
-    margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
-  }
-  .vw-workink-buttons { display: flex !important; gap: 12px !important; }
-  .vw-workink-btn {
-    font-family: 'Orbitron', sans-serif !important; flex: 1 !important; background: #1e1e1e !important;
-    box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; border: none !important;
-    padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important;
+  .vw-lootlink-buttons { display: flex !important; gap: 12px !important; }
+  .vw-lootlink-btn {
+    font-family: 'Orbitron', sans-serif !important;
+    flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+    border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important;
     font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important;
     text-transform: uppercase; letter-spacing: 1px;
   }
-  .vw-workink-btn-copy { color: #4ade80 !important; }
-  .vw-workink-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
-  @keyframes vw-fade-in { from { opacity:0; transform:translate(-50%,-40px); } to { opacity:1; transform:translate(-50%,-50%); } }
-  @media (max-width: 640px) {
-    .vw-workink-card { padding: 20px !important; }
-    .vw-workink-status { font-size: 22px !important; }
+  .vw-lootlink-btn-copy { color: #4ade80 !important; }
+  .vw-lootlink-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
+  .vw-lootlink-spinner {
+    width: 48px !important; height: 48px !important; border: 4px solid #141414 !important;
+    border-top: 4px solid #e0e0e0 !important; border-radius: 50% !important;
+    animation: vw-spin 0.8s linear infinite !important; margin: 0 auto 20px !important;
+    box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
   }
+  @keyframes vw-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @media (max-width: 640px) {
+    .vw-lootlink-card { padding: 20px !important; }
+    .vw-lootlink-status { font-size: 22px !important; }
+    .vw-lootlink-substatus { font-size: 12px !important; }
+  }
+`;
+
+const TPI_UI_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --vw-bg: #1e1e1e;
+    --vw-text: #e0e0e0;
+    --vw-text-dim: #a0a0a0;
+    --neu-out: 8px 8px 16px #141414, -8px -8px 16px #282828;
+    --neu-in: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
+    --neu-btn: 4px 4px 8px #141414, -4px -4px 8px #282828;
+    --neu-btn-active: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828;
+  }
+  #vortixWorldOverlay {
+    position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important;
+    height: 100vh !important; height: 100dvh !important; background: var(--vw-bg) !important;
+    z-index: 2147483647 !important; display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    font-family: 'Inter', sans-serif !important; opacity: 1 !important; visibility: visible !important;
+    pointer-events: auto !important; box-sizing: border-box !important; isolation: isolate !important;
+  }
+  .vw-header-bar {
+    position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important;
+    height: 72px !important; padding: 0 28px !important; display: flex !important;
+    align-items: center !important; justify-content: space-between !important;
+    background: var(--vw-bg) !important; box-shadow: 0 4px 10px #141414 !important;
+    z-index: 2147483648 !important;
+  }
+  .vw-title {
+    font-family: 'Orbitron', sans-serif !important;
+    font-weight: 700 !important; font-size: 1.5rem !important; display: flex !important;
+    align-items: center !important; gap: 12px !important; color: var(--vw-text) !important;
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .vw-header-icon {
+    height: 36px !important; width: 36px !important; border-radius: 50% !important;
+    object-fit: cover !important; box-shadow: var(--neu-btn) !important;
+  }
+  .vw-main-content {
+    display: flex !important; flex-direction: column !important; align-items: center !important;
+    justify-content: center !important; width: 100% !important; max-width: 520px !important;
+    padding: 2.5rem !important; background: var(--vw-bg) !important; border-radius: 24px !important;
+    border: none !important; box-shadow: var(--neu-out) !important; text-align: center !important;
+    animation: vw-fade-in 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1) !important;
+  }
+  .vw-icon-img {
+    width: 96px !important; height: 96px !important; border-radius: 50% !important;
+    margin-bottom: 1.5rem !important; object-fit: cover !important; box-shadow: var(--neu-btn) !important;
+  }
+  .vw-spinner {
+    width: 48px !important; height: 48px !important; border: 4px solid #141414 !important;
+    border-top: 4px solid var(--vw-text) !important; border-radius: 50% !important;
+    animation: spin 0.8s linear infinite !important; margin-bottom: 1.5rem !important;
+    box-shadow: var(--neu-btn) !important;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .vw-status {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 1.8rem !important; font-weight: 700 !important; color: var(--vw-text) !important;
+    margin-bottom: 0.5rem !important; text-transform: uppercase; letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .vw-console {
+    width: 100%; height: 120px; overflow-y: auto; background: var(--vw-bg);
+    box-shadow: var(--neu-in); border-radius: 10px; padding: 12px; margin-bottom: 15px;
+    font-family: 'Courier New', monospace; font-size: 12px; color: var(--vw-text-dim);
+    text-align: left; border-left: 3px solid #4ade80;
+  }
+  .vw-console-line { padding: 2px 0; border-bottom: 1px solid rgba(74, 222, 128, 0.1); }
+  .vw-console-line:last-child { border-bottom: none; }
+  .vw-countdown {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 15px; font-weight: 700; color: #4ade80; margin-bottom: 15px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .vw-url-container {
+    width: 100% !important; margin: 1.5rem 0 1rem 0 !important; padding: 1rem !important;
+    background: var(--vw-bg) !important; border-radius: 12px !important; box-shadow: var(--neu-in) !important;
+    word-break: break-all !important; font-size: 0.85rem !important; color: #b3b3b3 !important;
+    font-family: monospace !important; max-height: 100px !important; overflow-y: auto !important;
+  }
+  .vw-button-group {
+    display: flex !important; gap: 1rem !important; width: 100% !important; margin-top: 1rem !important;
+  }
+  .vw-btn {
+    font-family: 'Orbitron', sans-serif !important;
+    background: var(--vw-bg) !important; color: var(--vw-text) !important; border: none !important;
+    box-shadow: var(--neu-btn) !important; padding: 0.85rem 1rem !important; border-radius: 40px !important;
+    font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s ease !important;
+    font-size: 0.95rem !important; flex: 1; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .vw-btn-copy { color: #4ade80 !important; }
+  .vw-btn-proceed { color: var(--vw-text) !important; }
+  .vw-btn:hover { filter: brightness(1.1) !important; }
+  .vw-btn:active { box-shadow: var(--neu-btn-active) !important; transform: translateY(1px) !important; }
+  @keyframes vw-fade-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 640px) {
+    .vw-status { font-size: 1.4rem !important; }
+    .vw-main-content { padding: 1.5rem !important; margin: 1rem !important; max-width: 90vw !important; }
+    .vw-header-bar { height: 60px !important; padding: 0 16px !important; }
+    .vw-btn { padding: 0.6rem 1rem !important; font-size: 0.8rem !important; }
+  }
+`;
+
+const API_UI_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+  .vw-api-card {
+    position: fixed !important; top: 50% !important; left: 50% !important;
+    transform: translate(-50%, -50%) !important; width: min(500px, 90vw) !important;
+    background: #1e1e1e !important; border-radius: 24px !important; border: none !important;
+    box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important; padding: 24px !important;
+    text-align: center !important; z-index: 2147483647 !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  .vw-api-card .vw-close {
+    position: absolute !important; top: 16px !important; right: 16px !important; background: #1e1e1e !important;
+    box-shadow: 3px 3px 6px #141414, -3px -3px 6px #282828 !important; border: none !important; color: #aaa !important;
+    font-size: 18px !important; cursor: pointer !important; padding: 6px 10px !important; border-radius: 50% !important;
+    transition: all 0.2s !important;
+  }
+  .vw-api-card .vw-close:active { box-shadow: inset 3px 3px 6px #141414, inset -3px -3px 6px #282828 !important; }
+  .vw-api-icon { width: 64px !important; height: 64px !important; border-radius: 50% !important; margin-bottom: 16px !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important; object-fit: cover !important; }
+  .vw-api-status {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 28px !important; font-weight: 700 !important; margin-bottom: 8px !important; color: #e0e0e0 !important;
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .vw-api-substatus { font-size: 14px !important; color: #a0a0a0 !important; margin-bottom: 16px !important; }
+  .vw-api-url { background: #1e1e1e !important; box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; border-radius: 12px !important; padding: 12px !important; word-break: break-all !important; font-family: monospace !important; font-size: 12px !important; color: #b3b3b3 !important; margin-bottom: 20px !important; max-height: 100px !important; overflow-y: auto !important; }
+  .vw-api-buttons { display: flex !important; gap: 12px !important; }
+  .vw-api-btn {
+    font-family: 'Orbitron', sans-serif !important;
+    flex: 1 !important; background: #1e1e1e !important; box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+    border: none !important; padding: 12px !important; border-radius: 40px !important; color: #e0e0e0 !important;
+    font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .vw-api-btn-copy { color: #4ade80 !important; }
+  .vw-api-btn:active { box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important; transform: translateY(1px) !important; }
+  .vw-api-topbar-inner { display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: 100% !important; padding: 0 16px !important; white-space: nowrap !important; }
+  .vw-api-loading-ring { width: 20px !important; height: 20px !important; flex: 0 0 auto !important; display: inline-block !important; border-radius: 50% !important; border: 3px solid #141414 !important; border-top: 3px solid #e0e0e0 !important; animation: vw-api-spin 0.8s linear infinite !important; }
+  .vw-api-loading-text {
+    font-family: 'Orbitron', sans-serif !important;
+    color: #e0e0e0 !important; font-weight: 600 !important; line-height: 1 !important; white-space: nowrap !important;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  @keyframes vw-api-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @media (max-width: 640px) { .vw-api-card { padding: 20px !important; } .vw-api-status { font-size: 22px !important; } .vw-api-substatus { font-size: 12px !important; } }
 `;
 
 const cleanupManager = {
   intervals: new Set(),
   timeouts: new Set(),
-  setInterval(fn, delay, ...args) { const id = setInterval(fn, delay, ...args); this.intervals.add(id); return id; },
-  setTimeout(fn, delay, ...args) { const id = setTimeout(() => { this.timeouts.delete(id); fn(...args); }, delay); this.timeouts.add(id); return id; },
-  clearAll() { this.intervals.forEach(id => clearInterval(id)); this.timeouts.forEach(id => clearTimeout(id)); this.intervals.clear(); this.timeouts.clear(); }
+  setInterval(fn, delay, ...args) {
+    const id = setInterval(fn, delay, ...args);
+    this.intervals.add(id);
+    return id;
+  },
+  setTimeout(fn, delay, ...args) {
+    const id = setTimeout(() => {
+      this.timeouts.delete(id);
+      fn(...args);
+    }, delay);
+    this.timeouts.add(id);
+    return id;
+  },
+  clearAll() {
+    this.intervals.forEach(id => clearInterval(id));
+    this.timeouts.forEach(id => clearTimeout(id));
+    this.intervals.clear();
+    this.timeouts.clear();
+  }
 };
 
 let isShutdown = false;
+
 function shutdown() {
   if (isShutdown) return;
   isShutdown = true;
   cleanupManager.clearAll();
-  if (window.bypassObserver) { window.bypassObserver.disconnect(); window.bypassObserver = null; }
-  if (window.primaryWebSocket) { window.primaryWebSocket.disconnect(); window.primaryWebSocket = null; }
-  if (window.fallbackWebSocket) { window.fallbackWebSocket.disconnect(); window.fallbackWebSocket = null; }
-  if (window.activeWebSocket) { window.activeWebSocket.disconnect(); window.activeWebSocket = null; }
+  if (window.bypassObserver) {
+    window.bypassObserver.disconnect();
+    window.bypassObserver = null;
+  }
+  if (window.primaryWebSocket) {
+    window.primaryWebSocket.disconnect();
+    window.primaryWebSocket = null;
+  }
+  if (window.fallbackWebSocket) {
+    window.fallbackWebSocket.disconnect();
+    window.fallbackWebSocket = null;
+  }
+  if (window.activeWebSocket) {
+    window.activeWebSocket.disconnect();
+    window.activeWebSocket = null;
+  }
 }
 
 async function copyTextSilent(text) {
   try {
     if (!text) return false;
-    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(String(text)); return true; }
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(String(text));
+      return true;
+    }
   } catch (_) {}
   try {
     const ta = document.createElement('textarea');
     ta.value = String(text);
-    ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
     (document.body || document.documentElement).appendChild(ta);
-    ta.focus(); ta.select();
-    const ok = document.execCommand('copy'); ta.remove();
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
     return !!ok;
   } catch (_) {}
   return false;
@@ -152,12 +355,37 @@ function isLuarmorUrl(url) {
     const u = new URL(String(url), location.href);
     const h = (u.hostname || '').toLowerCase();
     return h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net');
-  } catch (_) { return String(url).includes('ads.luarmor.net'); }
+  } catch (_) {
+    return String(url).includes('ads.luarmor.net');
+  }
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m])
-    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, c => c);
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c });
+}
+
+function isAutoRedirectEnabled() {
+  const saved = localStorage.getItem(VW_KEYS.autoRedirect);
+  return saved !== null ? saved === 'true' : true;
+}
+
+function decodeURIxor(encodedString, prefixLength = 5) {
+  const base64Decoded = atob(encodedString);
+  const prefix = base64Decoded.substring(0, prefixLength);
+  const encodedPortion = base64Decoded.substring(prefixLength);
+  const prefixLen = prefix.length;
+  const decodedChars = new Array(encodedPortion.length);
+  for (let i = 0; i < encodedPortion.length; i++) {
+    const encodedChar = encodedPortion.charCodeAt(i);
+    const prefixChar = prefix.charCodeAt(i % prefixLen);
+    decodedChars[i] = String.fromCharCode(encodedChar ^ prefixChar);
+  }
+  return decodedChars.join('');
 }
 
 window.HOST = HOST;
@@ -178,18 +406,14 @@ window.isAllowedHost = isAllowedHost;
 window.isTpiLi = isTpiLi;
 window.CONFIG = CONFIG;
 window.VW_KEYS = VW_KEYS;
-window.WORKINK_UI_CSS = WORKINK_UI_CSS;
 window.LOOTLINK_CARD_CSS = LOOTLINK_CARD_CSS;
-window.API_UI_CSS = API_UI_CSS;
 window.TPI_UI_CSS = TPI_UI_CSS;
+window.API_UI_CSS = API_UI_CSS;
 window.cleanupManager = cleanupManager;
 window.shutdown = shutdown;
 window.copyTextSilent = copyTextSilent;
 window.isLuarmorUrl = isLuarmorUrl;
 window.escapeHtml = escapeHtml;
-window.isAutoRedirectEnabled = () => {
-  const v = localStorage.getItem(VW_KEYS.autoRedirect);
-  return v === null ? true : v === 'true';
-};
+window.isAutoRedirectEnabled = isAutoRedirectEnabled;
 window.decodeURIxor = decodeURIxor;
 window.isShutdown = isShutdown;
