@@ -16,7 +16,7 @@ const LOOT_HOSTS = [
 ];
 
 const ALLOWED_SHORT_HOSTS = [
-  'linkvertise.com', 'admaven.com', 'work.ink', 'shortearn.eu',
+  'linkvertise.com', 'admaven.com', 'shortearn.eu',
   'beta.shortearn.eu', 'cuty.io', 'ouo.io', 'lockr.so',
   'rekonise.com', 'mboost.me', 'link-unlocker.com', 'direct-link.net',
   'direct-links.net', 'direct-links.org', 'link-center.net', 'link-hub.net',
@@ -278,6 +278,79 @@ const API_UI_CSS = `
   @media (max-width: 640px) { .vw-api-card { padding: 20px !important; } .vw-api-status { font-size: 22px !important; } .vw-api-substatus { font-size: 12px !important; } }
 `;
 
+const WORKINK_UI_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+  .vw-workink-overlay {
+    position: fixed !important;
+    top: 20px !important; right: 20px !important;
+    background: #1e1e1e !important; backdrop-filter: none !important;
+    border-radius: 24px !important;
+    border: none !important;
+    box-shadow: 8px 8px 16px #141414, -8px -8px 16px #282828 !important;
+    z-index: 2147483647 !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #e0e0e0 !important;
+    width: 380px !important;
+    overflow: hidden !important;
+  }
+  .vw-workink-badge {
+    display: inline-flex !important; align-items: center !important; gap: 8px !important;
+    background: #1e1e1e !important;
+    box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+    padding: 6px 12px !important; border-radius: 20px !important;
+    margin-bottom: 16px !important;
+  }
+  .vw-workink-badge span {
+    color: #22c55e !important; font-size: 13px !important; font-weight: 700 !important;
+    letter-spacing: 1px !important; text-transform: uppercase !important;
+    font-family: 'Orbitron', sans-serif !important;
+  }
+  .vw-workink-url-box {
+    background: #1e1e1e !important;
+    box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+    border-radius: 12px !important; padding: 14px 16px !important;
+    margin-bottom: 16px !important; word-break: break-all !important;
+    font-size: 11px !important; color: #00f3ff !important; text-align: left !important;
+    max-height: 120px !important; overflow-y: auto !important;
+    font-family: 'Courier New', monospace !important;
+    position: relative !important;
+  }
+  .vw-workink-url-box::before {
+    content: 'DESTINATION >' !important; position: absolute !important;
+    top: 4px !important; left: 8px !important; font-size: 8px !important;
+    color: #555 !important; letter-spacing: 1px !important;
+  }
+  .vw-workink-status {
+    font-size: 12px !important; color: #a0a0a0 !important; margin-bottom: 20px !important;
+    text-transform: uppercase !important; letter-spacing: 1px !important;
+    font-weight: 600 !important; height: 18px !important;
+    font-family: 'Orbitron', sans-serif !important;
+  }
+  .vw-workink-btn-group { display: flex !important; gap: 12px !important; }
+  .vw-workink-btn {
+    font-family: 'Orbitron', sans-serif !important;
+    flex: 1 !important; background: #1e1e1e !important;
+    box-shadow: 4px 4px 8px #141414, -4px -4px 8px #282828 !important;
+    border: none !important; padding: 14px !important; border-radius: 40px !important;
+    font-size: 13px !important; font-weight: 700 !important;
+    cursor: pointer !important; transition: all 0.2s !important;
+    text-transform: uppercase !important; letter-spacing: 1px !important;
+    color: #e0e0e0 !important;
+  }
+  .vw-workink-btn:active {
+    box-shadow: inset 4px 4px 8px #141414, inset -4px -4px 8px #282828 !important;
+    transform: translateY(2px) !important;
+  }
+  .vw-workink-btn.redirect { color: #00f3ff !important; }
+  .vw-workink-footer {
+    margin-top: 20px !important; padding-top: 16px !important;
+    border-top: 1px solid rgba(255,255,255,0.05) !important;
+    font-size: 10px !important; color: #555 !important;
+  }
+  .vw-workink-footer a { color: #00f3ff !important; text-decoration: none !important; font-weight: 600 !important; }
+`;
+
 const cleanupManager = {
   intervals: new Set(),
   timeouts: new Set(),
@@ -388,6 +461,85 @@ function decodeURIxor(encodedString, prefixLength = 5) {
   return decodedChars.join('');
 }
 
+function createWorkinkUI(url) {
+  const old = document.querySelector('.vw-workink-overlay');
+  if (old) old.remove();
+
+  if (!document.getElementById('vwWorkinkStyles')) {
+    const style = document.createElement('style');
+    style.id = 'vwWorkinkStyles';
+    style.textContent = WORKINK_UI_CSS;
+    document.head.appendChild(style);
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'vw-workink-overlay';
+  overlay.innerHTML = `
+    <div style="padding: 24px;">
+      <div class="vw-workink-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>Bypassed</span>
+      </div>
+      <div class="vw-workink-url-box"><span>${escapeHtml(url)}</span></div>
+      <div class="vw-workink-status" id="vw-workink-status"></div>
+      <div class="vw-workink-btn-group">
+        <button class="vw-workink-btn" id="vw-workink-copy">📋 Copy URL</button>
+        <button class="vw-workink-btn redirect" id="vw-workink-redirect">➡️ Redirect</button>
+      </div>
+      <div class="vw-workink-footer">
+        Made by: Camper<br>Discord: <a href="https://discord.gg/QDSxnHeH63" target="_blank">discord.gg/QDSxnHeH63</a>
+      </div>
+    </div>
+  `;
+  (document.body || document.documentElement).appendChild(overlay);
+
+  document.getElementById('vw-workink-copy').onclick = () => {
+    copyTextSilent(url).then(() => {
+      const b = document.getElementById('vw-workink-copy');
+      b.innerHTML = 'Copied!';
+      b.style.color = '#22c55e';
+      setTimeout(() => { b.innerHTML = '📋 Copy URL'; b.style.color = '#e0e0e0'; }, 2000);
+    });
+  };
+  document.getElementById('vw-workink-redirect').onclick = () => location.replace(url);
+
+  function getWorkinkRedirectSetting() {
+    return new Promise(resolve => {
+      const saved = localStorage.getItem('bypass_redirect_setting') || 'off';
+      resolve(saved);
+    });
+  }
+
+  getWorkinkRedirectSetting().then(setting => {
+    let countdown = 0, auto = false;
+    switch (setting) {
+      case '25s': countdown = 25; auto = true; break;
+      case 'instant': countdown = 0; auto = true; break;
+      default: countdown = 0; auto = false;
+    }
+    const statusEl = document.getElementById('vw-workink-status');
+    if (!auto) {
+      statusEl.textContent = 'Auto‑redirect off';
+      statusEl.style.color = '#a0a0a0';
+    } else if (countdown === 0) {
+      statusEl.textContent = 'Redirecting...';
+      location.replace(url);
+    } else {
+      let left = countdown;
+      statusEl.style.color = '#00f3ff';
+      statusEl.textContent = `Auto‑redirect in ${left}s`;
+      const timer = setInterval(() => {
+        left--;
+        if (left > 0) statusEl.textContent = `Auto‑redirect in ${left}s`;
+        else {
+          clearInterval(timer);
+          location.replace(url);
+        }
+      }, 1000);
+    }
+  });
+}
+
 window.HOST = HOST;
 window.ICON_URL = ICON_URL;
 window.LOOTLINK_UI_ICON = LOOTLINK_UI_ICON;
@@ -409,6 +561,7 @@ window.VW_KEYS = VW_KEYS;
 window.LOOTLINK_CARD_CSS = LOOTLINK_CARD_CSS;
 window.TPI_UI_CSS = TPI_UI_CSS;
 window.API_UI_CSS = API_UI_CSS;
+window.WORKINK_UI_CSS = WORKINK_UI_CSS;
 window.cleanupManager = cleanupManager;
 window.shutdown = shutdown;
 window.copyTextSilent = copyTextSilent;
@@ -416,4 +569,5 @@ window.isLuarmorUrl = isLuarmorUrl;
 window.escapeHtml = escapeHtml;
 window.isAutoRedirectEnabled = isAutoRedirectEnabled;
 window.decodeURIxor = decodeURIxor;
+window.createWorkinkUI = createWorkinkUI;
 window.isShutdown = isShutdown;
