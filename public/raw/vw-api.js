@@ -173,7 +173,7 @@ async function runApiBypass() {
       const timeLabel = result.time;
       if (isLuarmorUrl(finalUrl)) {
         removeApiTopBar();
-        showHashExpireUI(finalUrl);
+        location.href = finalUrl;
         shutdown();
       } else {
         const autoRedirect = getStoredAutoRedirect();
