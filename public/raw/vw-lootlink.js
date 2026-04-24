@@ -180,8 +180,10 @@
   }
 
   function isAutoRedirectEnabled() {
-    const v = localStorage.getItem('vw_auto_redirect');
-    return v === null ? true : v === 'true';
+    if (typeof win.getStoredConfig === 'function') {
+      return win.getStoredConfig().then(cfg => cfg.autoRedirect).catch(() => true);
+    }
+    return true;
   }
 
   function shutdown() {
@@ -233,14 +235,22 @@
     if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
     const el = doc.getElementById('vwLootlinkCountdown'); if (el) el.style.display = 'none';
 
-    if (isAutoRedirectEnabled()) {
-      updateStatus('Redirecting...', 'Target URL acquired (' + timeLabel + 's)');
-      showToast('Bypassed in ' + timeLabel + 's', false, SUCCESS_GIF);
-      setTimeout(() => { location.href = url; }, 1000);
-    } else {
-      showCompleteUI(url, timeLabel, true);
+    if (win.isLuarmorUrl && win.isLuarmorUrl(url)) {
+      doc.getElementById('vwLootlinkCard')?.remove();
+      if (win.showHashExpireUI) win.showHashExpireUI(url);
+      shutdown();
+      return;
     }
-    shutdown();
+    Promise.resolve(isAutoRedirectEnabled()).then(auto => {
+      if (auto) {
+        updateStatus('Redirecting...', 'Target URL acquired (' + timeLabel + 's)');
+        showToast('Bypassed in ' + timeLabel + 's', false, SUCCESS_GIF);
+        setTimeout(() => { location.href = url; }, 1000);
+      } else {
+        showCompleteUI(url, timeLabel, true);
+      }
+      shutdown();
+    });
   }
 
   function handleBypassError(errorMsg) {
@@ -304,4 +314,5 @@
   }
 
   win.runLocalLootlinkBypass = runLocalLootlinkBypass;
+  win.showHashExpireUI = win.showHashExpireUI || function(finalUrl) {};
 })();
