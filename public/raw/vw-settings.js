@@ -1,5 +1,6 @@
 ;(function () {
   'use strict'
+
   if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
@@ -7,8 +8,7 @@
   const API_INFO_URL = 'https://apikey-nine.vercel.app/api/key/info/'
 
   const keys = {
-    autoRedirect: 'vw_auto_redirect',
-    lootLocal: 'vw_loot_use_local'
+    autoRedirect: 'vw_auto_redirect'
   }
 
   const SETTINGS_CSS = `
@@ -490,32 +490,44 @@
     }
   `
 
-  function hasGM() { return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'; }
+  function hasGM() {
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
+  }
 
   function getStoredValue(key, defaultValue) {
-    if (hasGM()) {
-      try {
-        const val = GM_getValue(key, defaultValue)
-        if (val !== undefined && val !== null) return val
-      } catch (_) {}
+    if (key === keys.autoRedirect) {
+      if (hasGM()) {
+        try {
+          const val = GM_getValue(key, defaultValue)
+          if (val !== undefined && val !== null) return val
+        } catch (_) {}
+      }
     }
     try {
-      const ls = localStorage.getItem(key)
-      if (ls === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return ls === 'true'
+      const lsValue = localStorage.getItem(key)
+      if (lsValue === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return lsValue === 'true'
       if (typeof defaultValue === 'number') {
-        const n = parseInt(ls, 10)
+        const n = parseInt(lsValue, 10)
         return Number.isFinite(n) ? n : defaultValue
       }
-      return ls
-    } catch (_) { return defaultValue }
+      return lsValue
+    } catch (_) {
+      return defaultValue
+    }
   }
 
   function setStoredValue(key, value) {
-    if (hasGM()) {
-      try { GM_setValue(key, value) } catch (_) {}
+    if (key === keys.autoRedirect) {
+      if (hasGM()) {
+        try {
+          GM_setValue(key, value)
+        } catch (_) {}
+      }
     }
-    try { localStorage.setItem(key, String(value)) } catch (_) {}
+    try {
+      localStorage.setItem(key, String(value))
+    } catch (_) {}
   }
 
   function escapeHtml(str) {
@@ -593,17 +605,6 @@
             </label>
           </div>
 
-          <div class="vw-row vw-row-toggle">
-            <div class="vw-label">
-              <div class="vw-label-title">Local LootLink Bypass</div>
-              <div class="vw-label-desc">Use local bypass instead of API for loot sites</div>
-            </div>
-            <label class="vw-toggle">
-              <input type="checkbox" id="vwLootLocalToggle">
-              <span class="vw-toggle-slider"></span>
-            </label>
-          </div>
-
           <div class="vw-actions">
             <button class="vw-btn" id="vwConsoleBtn" type="button">Console</button>
             <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
@@ -645,7 +646,6 @@
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
     const autoToggle = shadow.querySelector('#vwAutoToggle')
-    const lootToggle = shadow.querySelector('#vwLootLocalToggle')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
@@ -835,23 +835,19 @@
     }
 
     function loadSettings() {
-      autoToggle.checked = getStoredValue(keys.autoRedirect, true) === true
-      lootToggle.checked = getStoredValue(keys.lootLocal, true) === true
+      const auto = getStoredValue(keys.autoRedirect, true)
+      autoToggle.checked = auto === true
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue(keys.lootLocal, lootToggle.checked)
       showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
     }
 
     function syncFromStorage(e) {
       if (e.key === keys.autoRedirect) {
-        autoToggle.checked = e.newValue === 'true'
-      }
-      if (e.key === keys.lootLocal) {
-        lootToggle.checked = e.newValue === 'true'
+        loadSettings()
       }
     }
 
