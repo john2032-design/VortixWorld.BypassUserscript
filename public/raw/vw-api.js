@@ -171,13 +171,19 @@ async function runApiBypass() {
     if (result.status === 'success') {
       const finalUrl = result.result;
       const timeLabel = result.time;
-      const autoRedirect = getStoredAutoRedirect();
-      if (autoRedirect) {
+      if (isLuarmorUrl(finalUrl)) {
         removeApiTopBar();
-        location.href = finalUrl;
-      } else {
-        showApiResultUI(finalUrl, timeLabel, false);
+        showHashExpireUI(finalUrl);
         shutdown();
+      } else {
+        const autoRedirect = getStoredAutoRedirect();
+        if (autoRedirect) {
+          removeApiTopBar();
+          location.href = finalUrl;
+        } else {
+          showApiResultUI(finalUrl, timeLabel, false);
+          shutdown();
+        }
       }
     } else {
       const errorDetail = JSON.stringify(result, null, 2);
