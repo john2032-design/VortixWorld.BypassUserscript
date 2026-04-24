@@ -1,6 +1,5 @@
 ;(function () {
   'use strict'
-
   if (window.top !== window.self) return
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
@@ -9,7 +8,7 @@
 
   const keys = {
     autoRedirect: 'vw_auto_redirect',
-    lootlinkLocal: 'vw_lootlink_local'
+    lootLocal: 'vw_loot_use_local'
   }
 
   const SETTINGS_CSS = `
@@ -491,44 +490,32 @@
     }
   `
 
-  function hasGM() {
-    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
-  }
+  function hasGM() { return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'; }
 
   function getStoredValue(key, defaultValue) {
-    if (key === keys.autoRedirect || key === keys.lootlinkLocal) {
-      if (hasGM()) {
-        try {
-          const val = GM_getValue(key, defaultValue)
-          if (val !== undefined && val !== null) return val
-        } catch (_) {}
-      }
+    if (hasGM()) {
+      try {
+        const val = GM_getValue(key, defaultValue)
+        if (val !== undefined && val !== null) return val
+      } catch (_) {}
     }
     try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
+      const ls = localStorage.getItem(key)
+      if (ls === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return ls === 'true'
       if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
+        const n = parseInt(ls, 10)
         return Number.isFinite(n) ? n : defaultValue
       }
-      return lsValue
-    } catch (_) {
-      return defaultValue
-    }
+      return ls
+    } catch (_) { return defaultValue }
   }
 
   function setStoredValue(key, value) {
-    if (key === keys.autoRedirect || key === keys.lootlinkLocal) {
-      if (hasGM()) {
-        try {
-          GM_setValue(key, value)
-        } catch (_) {}
-      }
+    if (hasGM()) {
+      try { GM_setValue(key, value) } catch (_) {}
     }
-    try {
-      localStorage.setItem(key, String(value))
-    } catch (_) {}
+    try { localStorage.setItem(key, String(value)) } catch (_) {}
   }
 
   function escapeHtml(str) {
@@ -595,17 +582,6 @@
             <span class="vw-key-value" id="vwKeyStatusValue">—</span>
           </div>
 
-          <div class="vw-row vw-row-toggle" id="vwLootlinkRow">
-            <div class="vw-label">
-              <div class="vw-label-title">Local Lootlink Bypass</div>
-              <div class="vw-label-desc">Use built‑in bypass for loot‑link.com (enabled) or API (disabled)</div>
-            </div>
-            <label class="vw-toggle">
-              <input type="checkbox" id="vwLootlinkLocalToggle">
-              <span class="vw-toggle-slider"></span>
-            </label>
-          </div>
-
           <div class="vw-row vw-row-toggle">
             <div class="vw-label">
               <div class="vw-label-title">Auto Redirect</div>
@@ -613,6 +589,17 @@
             </div>
             <label class="vw-toggle">
               <input type="checkbox" id="vwAutoToggle">
+              <span class="vw-toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="vw-row vw-row-toggle">
+            <div class="vw-label">
+              <div class="vw-label-title">Local LootLink Bypass</div>
+              <div class="vw-label-desc">Use local bypass instead of API for loot sites</div>
+            </div>
+            <label class="vw-toggle">
+              <input type="checkbox" id="vwLootLocalToggle">
               <span class="vw-toggle-slider"></span>
             </label>
           </div>
@@ -658,7 +645,7 @@
     const backdropDiv = shadow.querySelector('.vw-backdrop')
 
     const autoToggle = shadow.querySelector('#vwAutoToggle')
-    const lootlinkToggle = shadow.querySelector('#vwLootlinkLocalToggle')
+    const lootToggle = shadow.querySelector('#vwLootLocalToggle')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
     const consoleBtn = shadow.querySelector('#vwConsoleBtn')
@@ -848,28 +835,23 @@
     }
 
     function loadSettings() {
-      const auto = getStoredValue(keys.autoRedirect, true)
-      autoToggle.checked = auto === true
-
-      const local = getStoredValue(keys.lootlinkLocal, true)
-      lootlinkToggle.checked = local === true
-      window.__vw_useLocalLootlink = local === true
+      autoToggle.checked = getStoredValue(keys.autoRedirect, true) === true
+      lootToggle.checked = getStoredValue(keys.lootLocal, true) === true
     }
 
     function saveSettings() {
       const newAuto = autoToggle.checked
-      const newLocal = lootlinkToggle.checked
-
       setStoredValue(keys.autoRedirect, newAuto)
-      setStoredValue(keys.lootlinkLocal, newLocal)
-      window.__vw_useLocalLootlink = newLocal
-
+      setStoredValue(keys.lootLocal, lootToggle.checked)
       showToast(hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
     }
 
     function syncFromStorage(e) {
-      if (e.key === keys.autoRedirect || e.key === keys.lootlinkLocal) {
-        loadSettings()
+      if (e.key === keys.autoRedirect) {
+        autoToggle.checked = e.newValue === 'true'
+      }
+      if (e.key === keys.lootLocal) {
+        lootToggle.checked = e.newValue === 'true'
       }
     }
 
